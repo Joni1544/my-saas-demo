@@ -2,15 +2,18 @@
  * NextAuth Konfiguration
  * Email/Password Authentication mit Prisma Adapter
  */
-import NextAuth, { NextAuthOptions } from 'next-auth'
+import NextAuth from 'next-auth'
+import type { NextAuthConfig } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { PrismaAdapter } from '@auth/prisma-adapter'
 import { prisma } from './prisma'
 import bcrypt from 'bcryptjs'
-import { Role } from '@prisma/client'
+// Role wird aus Prisma Client importiert (nach db:generate)
+type Role = 'ADMIN' | 'MITARBEITER'
 
-export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma) as any,
+export const authOptions: NextAuthConfig = {
+  // @ts-expect-error - PrismaAdapter Typen sind nicht vollständig kompatibel
+  adapter: PrismaAdapter(prisma),
   providers: [
     CredentialsProvider({
       name: 'Credentials',
@@ -25,7 +28,7 @@ export const authOptions: NextAuthOptions = {
 
         // Benutzer aus Datenbank laden
         const user = await prisma.user.findUnique({
-          where: { email: credentials.email },
+          where: { email: credentials.email as string },
           include: { shop: true },
         })
 
@@ -35,7 +38,7 @@ export const authOptions: NextAuthOptions = {
 
         // Passwort überprüfen
         const isPasswordValid = await bcrypt.compare(
-          credentials.password,
+          credentials.password as string,
           user.password
         )
 
@@ -61,8 +64,8 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id
-        token.role = (user as any).role
-        token.tenantId = (user as any).tenantId
+        token.role = user.role
+        token.tenantId = user.tenantId
       }
       return token
     },

@@ -1,11 +1,12 @@
 /**
  * NextAuth API Route Handler
  * Verarbeitet alle Authentication-Requests
+ * NextAuth v5 beta API
  */
 import NextAuth from 'next-auth'
 import { authOptions } from '@/lib/auth'
 
-const handler = NextAuth(authOptions)
+// NextAuth v5: Handler direkt exportieren
+const { handlers } = NextAuth(authOptions)
 
-export { handler as GET, handler as POST }
-
+export const { GET, POST } = handlers

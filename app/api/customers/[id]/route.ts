@@ -5,17 +5,17 @@
  * DELETE: Kunden löschen
  */
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
 // GET: Einzelnen Kunden abrufen
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    const { id } = await params
+    const session = await auth()
 
     if (!session?.user?.tenantId) {
       return NextResponse.json(
@@ -26,7 +26,7 @@ export async function GET(
 
     const customer = await prisma.customer.findFirst({
       where: {
-        id: params.id,
+        id: id,
         tenantId: session.user.tenantId,
       },
     })
@@ -51,10 +51,11 @@ export async function GET(
 // PUT: Kunden aktualisieren
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    const { id } = await params
+    const session = await auth()
 
     if (!session?.user?.tenantId) {
       return NextResponse.json(
@@ -68,7 +69,7 @@ export async function PUT(
 
     const customer = await prisma.customer.updateMany({
       where: {
-        id: params.id,
+        id: id,
         tenantId: session.user.tenantId,
       },
       data: {
@@ -88,7 +89,7 @@ export async function PUT(
     }
 
     const updatedCustomer = await prisma.customer.findUnique({
-      where: { id: params.id },
+      where: { id: id },
     })
 
     return NextResponse.json({ customer: updatedCustomer })
@@ -104,10 +105,11 @@ export async function PUT(
 // DELETE: Kunden löschen
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    const { id } = await params
+    const session = await auth()
 
     if (!session?.user?.tenantId) {
       return NextResponse.json(
@@ -118,7 +120,7 @@ export async function DELETE(
 
     const customer = await prisma.customer.deleteMany({
       where: {
-        id: params.id,
+        id: id,
         tenantId: session.user.tenantId,
       },
     })

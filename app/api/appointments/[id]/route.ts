@@ -5,17 +5,17 @@
  * DELETE: Termin löschen
  */
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
 // GET: Einzelnen Termin abrufen
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    const { id } = await params
+    const session = await auth()
 
     if (!session?.user?.tenantId) {
       return NextResponse.json(
@@ -24,8 +24,12 @@ export async function GET(
       )
     }
 
-    const where: any = {
-      id: params.id,
+    const where: {
+      id: string
+      tenantId: string
+      employeeId?: string
+    } = {
+      id: id,
       tenantId: session.user.tenantId,
     }
 
@@ -76,10 +80,11 @@ export async function GET(
 // PUT: Termin aktualisieren
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    const { id } = await params
+    const session = await auth()
 
     if (!session?.user?.tenantId) {
       return NextResponse.json(
@@ -91,8 +96,12 @@ export async function PUT(
     const body = await request.json()
     const { title, description, startTime, endTime, status, customerId } = body
 
-    const where: any = {
-      id: params.id,
+    const where: {
+      id: string
+      tenantId: string
+      employeeId?: string
+    } = {
+      id: id,
       tenantId: session.user.tenantId,
     }
 
@@ -131,7 +140,7 @@ export async function PUT(
     }
 
     const updatedAppointment = await prisma.appointment.findUnique({
-      where: { id: params.id },
+      where: { id: id },
       include: {
         customer: true,
         employee: {
@@ -155,10 +164,11 @@ export async function PUT(
 // DELETE: Termin löschen
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    const { id } = await params
+    const session = await auth()
 
     if (!session?.user?.tenantId) {
       return NextResponse.json(
@@ -167,8 +177,12 @@ export async function DELETE(
       )
     }
 
-    const where: any = {
-      id: params.id,
+    const where: {
+      id: string
+      tenantId: string
+      employeeId?: string
+    } = {
+      id: id,
       tenantId: session.user.tenantId,
     }
 

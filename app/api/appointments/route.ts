@@ -4,14 +4,13 @@
  * POST: Neuen Termin erstellen
  */
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
 // GET: Alle Termine abrufen
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await auth()
 
     if (!session?.user?.tenantId) {
       return NextResponse.json(
@@ -24,7 +23,11 @@ export async function GET(request: NextRequest) {
     const startDate = searchParams.get('startDate')
     const endDate = searchParams.get('endDate')
 
-    const where: any = {
+    const where: {
+      tenantId: string
+      startTime?: { gte: Date; lte: Date }
+      employeeId?: string
+    } = {
       tenantId: session.user.tenantId,
     }
 
@@ -75,7 +78,7 @@ export async function GET(request: NextRequest) {
 // POST: Neuen Termin erstellen
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await auth()
 
     if (!session?.user?.tenantId) {
       return NextResponse.json(

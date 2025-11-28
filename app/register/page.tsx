@@ -42,7 +42,7 @@ export default function RegisterPage() {
 
       // Nach erfolgreicher Registrierung zum Login weiterleiten
       router.push('/login?registered=true')
-    } catch (err) {
+    } catch {
       setError('Ein Fehler ist aufgetreten')
     } finally {
       setLoading(false)

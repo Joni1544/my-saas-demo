@@ -37,7 +37,7 @@ export default function DashboardStats() {
 
         const now = new Date()
         const upcoming = appointmentsData.appointments?.filter(
-          (apt: any) => new Date(apt.startTime) >= now
+          (apt: { startTime: string }) => new Date(apt.startTime) >= now
         ).length || 0
 
         setStats({
