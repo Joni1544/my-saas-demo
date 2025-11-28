@@ -2,7 +2,7 @@
  * NextAuth Konfiguration
  * Email/Password Authentication mit Prisma Adapter
  */
-import { NextAuthOptions } from 'next-auth'
+import NextAuth, { NextAuthOptions } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { PrismaAdapter } from '@auth/prisma-adapter'
 import { prisma } from './prisma'
@@ -81,4 +81,7 @@ export const authOptions: NextAuthOptions = {
   },
   secret: process.env.NEXTAUTH_SECRET,
 }
+
+// NextAuth v5: Exportiere auth() Funktion
+export const { auth, signIn, signOut } = NextAuth(authOptions)
 
