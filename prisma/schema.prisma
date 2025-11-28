@@ -1,0 +1,193 @@
+// Prisma Schema für Multi-Tenant SaaS System
+// Enthält: User, Shop (Tenant), Customer, Appointment, Employee
+
+generator client {
+  provider = "prisma-client"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Benutzer-Modell mit Rollen (Admin, Mitarbeiter)
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String   // Gehashtes Passwort
+  name      String?
+  role      Role     @default(MITARBEITER) // Admin oder Mitarbeiter
+  tenantId  String?  // Referenz zur Firma (Shop)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Beziehungen
+  shop      Shop?      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  employee  Employee?
+  sessions  Session[]
+  accounts  Account[]
+
+  @@index([tenantId])
+  @@index([email])
+}
+
+// Firma/Tenant-Modell
+model Shop {
+  id          String   @id @default(cuid())
+  name        String
+  tenantId    String   @unique // Eindeutige Tenant-ID
+  address     String?
+  phone       String?
+  email       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Beziehungen
+  users       User[]
+  customers   Customer[]
+  employees   Employee[]
+  appointments Appointment[]
+
+  @@index([tenantId])
+}
+
+// Kunden-Modell (gehört zu einem Tenant)
+model Customer {
+  id          String   @id @default(cuid())
+  firstName   String
+  lastName    String
+  email       String?
+  phone       String?
+  address     String?
+  tenantId    String   // Referenz zur Firma
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Beziehungen
+  shop        Shop          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  appointments Appointment[]
+
+  @@index([tenantId])
+  @@index([email])
+}
+
+// Mitarbeiter-Modell (Verknüpfung User <-> Shop)
+model Employee {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  tenantId    String   // Referenz zur Firma
+  position    String?  // Position/Abteilung
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Beziehungen
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shop        Shop          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  appointments Appointment[]
+
+  @@index([tenantId])
+  @@index([userId])
+}
+
+// Termin-Modell
+model Appointment {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  startTime   DateTime
+  endTime     DateTime
+  status      AppointmentStatus @default(SCHEDULED)
+  tenantId    String   // Referenz zur Firma
+  customerId  String?  // Optional: Kunde
+  employeeId  String?  // Optional: Mitarbeiter
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Beziehungen
+  shop        Shop      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer    Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  employee    Employee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([employeeId])
+  @@index([customerId])
+  @@index([startTime])
+}
+
+// Aufgaben-Modell (für Dashboard)
+model Task {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  status      TaskStatus @default(PENDING)
+  priority    TaskPriority @default(MEDIUM)
+  tenantId    String   // Referenz zur Firma
+  assignedTo  String?  // User-ID
+  dueDate     DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([assignedTo])
+  @@index([status])
+}
+
+// Rollen-Enum
+enum Role {
+  ADMIN
+  MITARBEITER
+}
+
+// Termin-Status-Enum
+enum AppointmentStatus {
+  SCHEDULED
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+// Aufgaben-Status-Enum
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+// Aufgaben-Priorität-Enum
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+// NextAuth Session & Account Models (für Authentication)
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}

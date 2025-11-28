@@ -1,0 +1,210 @@
+/**
+ * Appointment Detail API Route
+ * GET: Einzelnen Termin abrufen
+ * PUT: Termin aktualisieren
+ * DELETE: Termin löschen
+ */
+import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
+
+// GET: Einzelnen Termin abrufen
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await getServerSession(authOptions)
+
+    if (!session?.user?.tenantId) {
+      return NextResponse.json(
+        { error: 'Nicht autorisiert' },
+        { status: 401 }
+      )
+    }
+
+    const where: any = {
+      id: params.id,
+      tenantId: session.user.tenantId,
+    }
+
+    // Mitarbeiter sieht nur eigene Termine
+    if (session.user.role === 'MITARBEITER') {
+      const employee = await prisma.employee.findUnique({
+        where: { userId: session.user.id },
+      })
+      if (employee) {
+        where.employeeId = employee.id
+      } else {
+        return NextResponse.json(
+          { error: 'Termin nicht gefunden' },
+          { status: 404 }
+        )
+      }
+    }
+
+    const appointment = await prisma.appointment.findFirst({
+      where,
+      include: {
+        customer: true,
+        employee: {
+          include: {
+            user: true,
+          },
+        },
+      },
+    })
+
+    if (!appointment) {
+      return NextResponse.json(
+        { error: 'Termin nicht gefunden' },
+        { status: 404 }
+      )
+    }
+
+    return NextResponse.json({ appointment })
+  } catch (error) {
+    console.error('Fehler beim Abrufen des Termins:', error)
+    return NextResponse.json(
+      { error: 'Fehler beim Abrufen des Termins' },
+      { status: 500 }
+    )
+  }
+}
+
+// PUT: Termin aktualisieren
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await getServerSession(authOptions)
+
+    if (!session?.user?.tenantId) {
+      return NextResponse.json(
+        { error: 'Nicht autorisiert' },
+        { status: 401 }
+      )
+    }
+
+    const body = await request.json()
+    const { title, description, startTime, endTime, status, customerId } = body
+
+    const where: any = {
+      id: params.id,
+      tenantId: session.user.tenantId,
+    }
+
+    // Mitarbeiter kann nur eigene Termine aktualisieren
+    if (session.user.role === 'MITARBEITER') {
+      const employee = await prisma.employee.findUnique({
+        where: { userId: session.user.id },
+      })
+      if (employee) {
+        where.employeeId = employee.id
+      } else {
+        return NextResponse.json(
+          { error: 'Termin nicht gefunden' },
+          { status: 404 }
+        )
+      }
+    }
+
+    const appointment = await prisma.appointment.updateMany({
+      where,
+      data: {
+        ...(title && { title }),
+        ...(description !== undefined && { description }),
+        ...(startTime && { startTime: new Date(startTime) }),
+        ...(endTime && { endTime: new Date(endTime) }),
+        ...(status && { status }),
+        ...(customerId !== undefined && { customerId }),
+      },
+    })
+
+    if (appointment.count === 0) {
+      return NextResponse.json(
+        { error: 'Termin nicht gefunden' },
+        { status: 404 }
+      )
+    }
+
+    const updatedAppointment = await prisma.appointment.findUnique({
+      where: { id: params.id },
+      include: {
+        customer: true,
+        employee: {
+          include: {
+            user: true,
+          },
+        },
+      },
+    })
+
+    return NextResponse.json({ appointment: updatedAppointment })
+  } catch (error) {
+    console.error('Fehler beim Aktualisieren des Termins:', error)
+    return NextResponse.json(
+      { error: 'Fehler beim Aktualisieren des Termins' },
+      { status: 500 }
+    )
+  }
+}
+
+// DELETE: Termin löschen
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await getServerSession(authOptions)
+
+    if (!session?.user?.tenantId) {
+      return NextResponse.json(
+        { error: 'Nicht autorisiert' },
+        { status: 401 }
+      )
+    }
+
+    const where: any = {
+      id: params.id,
+      tenantId: session.user.tenantId,
+    }
+
+    // Mitarbeiter kann nur eigene Termine löschen
+    if (session.user.role === 'MITARBEITER') {
+      const employee = await prisma.employee.findUnique({
+        where: { userId: session.user.id },
+      })
+      if (employee) {
+        where.employeeId = employee.id
+      } else {
+        return NextResponse.json(
+          { error: 'Termin nicht gefunden' },
+          { status: 404 }
+        )
+      }
+    }
+
+    const appointment = await prisma.appointment.deleteMany({
+      where,
+    })
+
+    if (appointment.count === 0) {
+      return NextResponse.json(
+        { error: 'Termin nicht gefunden' },
+        { status: 404 }
+      )
+    }
+
+    return NextResponse.json({ message: 'Termin erfolgreich gelöscht' })
+  } catch (error) {
+    console.error('Fehler beim Löschen des Termins:', error)
+    return NextResponse.json(
+      { error: 'Fehler beim Löschen des Termins' },
+      { status: 500 }
+    )
+  }
+}
+
