@@ -41,3 +41,22 @@ yarn-error.log*
 next-env.d.ts
 
 /app/generated/prisma
+
+# Cursor + AI Tools
+.cursor/
+cursor/
+cursor-config.json
+.cursors/
+.claude/
+.claude.json
+.cache/
+.cache/*
+/cache/
+
+# macOS
+.DS_Store
+
+# VSCodium / VSCode AI Extensions
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
