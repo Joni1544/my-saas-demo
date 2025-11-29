@@ -41,7 +41,7 @@ export async function GET() {
 
         const customerIds = appointments
           .map((a: { customerId: string | null }) => a.customerId)
-          .filter((id): id is string => id !== null)
+          .filter((id: string | null): id is string => id !== null)
 
         if (customerIds.length > 0) {
           where.id = { in: customerIds }
