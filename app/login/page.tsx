@@ -21,25 +21,37 @@ export default function LoginPage() {
     setError('')
     setLoading(true)
 
-    console.log("LOGIN STARTED")
+    console.log("🚀 LOGIN STARTED")
+    console.log("📧 Email:", email)
+    console.log("🔑 Password length:", password.length)
 
     try {
+      console.log("📤 Calling signIn('credentials', ...)")
       const result = await signIn("credentials", {
         email,
         password,
         redirect: false
       })
 
-      console.log("SIGNIN RESPONSE:", result)
+      console.log("📥 SIGNIN RESPONSE:", result)
+      console.log("❓ Result error:", result?.error)
+      console.log("❓ Result ok:", result?.ok)
+      console.log("❓ Result status:", result?.status)
+      console.log("❓ Result url:", result?.url)
 
       if (result?.error) {
+        console.error("❌ Login failed with error:", result.error)
         setError("Ungültige Anmeldedaten")
-      } else {
+      } else if (result?.ok) {
+        console.log("✅ Login successful, redirecting to dashboard")
         router.push('/dashboard')
         router.refresh()
+      } else {
+        console.warn("⚠️ Unexpected result:", result)
+        setError("Ein Fehler ist aufgetreten")
       }
     } catch (err) {
-      console.error("Login error:", err)
+      console.error("💥 Login exception:", err)
       setError("Ungültige Anmeldedaten")
     } finally {
       setLoading(false)

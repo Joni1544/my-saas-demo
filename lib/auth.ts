@@ -88,8 +88,10 @@ export const authOptions: NextAuthConfig = {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 console.log("Provider IDs:", authOptions.providers.map((p: any) => p.id))
+console.log("✅ AuthOptions configured with", authOptions.providers.length, "provider(s)")
 
-// NextAuth v5: Export handlers, auth, signIn, signOut
-export const { handlers, auth, signIn, signOut } = NextAuth(authOptions)
+// NextAuth v5: Exportiere auth für Server-Side-Usage
+// WICHTIG: Handler werden in route.ts exportiert, nicht hier!
+export const { auth, signIn, signOut } = NextAuth(authOptions)
 
-console.log("NextAuth initialized with handlers:", !!handlers)
+console.log("✅ NextAuth auth function exported for server-side usage")
