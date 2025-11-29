@@ -4,8 +4,10 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { Prisma } from '@prisma/client'
 import bcrypt from 'bcryptjs'
+
+// Prisma 5 Transaction Client Typ
+type TransactionClient = Parameters<Parameters<typeof prisma.$transaction>[0]>[0]
 
 export async function POST(request: NextRequest) {
   try {
@@ -39,7 +41,7 @@ export async function POST(request: NextRequest) {
     const tenantId = `tenant_${Date.now()}_${Math.random().toString(36).substring(7)}`
 
     // Transaktion: Erstelle Shop und User gleichzeitig
-    const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    const result = await prisma.$transaction(async (tx: TransactionClient) => {
       // Erstelle Shop
       const shop = await tx.shop.create({
         data: {
