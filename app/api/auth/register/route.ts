@@ -4,6 +4,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { Prisma } from '@prisma/client'
 import bcrypt from 'bcryptjs'
 
 export async function POST(request: NextRequest) {
@@ -38,7 +39,7 @@ export async function POST(request: NextRequest) {
     const tenantId = `tenant_${Date.now()}_${Math.random().toString(36).substring(7)}`
 
     // Transaktion: Erstelle Shop und User gleichzeitig
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // Erstelle Shop
       const shop = await tx.shop.create({
         data: {
