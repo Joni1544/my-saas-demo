@@ -8,7 +8,8 @@ import DashboardStats from '@/components/DashboardStats'
 import Calendar from '@/components/Calendar'
 
 export default async function DashboardPage() {
-    const session = await auth()
+  const session = await auth();
+  console.log("SERVER SESSION:", session);
 
   if (!session) {
     redirect('/login')

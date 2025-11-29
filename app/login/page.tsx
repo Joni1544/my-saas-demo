@@ -17,45 +17,31 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
-    setLoading(true)
+    e.preventDefault();
+    setError('');
+    setLoading(true);
 
-    console.log("🚀 LOGIN STARTED")
-    console.log("📧 Email:", email)
-    console.log("🔑 Password length:", password.length)
+    console.log("CLIENT: LOGIN STARTED");
 
-    try {
-      console.log("📤 Calling signIn('credentials', ...)")
-      const result = await signIn("credentials", {
-        email,
-        password,
-        redirect: false
-      })
+    const result = await signIn("credentials", {
+      email,
+      password,
+      redirect: false,
+    });
 
-      console.log("📥 SIGNIN RESPONSE:", result)
-      console.log("❓ Result error:", result?.error)
-      console.log("❓ Result ok:", result?.ok)
-      console.log("❓ Result status:", result?.status)
-      console.log("❓ Result url:", result?.url)
+    console.log("CLIENT: SIGNIN RESULT", result);
 
-      if (result?.error) {
-        console.error("❌ Login failed with error:", result.error)
-        setError("Ungültige Anmeldedaten")
-      } else if (result?.ok) {
-        console.log("✅ Login successful, redirecting to dashboard")
-        router.push('/dashboard')
-        router.refresh()
-      } else {
-        console.warn("⚠️ Unexpected result:", result)
-        setError("Ein Fehler ist aufgetreten")
-      }
-    } catch (err) {
-      console.error("💥 Login exception:", err)
-      setError("Ungültige Anmeldedaten")
-    } finally {
-      setLoading(false)
+    if (!result || result.error) {
+      console.log("CLIENT: LOGIN FAILED", result?.error);
+      setError("Ungültige Anmeldedaten");
+      setLoading(false);
+      return;
     }
+
+    console.log("CLIENT: LOGIN SUCCESS → redirecting…");
+
+    router.push("/dashboard");
+    router.refresh();
   }
 
   return (
