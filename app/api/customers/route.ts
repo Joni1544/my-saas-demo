@@ -40,7 +40,7 @@ export async function GET() {
         })
 
         const customerIds = appointments
-          .map((a) => a.customerId)
+          .map((a: { customerId: string | null }) => a.customerId)
           .filter((id): id is string => id !== null)
 
         if (customerIds.length > 0) {
