@@ -23,6 +23,13 @@ export async function GET() {
       where: {
         tenantId: session.user.tenantId,
       },
+      include: {
+        _count: {
+          select: {
+            comments: true,
+          },
+        },
+      },
       orderBy: [
         { priority: 'desc' },
         { dueDate: 'asc' },

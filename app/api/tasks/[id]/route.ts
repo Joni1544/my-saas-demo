@@ -29,6 +29,20 @@ export async function GET(
         id: id,
         tenantId: session.user.tenantId,
       },
+      include: {
+        comments: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
+          },
+          orderBy: { createdAt: 'asc' },
+        },
+      },
     })
 
     if (!task) {

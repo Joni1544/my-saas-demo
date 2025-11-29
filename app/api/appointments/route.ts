@@ -22,11 +22,16 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const startDate = searchParams.get('startDate')
     const endDate = searchParams.get('endDate')
+    const customerId = searchParams.get('customerId')
+    const status = searchParams.get('status')
+    const employeeIdFilter = searchParams.get('employeeId')
 
     const where: {
       tenantId: string
       startTime?: { gte: Date; lte: Date }
       employeeId?: string
+      customerId?: string
+      status?: 'OPEN' | 'ACCEPTED' | 'CANCELLED' | 'RESCHEDULED' | 'COMPLETED'
     } = {
       tenantId: session.user.tenantId,
     }
@@ -37,6 +42,21 @@ export async function GET(request: NextRequest) {
         gte: new Date(startDate),
         lte: new Date(endDate),
       }
+    }
+
+    // Kundenfilter
+    if (customerId) {
+      where.customerId = customerId
+    }
+
+    // Statusfilter
+    if (status && ['OPEN', 'ACCEPTED', 'CANCELLED', 'RESCHEDULED', 'COMPLETED'].includes(status)) {
+      where.status = status as 'OPEN' | 'ACCEPTED' | 'CANCELLED' | 'RESCHEDULED' | 'COMPLETED'
+    }
+
+    // Mitarbeiterfilter (für Admin)
+    if (employeeIdFilter && session.user.role === 'ADMIN') {
+      where.employeeId = employeeIdFilter
     }
 
     // Mitarbeiter sieht nur eigene Termine
@@ -88,8 +108,18 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { title, description, startTime, endTime, customerId, employeeId } =
-      body
+    const { 
+      title, 
+      description, 
+      notes,
+      startTime, 
+      endTime, 
+      customerId, 
+      employeeId,
+      status,
+      price,
+      color
+    } = body
 
     if (!title || !startTime || !endTime) {
       return NextResponse.json(
@@ -109,12 +139,29 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Status-Farbe automatisch setzen wenn nicht angegeben
+    let finalColor = color
+    if (!finalColor && status) {
+      const statusColors: Record<string, string> = {
+        OPEN: '#3B82F6',        // Blau
+        ACCEPTED: '#10B981',    // Grün
+        CANCELLED: '#EF4444',   // Rot
+        RESCHEDULED: '#F59E0B', // Orange
+        COMPLETED: '#6B7280',   // Grau
+      }
+      finalColor = statusColors[status] || null
+    }
+
     const appointment = await prisma.appointment.create({
       data: {
         title,
         description: description || null,
+        notes: notes || null,
         startTime: new Date(startTime),
         endTime: new Date(endTime),
+        status: status || 'OPEN',
+        price: price ? parseFloat(price.toString()) : null,
+        color: finalColor || null,
         customerId: customerId || null,
         employeeId: finalEmployeeId || null,
         tenantId: session.user.tenantId,

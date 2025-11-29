@@ -7,8 +7,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
-// GET: Alle Kunden abrufen
-export async function GET() {
+// GET: Alle Kunden abrufen (mit Filter, Suche, Tags)
+export async function GET(request: NextRequest) {
   try {
     const session = await auth()
 
@@ -19,12 +19,43 @@ export async function GET() {
       )
     }
 
+    const { searchParams } = new URL(request.url)
+    const search = searchParams.get('search')
+    const tag = searchParams.get('tag')
+    const archived = searchParams.get('archived') === 'true'
+    const sortBy = searchParams.get('sortBy') || 'createdAt'
+    const sortOrder = searchParams.get('sortOrder') || 'desc'
+
     // Admin sieht alle Kunden der Firma, Mitarbeiter nur eigene
     const where: {
       tenantId: string
+      isArchived?: boolean
       id?: { in: string[] }
+      OR?: Array<{
+        firstName?: { contains: string; mode: 'insensitive' }
+        lastName?: { contains: string; mode: 'insensitive' }
+        email?: { contains: string; mode: 'insensitive' }
+        phone?: { contains: string; mode: 'insensitive' }
+      }>
+      tags?: { has: string }
     } = {
       tenantId: session.user.tenantId,
+      isArchived: archived,
+    }
+
+    // Suche
+    if (search) {
+      where.OR = [
+        { firstName: { contains: search, mode: 'insensitive' } },
+        { lastName: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
+        { phone: { contains: search, mode: 'insensitive' } },
+      ]
+    }
+
+    // Tag-Filter
+    if (tag) {
+      where.tags = { has: tag }
     }
 
     // Wenn Mitarbeiter: Nur Kunden mit eigenen Terminen
@@ -46,7 +77,6 @@ export async function GET() {
         if (customerIds.length > 0) {
           where.id = { in: customerIds }
         } else {
-          // Keine Termine = keine Kunden
           return NextResponse.json({ customers: [] })
         }
       } else {
@@ -54,12 +84,42 @@ export async function GET() {
       }
     }
 
+    // Sortierung
+    const orderBy: Record<string, 'asc' | 'desc'> = {}
+    if (sortBy === 'name') {
+      orderBy.firstName = sortOrder as 'asc' | 'desc'
+    } else {
+      orderBy[sortBy] = sortOrder as 'asc' | 'desc'
+    }
+
     const customers = await prisma.customer.findMany({
       where,
-      orderBy: { createdAt: 'desc' },
+      orderBy,
+      include: {
+        appointments: {
+          take: 1,
+          orderBy: { startTime: 'desc' },
+          select: {
+            startTime: true,
+            status: true,
+          },
+        },
+        _count: {
+          select: {
+            appointments: true,
+          },
+        },
+      },
     })
 
-    return NextResponse.json({ customers })
+    // Berechne Historie (Letzter Termin, Häufigkeit)
+    const customersWithHistory = customers.map((customer) => ({
+      ...customer,
+      lastAppointment: customer.appointments[0]?.startTime || null,
+      appointmentCount: customer._count.appointments,
+    }))
+
+    return NextResponse.json({ customers: customersWithHistory })
   } catch (error) {
     console.error('Fehler beim Abrufen der Kunden:', error)
     return NextResponse.json(
@@ -82,7 +142,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { firstName, lastName, email, phone, address } = body
+    const { firstName, lastName, email, phone, address, notes, tags } = body
 
     if (!firstName || !lastName) {
       return NextResponse.json(
@@ -98,6 +158,8 @@ export async function POST(request: NextRequest) {
         email: email || null,
         phone: phone || null,
         address: address || null,
+        notes: notes || null,
+        tags: tags || [],
         tenantId: session.user.tenantId,
       },
     })

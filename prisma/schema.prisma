@@ -24,6 +24,7 @@ model User {
   // Beziehungen
   shop      Shop?      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   employee  Employee?
+  taskComments TaskComment[] // Kommentare die der User erstellt hat
 
   @@index([tenantId])
   @@index([email])
@@ -57,6 +58,9 @@ model Customer {
   email       String?
   phone       String?
   address     String?
+  notes       String?  // Notizen zum Kunden
+  tags        String[] @default([]) // Tags: VIP, Problemkunde, No-Show, Neu, etc.
+  isArchived  Boolean  @default(false) // Archiviert statt gelöscht
   tenantId    String   // Referenz zur Firma
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -67,6 +71,8 @@ model Customer {
 
   @@index([tenantId])
   @@index([email])
+  @@index([isArchived])
+  @@index([tags])
 }
 
 // Mitarbeiter-Modell (Verknüpfung User <-> Shop)
@@ -75,6 +81,9 @@ model Employee {
   userId      String   @unique
   tenantId    String   // Referenz zur Firma
   position    String?  // Position/Abteilung
+  color       String?  // Farbe im Kalender (Hex-Code, z.B. #3B82F6)
+  isActive    Boolean  @default(true) // Aktiv/Inaktiv
+  workHours   Json?    // Arbeitszeiten: { monday: { start: "09:00", end: "17:00" }, ... }
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -85,6 +94,7 @@ model Employee {
 
   @@index([tenantId])
   @@index([userId])
+  @@index([isActive])
 }
 
 // Termin-Modell
@@ -92,9 +102,12 @@ model Appointment {
   id          String   @id @default(cuid())
   title       String
   description String?
+  notes       String?  // Termin-Notizen
   startTime   DateTime
   endTime     DateTime
-  status      AppointmentStatus @default(SCHEDULED)
+  status      AppointmentStatus @default(OPEN)
+  price       Decimal? @db.Decimal(10, 2) // Preis/Umsatz
+  color       String?  // Farbe nach Status (Hex-Code)
   tenantId    String   // Referenz zur Firma
   customerId  String?  // Optional: Kunde
   employeeId  String?  // Optional: Mitarbeiter
@@ -110,6 +123,7 @@ model Appointment {
   @@index([employeeId])
   @@index([customerId])
   @@index([startTime])
+  @@index([status])
 }
 
 // Aufgaben-Modell (für Dashboard)
@@ -117,17 +131,35 @@ model Task {
   id          String   @id @default(cuid())
   title       String
   description String?
-  status      TaskStatus @default(PENDING)
+  status      TaskStatus @default(TODO)
   priority    TaskPriority @default(MEDIUM)
   tenantId    String   // Referenz zur Firma
   assignedTo  String?  // User-ID
   dueDate     DateTime?
+  comments    TaskComment[] // Kommentare zur Aufgabe
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   @@index([tenantId])
   @@index([assignedTo])
   @@index([status])
+}
+
+// Task-Kommentare
+model TaskComment {
+  id        String   @id @default(cuid())
+  taskId    String
+  userId    String   // User der den Kommentar erstellt hat
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Beziehungen
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@index([userId])
 }
 
 // Rollen-Enum
@@ -138,18 +170,19 @@ enum Role {
 
 // Termin-Status-Enum
 enum AppointmentStatus {
-  SCHEDULED
-  CONFIRMED
-  COMPLETED
-  CANCELLED
+  OPEN        // Offen
+  ACCEPTED    // Angenommen
+  CANCELLED   // Storniert
+  RESCHEDULED // Verschoben
+  COMPLETED   // Abgeschlossen (für Historie)
 }
 
 // Aufgaben-Status-Enum
 enum TaskStatus {
-  PENDING
-  IN_PROGRESS
-  COMPLETED
-  CANCELLED
+  TODO        // To-Do
+  IN_PROGRESS // In Bearbeitung
+  DONE        // Erledigt
+  CANCELLED   // Abgebrochen
 }
 
 // Aufgaben-Priorität-Enum

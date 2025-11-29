@@ -16,8 +16,11 @@ export default function Navbar() {
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard' },
+    { name: 'Kalender', href: '/dashboard/calendar' },
     { name: 'Kunden', href: '/dashboard/customers' },
+    { name: 'Mitarbeiter', href: '/dashboard/employees' },
     { name: 'Termine', href: '/dashboard/appointments' },
+    { name: 'Umsatz', href: '/dashboard/revenue' },
     { name: 'Aufgaben', href: '/dashboard/tasks' },
   ]
 

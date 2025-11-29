@@ -94,7 +94,17 @@ export async function PUT(
     }
 
     const body = await request.json()
-    const { title, description, startTime, endTime, status, customerId } = body
+    const { 
+      title, 
+      description, 
+      notes,
+      startTime, 
+      endTime, 
+      status, 
+      customerId,
+      price,
+      color
+    } = body
 
     const where: {
       id: string
@@ -120,15 +130,31 @@ export async function PUT(
       }
     }
 
+    // Status-Farbe automatisch setzen wenn Status geändert wird
+    let finalColor = color
+    if (!finalColor && status) {
+      const statusColors: Record<string, string> = {
+        OPEN: '#3B82F6',        // Blau
+        ACCEPTED: '#10B981',    // Grün
+        CANCELLED: '#EF4444',   // Rot
+        RESCHEDULED: '#F59E0B', // Orange
+        COMPLETED: '#6B7280',   // Grau
+      }
+      finalColor = statusColors[status] || null
+    }
+
     const appointment = await prisma.appointment.updateMany({
       where,
       data: {
         ...(title && { title }),
         ...(description !== undefined && { description }),
+        ...(notes !== undefined && { notes }),
         ...(startTime && { startTime: new Date(startTime) }),
         ...(endTime && { endTime: new Date(endTime) }),
         ...(status && { status }),
         ...(customerId !== undefined && { customerId }),
+        ...(price !== undefined && { price: price ? parseFloat(price.toString()) : null }),
+        ...(finalColor !== undefined && { color: finalColor }),
       },
     })
 

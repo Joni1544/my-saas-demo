@@ -1,0 +1,167 @@
+/**
+ * Employee API Route (Einzelner Mitarbeiter)
+ * GET: Mitarbeiter abrufen
+ * PUT: Mitarbeiter aktualisieren
+ * DELETE: Mitarbeiter löschen (deaktivieren)
+ */
+import { NextRequest, NextResponse } from 'next/server'
+import { auth } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
+
+// GET: Einzelnen Mitarbeiter abrufen
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params
+    const session = await auth()
+
+    if (!session?.user?.tenantId) {
+      return NextResponse.json(
+        { error: 'Nicht autorisiert' },
+        { status: 401 }
+      )
+    }
+
+    const employee = await prisma.employee.findUnique({
+      where: { id },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+          },
+        },
+        appointments: {
+          take: 10,
+          orderBy: { startTime: 'desc' },
+          include: {
+            customer: true,
+          },
+        },
+      },
+    })
+
+    if (!employee || employee.tenantId !== session.user.tenantId) {
+      return NextResponse.json(
+        { error: 'Mitarbeiter nicht gefunden' },
+        { status: 404 }
+      )
+    }
+
+    return NextResponse.json({ employee })
+  } catch (error) {
+    console.error('Fehler beim Abrufen des Mitarbeiters:', error)
+    return NextResponse.json(
+      { error: 'Fehler beim Abrufen des Mitarbeiters' },
+      { status: 500 }
+    )
+  }
+}
+
+// PUT: Mitarbeiter aktualisieren
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params
+    const session = await auth()
+
+    if (!session?.user?.tenantId || session.user.role !== 'ADMIN') {
+      return NextResponse.json(
+        { error: 'Nicht autorisiert' },
+        { status: 403 }
+      )
+    }
+
+    const body = await request.json()
+    const { position, color, workHours, isActive } = body
+
+    const employee = await prisma.employee.findUnique({
+      where: { id },
+    })
+
+    if (!employee || employee.tenantId !== session.user.tenantId) {
+      return NextResponse.json(
+        { error: 'Mitarbeiter nicht gefunden' },
+        { status: 404 }
+      )
+    }
+
+    const updatedEmployee = await prisma.employee.update({
+      where: { id },
+      data: {
+        ...(position !== undefined && { position }),
+        ...(color !== undefined && { color }),
+        ...(workHours !== undefined && { workHours }),
+        ...(isActive !== undefined && { isActive }),
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+          },
+        },
+      },
+    })
+
+    return NextResponse.json({ employee: updatedEmployee })
+  } catch (error) {
+    console.error('Fehler beim Aktualisieren des Mitarbeiters:', error)
+    return NextResponse.json(
+      { error: 'Fehler beim Aktualisieren des Mitarbeiters' },
+      { status: 500 }
+    )
+  }
+}
+
+// DELETE: Mitarbeiter deaktivieren (nicht löschen)
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params
+    const session = await auth()
+
+    if (!session?.user?.tenantId || session.user.role !== 'ADMIN') {
+      return NextResponse.json(
+        { error: 'Nicht autorisiert' },
+        { status: 403 }
+      )
+    }
+
+    const employee = await prisma.employee.findUnique({
+      where: { id },
+    })
+
+    if (!employee || employee.tenantId !== session.user.tenantId) {
+      return NextResponse.json(
+        { error: 'Mitarbeiter nicht gefunden' },
+        { status: 404 }
+      )
+    }
+
+    // Deaktiviere statt zu löschen
+    const updatedEmployee = await prisma.employee.update({
+      where: { id },
+      data: { isActive: false },
+    })
+
+    return NextResponse.json({ employee: updatedEmployee })
+  } catch (error) {
+    console.error('Fehler beim Deaktivieren des Mitarbeiters:', error)
+    return NextResponse.json(
+      { error: 'Fehler beim Deaktivieren des Mitarbeiters' },
+      { status: 500 }
+    )
+  }
+}
+

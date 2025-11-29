@@ -65,7 +65,7 @@ export async function PUT(
     }
 
     const body = await request.json()
-    const { firstName, lastName, email, phone, address } = body
+    const { firstName, lastName, email, phone, address, notes, tags, isArchived } = body
 
     const customer = await prisma.customer.updateMany({
       where: {
@@ -73,11 +73,14 @@ export async function PUT(
         tenantId: session.user.tenantId,
       },
       data: {
-        firstName,
-        lastName,
-        email: email || null,
-        phone: phone || null,
-        address: address || null,
+        ...(firstName !== undefined && { firstName }),
+        ...(lastName !== undefined && { lastName }),
+        ...(email !== undefined && { email: email || null }),
+        ...(phone !== undefined && { phone: phone || null }),
+        ...(address !== undefined && { address: address || null }),
+        ...(notes !== undefined && { notes: notes || null }),
+        ...(tags !== undefined && { tags }),
+        ...(isArchived !== undefined && { isArchived }),
       },
     })
 
@@ -102,7 +105,7 @@ export async function PUT(
   }
 }
 
-// DELETE: Kunden löschen
+// DELETE: Kunden archivieren (nicht löschen)
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -118,10 +121,14 @@ export async function DELETE(
       )
     }
 
-    const customer = await prisma.customer.deleteMany({
+    // Archiviere statt zu löschen
+    const customer = await prisma.customer.updateMany({
       where: {
         id: id,
         tenantId: session.user.tenantId,
+      },
+      data: {
+        isArchived: true,
       },
     })
 
@@ -132,11 +139,18 @@ export async function DELETE(
       )
     }
 
-    return NextResponse.json({ message: 'Kunde erfolgreich gelöscht' })
+    const archivedCustomer = await prisma.customer.findUnique({
+      where: { id: id },
+    })
+
+    return NextResponse.json({ 
+      message: 'Kunde erfolgreich archiviert',
+      customer: archivedCustomer 
+    })
   } catch (error) {
-    console.error('Fehler beim Löschen des Kunden:', error)
+    console.error('Fehler beim Archivieren des Kunden:', error)
     return NextResponse.json(
-      { error: 'Fehler beim Löschen des Kunden' },
+      { error: 'Fehler beim Archivieren des Kunden' },
       { status: 500 }
     )
   }
