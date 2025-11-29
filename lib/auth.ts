@@ -1,90 +1,86 @@
 /**
  * NextAuth Konfiguration
- * Email/Password Authentication mit Prisma Adapter
+ * Email/Password Authentication OHNE PrismaAdapter
+ * Direkte Prisma-Integration für Credentials-Login
  */
-import NextAuth from 'next-auth'
-import type { NextAuthConfig } from 'next-auth'
-import CredentialsProvider from 'next-auth/providers/credentials'
-import { PrismaAdapter } from '@auth/prisma-adapter'
-import { prisma } from './prisma'
-import bcrypt from 'bcryptjs'
-// Role wird aus Prisma Client importiert (nach db:generate)
-type Role = 'ADMIN' | 'MITARBEITER'
+import NextAuth from "next-auth";
+import type { NextAuthConfig } from "next-auth";
+import CredentialsProvider from "next-auth/providers/credentials";
+import { prisma } from "./prisma";
+import bcrypt from "bcryptjs";
+
+type Role = "ADMIN" | "MITARBEITER";
 
 export const authOptions: NextAuthConfig = {
-  // @ts-expect-error - PrismaAdapter Typen sind nicht vollständig kompatibel
-  adapter: PrismaAdapter(prisma),
   providers: [
     CredentialsProvider({
-      name: 'Credentials',
+      name: "Credentials",
       credentials: {
-        email: { label: 'Email', type: 'email' },
-        password: { label: 'Password', type: 'password' },
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
-          throw new Error('Email und Passwort sind erforderlich')
+          throw new Error("Email und Passwort sind erforderlich");
         }
 
-        // Benutzer aus Datenbank laden
         const user = await prisma.user.findUnique({
           where: { email: credentials.email as string },
-          include: { shop: true },
-        })
+        });
 
         if (!user) {
-          throw new Error('Ungültige Anmeldedaten')
+          throw new Error("Ungültige Anmeldedaten");
         }
 
-        // Passwort überprüfen
-        const isPasswordValid = await bcrypt.compare(
+        const isValid = await bcrypt.compare(
           credentials.password as string,
           user.password
-        )
+        );
 
-        if (!isPasswordValid) {
-          throw new Error('Ungültige Anmeldedaten')
+        if (!isValid) {
+          throw new Error("Ungültige Anmeldedaten");
         }
 
-        // User-Objekt für Session zurückgeben
         return {
           id: user.id,
           email: user.email,
           name: user.name,
           role: user.role,
           tenantId: user.tenantId,
-        }
+        };
       },
     }),
   ],
+
   session: {
-    strategy: 'jwt',
+    strategy: "jwt",
   },
+
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.id = user.id
-        token.role = user.role
-        token.tenantId = user.tenantId
+        token.id = user.id;
+        token.role = user.role;
+        token.tenantId = user.tenantId;
       }
-      return token
+      return token;
     },
     async session({ session, token }) {
       if (session.user) {
-        session.user.id = token.id as string
-        session.user.role = token.role as Role
-        session.user.tenantId = token.tenantId as string | null
+        session.user.id = token.id as string;
+        session.user.role = token.role as Role;
+        session.user.tenantId = token.tenantId as string | null;
       }
-      return session
+      return session;
     },
   },
+
   pages: {
-    signIn: '/login',
-    error: '/login',
+    signIn: "/login",
+    error: "/login",
   },
+
   secret: process.env.NEXTAUTH_SECRET,
-}
+};
 
-// NextAuth v5: Exportiere auth() Funktion
-export const { auth, signIn, signOut } = NextAuth(authOptions)
-
+export const { auth, signIn, signOut } = NextAuth(authOptions);

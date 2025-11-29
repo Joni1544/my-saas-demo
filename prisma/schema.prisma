@@ -24,8 +24,6 @@ model User {
   // Beziehungen
   shop      Shop?      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   employee  Employee?
-  sessions  Session[]
-  accounts  Account[]
 
   @@index([tenantId])
   @@index([email])
@@ -162,32 +160,5 @@ enum TaskPriority {
   URGENT
 }
 
-// NextAuth Session & Account Models (für Authentication)
-model Session {
-  id           String   @id @default(cuid())
-  sessionToken String   @unique
-  userId       String
-  expires      DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-}
-
-model Account {
-  id                String  @id @default(cuid())
-  userId            String
-  type              String
-  provider          String
-  providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
-  expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String? @db.Text
-  session_state     String?
-  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([provider, providerAccountId])
-  @@index([userId])
-}
+// Session & Account Models werden nicht mehr benötigt
+// NextAuth v5 mit JWT verwendet keine Datenbank-Sessions
