@@ -21,21 +21,26 @@ export default function LoginPage() {
     setError('')
     setLoading(true)
 
+    console.log("LOGIN STARTED")
+
     try {
-      const result = await signIn('credentials', {
+      const result = await signIn("credentials", {
         email,
         password,
-        redirect: false,
+        redirect: false
       })
 
+      console.log("SIGNIN RESPONSE:", result)
+
       if (result?.error) {
-        setError('Ungültige Anmeldedaten')
+        setError("Ungültige Anmeldedaten")
       } else {
         router.push('/dashboard')
         router.refresh()
       }
-    } catch {
-      setError('Ein Fehler ist aufgetreten')
+    } catch (err) {
+      console.error("Login error:", err)
+      setError("Ungültige Anmeldedaten")
     } finally {
       setLoading(false)
     }

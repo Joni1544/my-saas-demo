@@ -1,86 +1,74 @@
-/**
- * NextAuth Konfiguration
- * Email/Password Authentication OHNE PrismaAdapter
- * Direkte Prisma-Integration für Credentials-Login
- */
-import NextAuth from "next-auth";
-import type { NextAuthConfig } from "next-auth";
-import CredentialsProvider from "next-auth/providers/credentials";
-import { prisma } from "./prisma";
-import bcrypt from "bcryptjs";
+console.log("AUTH OPTIONS LOADED")
 
-type Role = "ADMIN" | "MITARBEITER";
+import bcrypt from "bcryptjs"
+import CredentialsProvider from "next-auth/providers/credentials"
+import { prisma } from "./prisma"
+import NextAuth from "next-auth"
+import type { NextAuthConfig } from "next-auth"
 
 export const authOptions: NextAuthConfig = {
   providers: [
     CredentialsProvider({
+      id: "credentials",
       name: "Credentials",
       credentials: {
         email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" },
+        password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          throw new Error("Email und Passwort sind erforderlich");
-        }
+        if (!credentials?.email || !credentials?.password)
+          throw new Error("Email und Passwort sind erforderlich")
 
         const user = await prisma.user.findUnique({
-          where: { email: credentials.email as string },
-        });
+          where: { email: credentials.email as string }
+        })
 
-        if (!user) {
-          throw new Error("Ungültige Anmeldedaten");
-        }
+        if (!user) throw new Error("Ungültige Anmeldedaten")
 
         const isValid = await bcrypt.compare(
           credentials.password as string,
           user.password
-        );
-
-        if (!isValid) {
-          throw new Error("Ungültige Anmeldedaten");
-        }
+        )
+        if (!isValid) throw new Error("Ungültige Anmeldedaten")
 
         return {
           id: user.id,
           email: user.email,
-          name: user.name,
           role: user.role,
-          tenantId: user.tenantId,
-        };
-      },
-    }),
+          tenantId: user.tenantId
+        }
+      }
+    })
   ],
-
-  session: {
-    strategy: "jwt",
-  },
-
+  session: { strategy: "jwt" as const },
   callbacks: {
-    async jwt({ token, user }) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    async jwt({ token, user }: any) {
       if (user) {
-        token.id = user.id;
-        token.role = user.role;
-        token.tenantId = user.tenantId;
+        token.id = user.id
+        token.role = user.role
+        token.tenantId = user.tenantId
       }
-      return token;
+      return token
     },
-    async session({ session, token }) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    async session({ session, token }: any) {
       if (session.user) {
-        session.user.id = token.id as string;
-        session.user.role = token.role as Role;
-        session.user.tenantId = token.tenantId as string | null;
+        session.user.id = token.id as string
+        session.user.role = token.role as "ADMIN" | "MITARBEITER"
+        session.user.tenantId = token.tenantId as string | null
       }
-      return session;
-    },
+      return session
+    }
   },
-
   pages: {
     signIn: "/login",
-    error: "/login",
+    error: "/login"
   },
+  secret: process.env.NEXTAUTH_SECRET
+}
 
-  secret: process.env.NEXTAUTH_SECRET,
-};
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+console.log("Provider IDs:", authOptions.providers.map((p: any) => p.id))
 
-export const { auth, signIn, signOut } = NextAuth(authOptions);
+export const { auth, signIn, signOut } = NextAuth(authOptions)
