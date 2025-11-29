@@ -1,11 +1,13 @@
 /**
  * Dashboard-Seite
- * Hauptübersicht mit Statistiken und Kalender
+ * Hauptübersicht mit Statistiken, Quick Actions und Kalender
  */
 import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import DashboardStats from '@/components/DashboardStats'
 import Calendar from '@/components/Calendar'
+import QuickActions from '@/components/QuickActions'
+import UpcomingAppointments from '@/components/UpcomingAppointments'
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -27,6 +29,11 @@ export default async function DashboardPage() {
           </p>
         </div>
 
+        {/* Quick Actions */}
+        <div className="mb-8">
+          <QuickActions role={session.user.role} />
+        </div>
+
         {/* Statistiken */}
         <div className="mb-8">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">
@@ -35,12 +42,22 @@ export default async function DashboardPage() {
           <DashboardStats />
         </div>
 
-        {/* Kalender */}
-        <div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">
-            Kalender
-          </h2>
-          <Calendar />
+        <div className="grid gap-6 lg:grid-cols-2">
+          {/* Nächste Termine */}
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              Nächste Termine
+            </h2>
+            <UpcomingAppointments />
+          </div>
+
+          {/* Kalender */}
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              Kalender
+            </h2>
+            <Calendar />
+          </div>
         </div>
       </div>
     </div>
