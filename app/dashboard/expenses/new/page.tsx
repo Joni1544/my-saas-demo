@@ -72,7 +72,6 @@ export default function NewExpensePage() {
           ...formData,
           amount: parseFloat(formData.amount),
           employeeId: formData.employeeId || null,
-          recurringExpenseId: formData.recurringExpenseId || null,
         }),
       })
 
