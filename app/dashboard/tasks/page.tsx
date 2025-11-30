@@ -7,6 +7,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { format } from 'date-fns'
+import { selectBase } from '@/lib/inputStyles'
 
 interface Task {
   id: string
@@ -125,7 +126,7 @@ export default function TasksPage() {
                 id="status"
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                className={`mt-1 ${selectBase}`}
               >
                 <option value="">Alle Status</option>
                 {Object.entries(STATUS_LABELS).map(([value, label]) => (
@@ -143,7 +144,7 @@ export default function TasksPage() {
                 id="priority"
                 value={priorityFilter}
                 onChange={(e) => setPriorityFilter(e.target.value)}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                className={`mt-1 ${selectBase}`}
               >
                 <option value="">Alle Prioritäten</option>
                 {Object.entries(PRIORITY_LABELS).map(([value, label]) => (

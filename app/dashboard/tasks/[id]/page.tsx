@@ -8,6 +8,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { format } from 'date-fns'
+import { inputBase, textareaBase, selectBase } from '@/lib/inputStyles'
 import { useSession } from 'next-auth/react'
 
 interface Task {
@@ -258,7 +259,7 @@ export default function TaskDetailPage() {
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   rows={6}
-                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                  className={inputBase}
                 />
               ) : (
                 <p className="text-sm text-gray-600 whitespace-pre-wrap">
@@ -278,7 +279,7 @@ export default function TaskDetailPage() {
                       type="text"
                       value={formData.title}
                       onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                      className={`mt-1 ${selectBase}`}
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
@@ -287,7 +288,7 @@ export default function TaskDetailPage() {
                       <select
                         value={formData.status}
                         onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                        className={`mt-1 ${selectBase}`}
                       >
                         {STATUS_OPTIONS.map((option) => (
                           <option key={option.value} value={option.value}>
@@ -301,7 +302,7 @@ export default function TaskDetailPage() {
                       <select
                         value={formData.priority}
                         onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                        className={`mt-1 ${selectBase}`}
                       >
                         {PRIORITY_OPTIONS.map((option) => (
                           <option key={option.value} value={option.value}>
@@ -317,7 +318,7 @@ export default function TaskDetailPage() {
                       type="date"
                       value={formData.dueDate}
                       onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                      className={`mt-1 ${selectBase}`}
                     />
                   </div>
                 </div>
@@ -337,7 +338,7 @@ export default function TaskDetailPage() {
                   onChange={(e) => setCommentText(e.target.value)}
                   rows={3}
                   placeholder="Kommentar hinzufügen..."
-                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                  className={inputBase}
                 />
                 <button
                   type="submit"

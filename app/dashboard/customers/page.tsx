@@ -111,7 +111,7 @@ export default function CustomersPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Name, Email, Telefon..."
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              className="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-base text-black shadow-sm transition-all placeholder:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
             />
           </div>
 
@@ -126,7 +126,7 @@ export default function CustomersPage() {
                 id="tag"
                 value={selectedTag}
                 onChange={(e) => setSelectedTag(e.target.value)}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                className="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-base text-black shadow-sm transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
               >
                 <option value="">Alle Tags</option>
                 {AVAILABLE_TAGS.map((tag) => (
@@ -146,7 +146,7 @@ export default function CustomersPage() {
                 id="sortBy"
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as 'name' | 'createdAt' | 'appointmentCount')}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                className="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-base text-black shadow-sm transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
               >
                 <option value="createdAt">Erstellt</option>
                 <option value="name">Name</option>
@@ -163,7 +163,7 @@ export default function CustomersPage() {
                 id="sortOrder"
                 value={sortOrder}
                 onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                className="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-base text-black shadow-sm transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
               >
                 <option value="desc">Absteigend</option>
                 <option value="asc">Aufsteigend</option>

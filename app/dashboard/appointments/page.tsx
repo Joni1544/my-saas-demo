@@ -7,6 +7,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { format } from 'date-fns'
+import { inputBase, selectBase } from '@/lib/inputStyles'
 
 interface Appointment {
   id: string
@@ -156,7 +157,7 @@ export default function AppointmentsPage() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Titel, Kunde, Mitarbeiter..."
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                className={`mt-1 ${inputBase}`}
               />
             </div>
 
@@ -169,7 +170,7 @@ export default function AppointmentsPage() {
                 id="status"
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                className={`mt-1 ${inputBase}`}
               >
                 <option value="">Alle Status</option>
                 {Object.entries(STATUS_LABELS).map(([value, label]) => (
@@ -190,7 +191,7 @@ export default function AppointmentsPage() {
                 id="date"
                 value={dateFilter}
                 onChange={(e) => setDateFilter(e.target.value)}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                className={`mt-1 ${inputBase}`}
               />
             </div>
           </div>

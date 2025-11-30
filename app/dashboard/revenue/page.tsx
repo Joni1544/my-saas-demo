@@ -36,21 +36,27 @@ interface RevenueStats {
   recurringCustomers: number
 }
 
-type Period = 'day' | 'week' | 'month' | 'year'
+type Period = 'day' | 'week' | 'month' | 'year' | 'custom'
 
 export default function RevenuePage() {
   const [period, setPeriod] = useState<Period>('month')
+  const [customStartDate, setCustomStartDate] = useState('')
+  const [customEndDate, setCustomEndDate] = useState('')
   const [stats, setStats] = useState<RevenueStats | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     fetchStats()
-  }, [period])
+  }, [period, customStartDate, customEndDate])
 
   const fetchStats = async () => {
     try {
       setLoading(true)
-      const response = await fetch(`/api/stats/revenue?period=${period}`)
+      let url = `/api/stats/revenue?period=${period}`
+      if (customStartDate && customEndDate) {
+        url += `&startDate=${customStartDate}&endDate=${customEndDate}`
+      }
+      const response = await fetch(url)
       if (!response.ok) throw new Error('Fehler beim Laden der Statistiken')
       const data = await response.json()
       setStats(data)
@@ -106,22 +112,67 @@ export default function RevenuePage() {
           <p className="mt-2 text-gray-600">Detaillierte Umsatz-Statistiken und Analysen</p>
         </div>
 
-        {/* Period Selector */}
-        <div className="mb-6 rounded-lg bg-white p-4 shadow">
-          <div className="flex rounded-md border border-gray-300">
-            {(['day', 'week', 'month', 'year'] as Period[]).map((p) => (
-              <button
-                key={p}
-                onClick={() => setPeriod(p)}
-                className={`flex-1 px-4 py-2 text-sm font-medium ${
-                  period === p
-                    ? 'bg-indigo-600 text-white'
-                    : 'bg-white text-gray-700 hover:bg-gray-50'
-                } ${p === 'day' ? 'rounded-l-md' : ''} ${p === 'year' ? 'rounded-r-md' : ''}`}
-              >
-                {p === 'day' ? 'Tag' : p === 'week' ? 'Woche' : p === 'month' ? 'Monat' : 'Jahr'}
-              </button>
-            ))}
+        {/* Period Selector & Custom Date Range */}
+        <div className="mb-6 rounded-lg bg-white p-6 shadow">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            {/* Period Buttons */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Zeitraum</label>
+              <div className="flex rounded-lg border border-gray-300 overflow-hidden">
+                {(['day', 'week', 'month', 'year'] as Period[]).map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => {
+                      setPeriod(p)
+                      setCustomStartDate('')
+                      setCustomEndDate('')
+                    }}
+                    className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
+                      period === p && !customStartDate
+                        ? 'bg-indigo-600 text-white'
+                        : 'bg-white text-gray-700 hover:bg-gray-50'
+                    } ${p === 'day' ? '' : 'border-l border-gray-300'}`}
+                  >
+                    {p === 'day' ? 'Tag' : p === 'week' ? 'Woche' : p === 'month' ? 'Monat' : 'Jahr'}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Custom Date Range */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Eigener Zeitraum</label>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <input
+                    type="date"
+                    value={customStartDate}
+                    onChange={(e) => {
+                      setCustomStartDate(e.target.value)
+                      if (e.target.value && customEndDate) {
+                        setPeriod('custom' as Period)
+                      }
+                    }}
+                    className="block w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-base text-black shadow-sm transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                    placeholder="Von"
+                  />
+                </div>
+                <div>
+                  <input
+                    type="date"
+                    value={customEndDate}
+                    onChange={(e) => {
+                      setCustomEndDate(e.target.value)
+                      if (customStartDate && e.target.value) {
+                        setPeriod('custom' as Period)
+                      }
+                    }}
+                    className="block w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-base text-black shadow-sm transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                    placeholder="Bis"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 

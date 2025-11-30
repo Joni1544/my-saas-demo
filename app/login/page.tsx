@@ -23,25 +23,46 @@ export default function LoginPage() {
 
     console.log("CLIENT: LOGIN STARTED");
 
-    const result = await signIn("credentials", {
-      email,
-      password,
-      redirect: false,
-    });
+    try {
+      // Zuerst validieren für spezifische Fehlermeldungen
+      const validateResponse = await fetch('/api/auth/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
 
-    console.log("CLIENT: SIGNIN RESULT", result);
+      if (!validateResponse.ok) {
+        const validateData = await validateResponse.json();
+        setError(validateData.message || 'Ungültige Anmeldedaten');
+        setLoading(false);
+        return;
+      }
 
-    if (!result || result.error) {
-      console.log("CLIENT: LOGIN FAILED", result?.error);
-      setError("Ungültige Anmeldedaten");
+      // Wenn Validierung OK, dann signIn
+      const result = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+      });
+
+      console.log("CLIENT: SIGNIN RESULT", result);
+
+      if (!result || result.error) {
+        console.log("CLIENT: LOGIN FAILED", result?.error);
+        setError("Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.");
+        setLoading(false);
+        return;
+      }
+
+      console.log("CLIENT: LOGIN SUCCESS → redirecting…");
+
+      router.push("/dashboard");
+      router.refresh();
+    } catch (err) {
+      console.error("CLIENT: LOGIN EXCEPTION", err);
+      setError("Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.");
       setLoading(false);
-      return;
     }
-
-    console.log("CLIENT: LOGIN SUCCESS → redirecting…");
-
-    router.push("/dashboard");
-    router.refresh();
   }
 
   return (
@@ -63,8 +84,17 @@ export default function LoginPage() {
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           {error && (
-            <div className="rounded-md bg-red-50 p-4">
-              <p className="text-sm text-red-800">{error}</p>
+            <div className="rounded-md bg-red-50 border border-red-200 p-4">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm font-medium text-red-800">{error}</p>
+                </div>
+              </div>
             </div>
           )}
           <div className="-space-y-px rounded-md shadow-sm">
@@ -80,7 +110,7 @@ export default function LoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="relative block w-full rounded-t-md border-0 px-3 py-2 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                className="relative block w-full rounded-t-md border-0 px-4 py-3 text-base text-black ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-base"
                 placeholder="Email-Adresse"
               />
             </div>
@@ -96,7 +126,7 @@ export default function LoginPage() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="relative block w-full rounded-b-md border-0 px-3 py-2 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                className="relative block w-full rounded-b-md border-0 px-4 py-3 text-base text-black ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-base"
                 placeholder="Passwort"
               />
             </div>
@@ -106,7 +136,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="group relative flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50"
+              className="group relative flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50"
             >
               {loading ? 'Wird angemeldet...' : 'Anmelden'}
             </button>

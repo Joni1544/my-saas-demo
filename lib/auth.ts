@@ -20,7 +20,7 @@ export const authOptions: NextAuthConfig = {
         
         if (!credentials?.email || !credentials?.password) {
           console.log("❌ Missing credentials")
-          throw new Error("Email und Passwort sind erforderlich")
+          throw new Error("EMAIL_REQUIRED")
         }
 
         console.log("🔍 Looking up user in database...")
@@ -30,7 +30,7 @@ export const authOptions: NextAuthConfig = {
 
         if (!user) {
           console.log("❌ User not found")
-          throw new Error("Ungültige Anmeldedaten")
+          throw new Error("USER_NOT_FOUND")
         }
 
         console.log("🔑 Comparing password...")
@@ -41,7 +41,7 @@ export const authOptions: NextAuthConfig = {
         
         if (!isValid) {
           console.log("❌ Invalid password")
-          throw new Error("Ungültige Anmeldedaten")
+          throw new Error("INVALID_PASSWORD")
         }
 
         console.log("✅ User authorized:", user.email)

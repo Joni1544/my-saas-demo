@@ -7,6 +7,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { inputBase, selectBase } from '@/lib/inputStyles'
 
 interface Employee {
   id: string
@@ -153,7 +154,7 @@ export default function EmployeeDetailPage() {
                   value={formData.position}
                   onChange={(e) => setFormData({ ...formData, position: e.target.value })}
                   placeholder="z.B. Friseur, Masseur..."
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                  className={`mt-1 ${inputBase}`}
                 />
               </div>
               <div>
@@ -213,14 +214,14 @@ export default function EmployeeDetailPage() {
                           type="time"
                           value={formData.workHours[day].start}
                           onChange={(e) => updateWorkHours(day, 'start', e.target.value)}
-                          className="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                          className={inputBase}
                         />
                         <span className="text-gray-500">bis</span>
                         <input
                           type="time"
                           value={formData.workHours[day].end}
                           onChange={(e) => updateWorkHours(day, 'end', e.target.value)}
-                          className="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                          className={inputBase}
                         />
                       </div>
                     )}

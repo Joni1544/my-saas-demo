@@ -6,6 +6,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { inputBase, textareaBase } from '@/lib/inputStyles'
 
 const AVAILABLE_TAGS = ['VIP', 'Problemkunde', 'No-Show', 'Neu', 'Stammkunde', 'Wichtig']
 
@@ -78,7 +79,7 @@ export default function NewCustomerPage() {
                 required
                 value={formData.firstName}
                 onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                className={`mt-1 ${inputBase}`}
               />
             </div>
             <div>
@@ -90,7 +91,7 @@ export default function NewCustomerPage() {
                 required
                 value={formData.lastName}
                 onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                className={`mt-1 ${inputBase}`}
               />
             </div>
           </div>
@@ -101,7 +102,7 @@ export default function NewCustomerPage() {
               type="email"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              className={`mt-1 ${textareaBase}`}
             />
           </div>
 
@@ -111,7 +112,7 @@ export default function NewCustomerPage() {
               type="tel"
               value={formData.phone}
               onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              className={`mt-1 ${textareaBase}`}
             />
           </div>
 
@@ -121,7 +122,7 @@ export default function NewCustomerPage() {
               value={formData.address}
               onChange={(e) => setFormData({ ...formData, address: e.target.value })}
               rows={3}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              className={`mt-1 ${textareaBase}`}
             />
           </div>
 
@@ -151,7 +152,7 @@ export default function NewCustomerPage() {
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               rows={4}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              className={`mt-1 ${textareaBase}`}
               placeholder="Notizen zum Kunden..."
             />
           </div>
