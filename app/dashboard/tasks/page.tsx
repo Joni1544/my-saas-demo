@@ -8,7 +8,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { format, isPast, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns'
-import { inputBase, selectBase } from '@/lib/inputStyles'
+import { selectBase } from '@/lib/inputStyles'
 
 interface Task {
   id: string

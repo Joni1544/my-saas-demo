@@ -6,7 +6,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { inputBase, selectBase } from '@/lib/inputStyles'
+import { selectBase } from '@/lib/inputStyles'
 
 interface InventoryItem {
   id: string
@@ -26,6 +26,7 @@ export default function InventoryPage() {
 
   useEffect(() => {
     fetchItems()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [categoryFilter])
 
   const fetchItems = async () => {

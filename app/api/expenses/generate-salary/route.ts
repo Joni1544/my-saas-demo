@@ -3,7 +3,7 @@
  * Wird aufgerufen wenn Ausgaben- oder Finanzen-Seite geöffnet wird
  * Generiert automatisch Gehalts-Ausgaben für den aktuellen Monat
  */
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { ExpenseCategory } from '@prisma/client'

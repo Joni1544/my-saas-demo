@@ -100,7 +100,7 @@ export default function UpcomingAppointments() {
   return (
     <div className="rounded-2xl bg-white p-6 shadow-lg border border-gray-100">
       <div className="space-y-3">
-        {appointments.map((appointment, index) => (
+        {appointments.map((appointment) => (
           <Link
             key={appointment.id}
             href={`/dashboard/appointments/${appointment.id}`}

@@ -188,7 +188,7 @@ export default function DashboardStats() {
 
   return (
     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-      {cards.map((card, index) => (
+      {cards.map((card) => (
         <div
           key={card.title}
           className="group relative overflow-hidden rounded-2xl bg-white shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100"

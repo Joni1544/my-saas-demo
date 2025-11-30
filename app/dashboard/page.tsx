@@ -22,7 +22,7 @@ export default async function DashboardPage() {
   const session = await auth();
   console.log("SERVER SESSION:", session);
 
-  if (!session) {
+  if (!session || !session.user.tenantId) {
     redirect('/login')
   }
 
