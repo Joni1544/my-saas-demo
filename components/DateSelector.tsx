@@ -6,7 +6,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { selectBase } from '@/lib/inputStyles'
 
 interface DateSelectorProps {
   value?: { month: number; year: number }

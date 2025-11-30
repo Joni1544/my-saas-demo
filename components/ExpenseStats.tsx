@@ -44,7 +44,7 @@ export default function ExpenseStats() {
                 sum + parseFloat(rec.amount.toString()), 0
               ) || 0
           }
-        } catch (error) {
+        } catch {
           // Ignoriere Fehler - API könnte nicht mehr existieren
         }
 

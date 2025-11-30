@@ -4,7 +4,7 @@
  */
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import {
   format,
   startOfMonth,
@@ -40,7 +40,10 @@ export default function Calendar() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [loading, setLoading] = useState(true)
   
-  const currentDate = new Date(monthSelection.year, monthSelection.month, 1)
+  const currentDate = useMemo(
+    () => new Date(monthSelection.year, monthSelection.month, 1),
+    [monthSelection.year, monthSelection.month]
+  )
 
   // Lade Termine für den aktuellen Monat
   useEffect(() => {

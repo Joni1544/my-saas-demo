@@ -73,6 +73,11 @@ export async function POST() {
         payoutDate.setDate(now.getDate())
       }
 
+      // Sicherstellen, dass salary nicht null ist
+      if (!employee.salary || employee.salary <= 0) {
+        continue
+      }
+
       const expense = await prisma.expense.create({
         data: {
           name: `Gehalt • ${employee.user.name || employee.user.email}`,

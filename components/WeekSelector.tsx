@@ -5,7 +5,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { getWeek, startOfWeek, endOfWeek } from 'date-fns'
+import { getWeek } from 'date-fns'
 
 interface WeekSelectorProps {
   value?: { week: number; year: number }
