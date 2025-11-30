@@ -17,6 +17,8 @@ export default function NewInventoryItemPage() {
     minThreshold: '0',
     category: '',
     pricePerUnit: '',
+    link: '',
+    manufacturer: '',
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -33,6 +35,8 @@ export default function NewInventoryItemPage() {
           minThreshold: parseInt(formData.minThreshold) || 0,
           pricePerUnit: formData.pricePerUnit ? parseFloat(formData.pricePerUnit) : null,
           category: formData.category || null,
+          link: formData.link || null,
+          manufacturer: formData.manufacturer || null,
         }),
       })
 
@@ -124,6 +128,29 @@ export default function NewInventoryItemPage() {
                 onChange={(e) => setFormData({ ...formData, pricePerUnit: e.target.value })}
                 className={`mt-1 ${inputBase}`}
                 placeholder="0.00"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Link (optional)</label>
+              <input
+                type="url"
+                value={formData.link}
+                onChange={(e) => setFormData({ ...formData, link: e.target.value })}
+                className={`mt-1 ${inputBase}`}
+                placeholder="https://..."
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Firma/Hersteller (optional)</label>
+              <input
+                type="text"
+                value={formData.manufacturer}
+                onChange={(e) => setFormData({ ...formData, manufacturer: e.target.value })}
+                className={`mt-1 ${inputBase}`}
+                placeholder="z.B. Firma XYZ..."
               />
             </div>
           </div>

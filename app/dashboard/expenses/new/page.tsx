@@ -22,7 +22,6 @@ export default function NewExpensePage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [employees, setEmployees] = useState<Array<{ id: string; user: { name: string | null; email: string } }>>([])
-  const [recurringExpenses, setRecurringExpenses] = useState<Array<{ id: string; name: string; amount: number; category: string; description: string | null }>>([])
   const [formData, setFormData] = useState({
     name: '',
     amount: '',
@@ -30,14 +29,12 @@ export default function NewExpensePage() {
     category: '',
     description: '',
     employeeId: '',
-    recurringExpenseId: '',
     invoiceUrl: '',
   })
 
   useEffect(() => {
     generateAutoExpenses()
     fetchEmployees()
-    fetchRecurringExpenses()
   }, [])
 
   const generateAutoExpenses = async () => {
@@ -62,31 +59,6 @@ export default function NewExpensePage() {
     }
   }
 
-  const fetchRecurringExpenses = async () => {
-    try {
-      const response = await fetch('/api/recurring-expenses?includeInactive=false')
-      if (response.ok) {
-        const data = await response.json()
-        setRecurringExpenses(data.recurringExpenses || [])
-      }
-    } catch (error) {
-      console.error('Fehler beim Laden der Daueraufträge:', error)
-    }
-  }
-
-  const handleLoadFromRecurring = (recurringId: string) => {
-    const recurring = recurringExpenses.find(r => r.id === recurringId)
-    if (recurring) {
-      setFormData({
-        ...formData,
-        name: recurring.name,
-        amount: recurring.amount.toString(),
-        category: recurring.category,
-        description: recurring.description || '',
-        recurringExpenseId: recurring.id,
-      })
-    }
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -219,40 +191,6 @@ export default function NewExpensePage() {
             </div>
           </div>
 
-          <div>
-            <label htmlFor="recurringExpenseId" className="block text-sm font-medium text-gray-700">
-              Dauerauftrag (optional)
-            </label>
-            <div className="mt-1 flex gap-2">
-              <select
-                id="recurringExpenseId"
-                value={formData.recurringExpenseId}
-                onChange={(e) => setFormData({ ...formData, recurringExpenseId: e.target.value })}
-                className={`flex-1 ${selectBase}`}
-              >
-                <option value="">Kein Dauerauftrag</option>
-                {recurringExpenses.map((rec) => (
-                  <option key={rec.id} value={rec.id}>
-                    {rec.name} ({rec.amount.toFixed(2)}€)
-                  </option>
-                ))}
-              </select>
-              {formData.recurringExpenseId && (
-                <button
-                  type="button"
-                  onClick={() => handleLoadFromRecurring(formData.recurringExpenseId)}
-                  className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500"
-                >
-                  Übernehmen
-                </button>
-              )}
-            </div>
-            {formData.recurringExpenseId && (
-              <p className="mt-1 text-xs text-gray-500">
-                Klicken Sie auf &quot;Übernehmen&quot;, um Betrag, Kategorie und Beschreibung aus dem Dauerauftrag zu übernehmen.
-              </p>
-            )}
-          </div>
 
           <div>
             <label htmlFor="description" className="block text-sm font-medium text-gray-700">

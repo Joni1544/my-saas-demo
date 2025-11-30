@@ -22,7 +22,7 @@ interface Customer {
   createdAt: string
 }
 
-const AVAILABLE_TAGS = ['VIP', 'Problemkunde', 'No-Show', 'Neu', 'Stammkunde', 'Wichtig']
+const AVAILABLE_TAGS = ['Normal', 'VIP', 'Problemkunde', 'No-Show', 'Neu', 'Stammkunde', 'Wichtig']
 
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([])

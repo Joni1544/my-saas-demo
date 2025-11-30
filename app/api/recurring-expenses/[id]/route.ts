@@ -1,6 +1,6 @@
 /**
  * Recurring Expense Detail API Route
- * GET, PATCH, DELETE für einzelnen Dauerauftrag
+ * GET, PATCH, DELETE für einzelnen Dauerauftrag (nur für interne Verwendung - Gehälter)
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
@@ -31,6 +31,17 @@ export async function GET(
         expenses: {
           take: 10,
           orderBy: { date: 'desc' },
+        },
+        employee: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
+          },
         },
       },
     })
@@ -69,9 +80,8 @@ export async function PATCH(
     }
 
     const body = await request.json()
-    const { name, amount, category, interval, startDate, nextRun, description, isActive } = body
+    const { name, amount, category, interval, startDate, nextRun, description, isActive, employeeId, dayOfMonth } = body
 
-    // Prüfe ob Dauerauftrag existiert
     const existing = await prisma.recurringExpense.findFirst({
       where: {
         id: id,
@@ -95,12 +105,13 @@ export async function PATCH(
       nextRun?: Date
       description?: string | null
       isActive?: boolean
+      employeeId?: string | null
+      dayOfMonth?: number | null
     } = {}
 
     if (name !== undefined) updateData.name = name
     if (amount !== undefined) updateData.amount = parseFloat(amount)
     if (category !== undefined) {
-      // Validiere Kategorie
       const validCategories = ['GEHALT', 'MIETE', 'MARKETING', 'MATERIAL', 'VERSICHERUNG', 'STEUERN', 'SONSTIGES']
       if (validCategories.includes(category)) {
         updateData.category = category as 'GEHALT' | 'MIETE' | 'MARKETING' | 'MATERIAL' | 'VERSICHERUNG' | 'STEUERN' | 'SONSTIGES'
@@ -119,6 +130,8 @@ export async function PATCH(
     if (nextRun !== undefined) updateData.nextRun = new Date(nextRun)
     if (description !== undefined) updateData.description = description
     if (isActive !== undefined) updateData.isActive = isActive
+    if (employeeId !== undefined) updateData.employeeId = employeeId || null
+    if (dayOfMonth !== undefined) updateData.dayOfMonth = dayOfMonth || null
 
     const updated = await prisma.recurringExpense.update({
       where: { id: id },

@@ -63,7 +63,7 @@ export async function PUT(
     }
 
     const body = await request.json()
-    const { name, quantity, minThreshold, category, pricePerUnit } = body
+    const { name, quantity, minThreshold, category, pricePerUnit, link, manufacturer } = body
 
     const item = await prisma.inventoryItem.updateMany({
       where: {
@@ -76,6 +76,8 @@ export async function PUT(
         ...(minThreshold !== undefined && { minThreshold: parseInt(minThreshold) || 0 }),
         ...(category !== undefined && { category: category || null }),
         ...(pricePerUnit !== undefined && { pricePerUnit: pricePerUnit ? parseFloat(pricePerUnit) : null }),
+        ...(link !== undefined && { link: link || null }),
+        ...(manufacturer !== undefined && { manufacturer: manufacturer || null }),
         lastUpdated: new Date(),
       },
     })

@@ -10,6 +10,7 @@ import Link from 'next/link'
 import { format } from 'date-fns'
 import { inputBase } from '@/lib/inputStyles'
 import DateSelector from '@/components/DateSelector'
+import DaySelector from '@/components/DaySelector'
 
 interface Appointment {
   id: string
@@ -60,13 +61,18 @@ export default function AppointmentsPage() {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('')
   const [employeeFilter, setEmployeeFilter] = useState<string>('')
+  const now = new Date()
   const [timeFilterMode, setTimeFilterMode] = useState<TimeFilterMode>('month')
-  const [dayFilter, setDayFilter] = useState<string>(format(new Date(), 'yyyy-MM-dd'))
-  const [monthFilter, setMonthFilter] = useState<{ month: number; year: number }>({
-    month: new Date().getMonth(),
-    year: new Date().getFullYear(),
+  const [dayFilter, setDayFilter] = useState<{ day: number; month: number; year: number }>({
+    day: now.getDate(),
+    month: now.getMonth(),
+    year: now.getFullYear(),
   })
-  const [yearFilter, setYearFilter] = useState<number>(new Date().getFullYear())
+  const [monthFilter, setMonthFilter] = useState<{ month: number; year: number }>({
+    month: now.getMonth(),
+    year: now.getFullYear(),
+  })
+  const [yearFilter, setYearFilter] = useState<number>(now.getFullYear())
   const [employees, setEmployees] = useState<Array<{ id: string; user: { name: string | null; email: string } }>>([])
 
   useEffect(() => {
@@ -113,7 +119,7 @@ export default function AppointmentsPage() {
       let endDate: Date
 
       if (timeFilterMode === 'day') {
-        const date = new Date(dayFilter)
+        const date = new Date(dayFilter.year, dayFilter.month, dayFilter.day)
         startDate = new Date(date.setHours(0, 0, 0, 0))
         endDate = new Date(date.setHours(23, 59, 59, 999))
       } else if (timeFilterMode === 'month') {
@@ -247,15 +253,14 @@ export default function AppointmentsPage() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {timeFilterMode === 'day' && (
               <div>
-                <label htmlFor="day" className="block text-sm font-medium text-gray-700">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Datum
                 </label>
-                <input
-                  type="date"
-                  id="day"
+                <DaySelector
                   value={dayFilter}
-                  onChange={(e) => setDayFilter(e.target.value)}
-                  className={`mt-1 ${inputBase}`}
+                  onChange={(value) => setDayFilter(value)}
+                  minYear={2020}
+                  maxYear={2080}
                 />
               </div>
             )}
@@ -274,16 +279,16 @@ export default function AppointmentsPage() {
 
             {timeFilterMode === 'year' && (
               <div>
-                <label htmlFor="year" className="block text-sm font-medium text-gray-700">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Jahr
                 </label>
                 <select
                   id="year"
                   value={yearFilter}
                   onChange={(e) => setYearFilter(parseInt(e.target.value))}
-                  className={`mt-1 ${inputBase}`}
+                  className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 >
-                  {Array.from({ length: 20 }, (_, i) => new Date().getFullYear() - 10 + i).map((year) => (
+                  {Array.from({ length: 80 }, (_, i) => 2000 + i).map((year) => (
                     <option key={year} value={year}>
                       {year}
                     </option>

@@ -26,7 +26,6 @@ export default function EditExpensePage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [employees, setEmployees] = useState<Array<{ id: string; user: { name: string | null; email: string } }>>([])
-  const [recurringExpenses, setRecurringExpenses] = useState<Array<{ id: string; name: string }>>([])
   const [formData, setFormData] = useState({
     name: '',
     amount: '',
@@ -34,7 +33,6 @@ export default function EditExpensePage() {
     category: '',
     description: '',
     employeeId: '',
-    recurringExpenseId: '',
     invoiceUrl: '',
   })
 
@@ -42,22 +40,9 @@ export default function EditExpensePage() {
     if (expenseId) {
       fetchExpense()
       fetchEmployees()
-      fetchRecurringExpenses()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [expenseId])
-
-  const fetchRecurringExpenses = async () => {
-    try {
-      const response = await fetch('/api/recurring-expenses')
-      if (response.ok) {
-        const data = await response.json()
-        setRecurringExpenses(data.recurringExpenses || [])
-      }
-    } catch (error) {
-      console.error('Fehler beim Laden der Daueraufträge:', error)
-    }
-  }
 
   const fetchExpense = async () => {
     try {
@@ -72,7 +57,6 @@ export default function EditExpensePage() {
         category: exp.category,
         description: exp.description || '',
         employeeId: exp.employeeId || '',
-        recurringExpenseId: exp.recurringExpenseId || '',
         invoiceUrl: exp.invoiceUrl || '',
       })
     } catch (error) {
@@ -107,7 +91,6 @@ export default function EditExpensePage() {
           ...formData,
           amount: parseFloat(formData.amount),
           employeeId: formData.employeeId || null,
-          recurringExpenseId: formData.recurringExpenseId || null,
         }),
       })
 
@@ -246,23 +229,6 @@ export default function EditExpensePage() {
           </div>
 
           <div>
-            <label htmlFor="recurringExpenseId" className="block text-sm font-medium text-gray-700">
-              Dauerauftrag (optional)
-            </label>
-            <select
-              id="recurringExpenseId"
-              value={formData.recurringExpenseId}
-              onChange={(e) => setFormData({ ...formData, recurringExpenseId: e.target.value })}
-              className={`mt-1 ${selectBase}`}
-            >
-              <option value="">Kein Dauerauftrag</option>
-              {recurringExpenses.map((rec) => (
-                <option key={rec.id} value={rec.id}>
-                  {rec.name}
-                </option>
-              ))}
-            </select>
-          </div>
 
           <div>
             <label htmlFor="invoiceUrl" className="block text-sm font-medium text-gray-700">

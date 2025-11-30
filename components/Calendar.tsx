@@ -12,11 +12,10 @@ import {
   eachDayOfInterval,
   isSameMonth,
   isSameDay,
-  addMonths,
-  subMonths,
   startOfWeek,
   endOfWeek,
 } from 'date-fns'
+import DateSelector from '@/components/DateSelector'
 // Locale wird nicht verwendet, da Next.js standardmäßig englisch ist
 // Für deutsche Lokalisierung würde man: import { de } from 'date-fns/locale'
 
@@ -32,10 +31,16 @@ interface Appointment {
 }
 
 export default function Calendar() {
-  const [currentDate, setCurrentDate] = useState(new Date())
+  const now = new Date()
+  const [monthSelection, setMonthSelection] = useState({
+    month: now.getMonth(),
+    year: now.getFullYear(),
+  })
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [loading, setLoading] = useState(true)
+  
+  const currentDate = new Date(monthSelection.year, monthSelection.month, 1)
 
   // Lade Termine für den aktuellen Monat
   useEffect(() => {
@@ -71,8 +76,6 @@ export default function Calendar() {
     )
   }
 
-  const nextMonth = () => setCurrentDate(addMonths(currentDate, 1))
-  const prevMonth = () => setCurrentDate(subMonths(currentDate, 1))
 
   const dayAppointments = selectedDate
     ? getAppointmentsForDate(selectedDate)
@@ -82,21 +85,15 @@ export default function Calendar() {
     <div className="bg-white shadow-xl rounded-2xl p-6 border border-gray-100">
       <div className="mb-6">
         <div className="flex items-center justify-between mb-6">
-          <button
-            onClick={prevMonth}
-            className="p-2.5 hover:bg-indigo-50 rounded-xl text-black hover:text-indigo-600 transition-all duration-200 transform hover:scale-110 font-bold text-lg"
-          >
-            ←
-          </button>
           <h2 className="text-2xl font-bold text-black">
             {format(currentDate, 'MMMM yyyy')}
           </h2>
-          <button
-            onClick={nextMonth}
-            className="p-2.5 hover:bg-indigo-50 rounded-xl text-black hover:text-indigo-600 transition-all duration-200 transform hover:scale-110 font-bold text-lg"
-          >
-            →
-          </button>
+          <DateSelector
+            value={monthSelection}
+            onChange={(value) => setMonthSelection(value)}
+            minYear={2020}
+            maxYear={2080}
+          />
         </div>
 
         {/* Kalender-Grid */}

@@ -5,6 +5,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 
 interface Stats {
   customers: number
@@ -128,36 +129,42 @@ export default function DashboardStats() {
       value: stats.customers,
       icon: '👥',
       color: 'bg-blue-500',
+      href: '/dashboard/customers',
     },
     {
       title: 'Termine',
       value: stats.appointments,
       icon: '📅',
       color: 'bg-green-500',
+      href: '/dashboard/appointments',
     },
     {
       title: 'Abgeschlossene Termine',
       value: stats.completedAppointments || 0,
       icon: '✅',
       color: 'bg-emerald-500',
+      href: '/dashboard/appointments?status=COMPLETED',
     },
     {
       title: 'Umsatz',
       value: formatCurrency(stats.totalRevenue || 0),
       icon: '💰',
       color: 'bg-indigo-500',
+      href: '/dashboard/revenue',
     },
     {
       title: 'Anstehende Termine',
       value: stats.upcomingAppointments,
       icon: '⏰',
       color: 'bg-yellow-500',
+      href: '/dashboard/appointments?status=upcoming',
     },
     {
       title: 'Aufgaben',
       value: stats.tasks,
       icon: '📋',
       color: 'bg-purple-500',
+      href: '/dashboard/tasks',
     },
   ] : [
     {
@@ -165,33 +172,39 @@ export default function DashboardStats() {
       value: stats.appointments,
       icon: '📅',
       color: 'bg-green-500',
+      href: '/dashboard/appointments',
     },
     {
       title: 'Abgeschlossene Termine',
       value: stats.completedAppointments || 0,
       icon: '✅',
       color: 'bg-emerald-500',
+      href: '/dashboard/appointments?status=COMPLETED',
     },
     {
       title: 'Mein Umsatz',
       value: formatCurrency(stats.totalRevenue || 0),
       icon: '💰',
       color: 'bg-indigo-500',
+      href: '/dashboard/revenue',
     },
     {
       title: 'Meine Aufgaben',
       value: stats.tasks,
       icon: '📋',
       color: 'bg-purple-500',
+      href: '/dashboard/tasks',
     },
   ]
 
   return (
     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
       {cards.map((card) => (
-        <div
+        <Link
           key={card.title}
-          className="group relative overflow-hidden rounded-2xl bg-white shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100"
+          href={card.href}
+          className="group relative overflow-hidden rounded-2xl bg-white shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 border border-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+          tabIndex={0}
         >
           <div className="absolute inset-0 bg-gradient-to-br from-white to-gray-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           <div className="relative p-6">
@@ -212,7 +225,7 @@ export default function DashboardStats() {
             </div>
           </div>
           <div className={`absolute bottom-0 left-0 right-0 h-1 ${card.color} transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left`} />
-        </div>
+        </Link>
       ))}
     </div>
   )

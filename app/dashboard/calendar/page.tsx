@@ -16,17 +16,13 @@ import {
   eachDayOfInterval,
   isSameMonth,
   isSameDay,
-  addMonths,
-  subMonths,
-  addWeeks,
-  subWeeks,
-  addDays,
-  subDays,
   getWeek,
+  setWeek,
 } from 'date-fns'
 import Link from 'next/link'
-import { inputBase } from '@/lib/inputStyles'
 import DateSelector from '@/components/DateSelector'
+import DaySelector from '@/components/DaySelector'
+import WeekSelector from '@/components/WeekSelector'
 
 interface Appointment {
   id: string
@@ -73,19 +69,52 @@ const STATUS_COLORS: Record<string, string> = {
 }
 
 export default function CalendarPage() {
+  const now = new Date()
   const [viewMode, setViewMode] = useState<ViewMode>('month')
-  const [currentDate, setCurrentDate] = useState(new Date())
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [employees, setEmployees] = useState<Employee[]>([])
   const [customers, setCustomers] = useState<Array<{ id: string; firstName: string; lastName: string }>>([])
   const [loading, setLoading] = useState(true)
+  
+  // Einheitliche Datumsauswahl-States
+  const [daySelection, setDaySelection] = useState({
+    day: now.getDate(),
+    month: now.getMonth(),
+    year: now.getFullYear(),
+  })
+  const [weekSelection, setWeekSelection] = useState({
+    week: getWeek(now, { weekStartsOn: 1 }),
+    year: now.getFullYear(),
+  })
+  const [monthSelection, setMonthSelection] = useState({
+    month: now.getMonth(),
+    year: now.getFullYear(),
+  })
   
   // Filter
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('')
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('')
   const [selectedStatus, setSelectedStatus] = useState<string>('')
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null)
-  const [jumpToDate, setJumpToDate] = useState('')
+  
+  // Berechne currentDate basierend auf viewMode und Selection
+  const getCurrentDate = (): Date => {
+    switch (viewMode) {
+      case 'day':
+        return new Date(daySelection.year, daySelection.month, daySelection.day)
+      case 'week':
+        // Berechne Datum für die ausgewählte Woche
+        const yearStart = new Date(weekSelection.year, 0, 1)
+        const weekStart = startOfWeek(setWeek(yearStart, weekSelection.week, { weekStartsOn: 1 }), { weekStartsOn: 1 })
+        return weekStart
+      case 'month':
+        return new Date(monthSelection.year, monthSelection.month, 1)
+      default:
+        return now
+    }
+  }
+  
+  const currentDate = getCurrentDate()
 
   useEffect(() => {
     fetchEmployees()
@@ -95,7 +124,7 @@ export default function CalendarPage() {
   useEffect(() => {
     fetchAppointments()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentDate, viewMode, selectedEmployeeId, selectedCustomerId, selectedStatus])
+  }, [viewMode, daySelection, weekSelection, monthSelection, selectedEmployeeId, selectedCustomerId, selectedStatus])
 
   const fetchEmployees = async () => {
     try {
@@ -166,52 +195,21 @@ export default function CalendarPage() {
     return STATUS_COLORS[appointment.status] || '#3B82F6'
   }
 
-  const navigateDate = (direction: 'prev' | 'next') => {
-    let newDate: Date
-    switch (viewMode) {
-      case 'day':
-        newDate = direction === 'next' ? addDays(currentDate, 1) : subDays(currentDate, 1)
-        break
-      case 'week':
-        newDate = direction === 'next' ? addWeeks(currentDate, 1) : subWeeks(currentDate, 1)
-        break
-      case 'month':
-        newDate = direction === 'next' ? addMonths(currentDate, 1) : subMonths(currentDate, 1)
-        break
-      default:
-        newDate = currentDate
-    }
-    
-    // Prüfe ob Datum bis 2035
-    if (newDate.getFullYear() <= 2035) {
-      setCurrentDate(newDate)
-    }
-  }
-
   const goToToday = () => {
-    setCurrentDate(new Date())
-  }
-
-  const handleJumpToDate = () => {
-    if (jumpToDate) {
-      const date = new Date(jumpToDate)
-      if (!isNaN(date.getTime())) {
-        // Prüfe ob Datum bis 2035
-        if (date.getFullYear() <= 2035) {
-          setCurrentDate(date)
-          setJumpToDate('')
-        } else {
-          alert('Datum darf nicht nach 2035 sein')
-        }
-      }
-    }
-  }
-
-  const handleMonthYearChange = (month: number, year: number) => {
-    if (year <= 2035) {
-      const newDate = new Date(year, month, 1)
-      setCurrentDate(newDate)
-    }
+    const today = new Date()
+    setDaySelection({
+      day: today.getDate(),
+      month: today.getMonth(),
+      year: today.getFullYear(),
+    })
+    setWeekSelection({
+      week: getWeek(today, { weekStartsOn: 1 }),
+      year: today.getFullYear(),
+    })
+    setMonthSelection({
+      month: today.getMonth(),
+      year: today.getFullYear(),
+    })
   }
 
   // Render Functions
@@ -433,63 +431,53 @@ export default function CalendarPage() {
               ))}
             </div>
 
-            {/* Navigation */}
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => navigateDate('prev')}
-                className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-black hover:bg-gray-50 hover:text-gray-700 transition-colors"
-              >
-                ←
-              </button>
+            {/* Einheitliche Datumsauswahl */}
+            <div className="flex items-center gap-4">
               <button
                 onClick={goToToday}
-                className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
               >
                 Heute
               </button>
-              <button
-                onClick={() => navigateDate('next')}
-                className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-black hover:bg-gray-50 hover:text-gray-700 transition-colors"
-              >
-                →
-              </button>
-              <div className="ml-4 flex items-center gap-2">
-                <span className="text-lg font-semibold text-black">
-                  {viewMode === 'day'
-                    ? format(currentDate, 'EEEE, d. MMMM yyyy', { locale: undefined })
-                    : viewMode === 'week'
-                    ? `Woche ${getWeek(currentDate)} - ${format(currentDate, 'MMMM yyyy')}`
-                    : format(currentDate, 'MMMM yyyy')}
-                </span>
-                
-                {/* Monat/Jahr Dropdown (nur für Monatsansicht) */}
-                {viewMode === 'month' && (
-                  <DateSelector
-                    value={{ month: currentDate.getMonth(), year: currentDate.getFullYear() }}
-                    onChange={(value) => handleMonthYearChange(value.month, value.year)}
+              
+              {/* Tag-Auswahl */}
+              {viewMode === 'day' && (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-gray-700">Datum:</span>
+                  <DaySelector
+                    value={daySelection}
+                    onChange={(value) => setDaySelection(value)}
                     minYear={2020}
-                    maxYear={2035}
+                    maxYear={2080}
                   />
-                )}
-              </div>
-            </div>
-
-            {/* Jump to Date */}
-            <div className="flex items-center gap-2">
-              <input
-                type="date"
-                value={jumpToDate}
-                onChange={(e) => setJumpToDate(e.target.value)}
-                max="2035-12-31"
-                className={`${inputBase} text-sm`}
-                placeholder="Zu Datum springen"
-              />
-              <button
-                onClick={handleJumpToDate}
-                className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
-              >
-                Springen
-              </button>
+                </div>
+              )}
+              
+              {/* Woche-Auswahl */}
+              {viewMode === 'week' && (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-gray-700">Woche:</span>
+                  <WeekSelector
+                    value={weekSelection}
+                    onChange={(value) => setWeekSelection(value)}
+                    minYear={2020}
+                    maxYear={2080}
+                  />
+                </div>
+              )}
+              
+              {/* Monat-Auswahl */}
+              {viewMode === 'month' && (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-gray-700">Monat:</span>
+                  <DateSelector
+                    value={monthSelection}
+                    onChange={(value) => setMonthSelection(value)}
+                    minYear={2020}
+                    maxYear={2080}
+                  />
+                </div>
+              )}
             </div>
 
             {/* Filters */}

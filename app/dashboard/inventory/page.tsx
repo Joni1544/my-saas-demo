@@ -15,6 +15,8 @@ interface InventoryItem {
   minThreshold: number
   category: string | null
   pricePerUnit: number | null
+  link: string | null
+  manufacturer: string | null
   lastUpdated: string
 }
 
@@ -175,15 +177,30 @@ export default function InventoryPage() {
                       className={`hover:bg-gray-50 ${lowStock ? 'bg-yellow-50' : ''}`}
                     >
                       <td className="whitespace-nowrap px-6 py-4">
-                        <div className="flex items-center">
-                          {lowStock && (
-                            <span className="mr-2 text-yellow-600" title="Niedriger Bestand">
-                              ⚠️
+                        <div className="flex flex-col">
+                          <div className="flex items-center">
+                            {lowStock && (
+                              <span className="mr-2 text-yellow-600" title="Niedriger Bestand">
+                                ⚠️
+                              </span>
+                            )}
+                            <span className={`text-sm font-medium ${lowStock ? 'text-yellow-800' : 'text-gray-900'}`}>
+                              {item.name}
                             </span>
+                          </div>
+                          {item.manufacturer && (
+                            <span className="text-xs text-gray-500 mt-1">{item.manufacturer}</span>
                           )}
-                          <span className={`text-sm font-medium ${lowStock ? 'text-yellow-800' : 'text-gray-900'}`}>
-                            {item.name}
-                          </span>
+                          {item.link && (
+                            <a
+                              href={item.link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-indigo-600 hover:text-indigo-800 mt-1"
+                            >
+                              🔗 Link öffnen
+                            </a>
+                          )}
                         </div>
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">

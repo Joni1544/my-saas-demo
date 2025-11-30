@@ -48,7 +48,6 @@ export default function ExpensesPage() {
     startDate: '',
     endDate: '',
     category: '',
-    onlyRecurring: false,
   })
 
   useEffect(() => {
@@ -185,18 +184,6 @@ export default function ExpensesPage() {
                 ))}
               </select>
             </div>
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="onlyRecurring"
-                checked={filters.onlyRecurring}
-                onChange={(e) => setFilters({ ...filters, onlyRecurring: e.target.checked })}
-                className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-              />
-              <label htmlFor="onlyRecurring" className="ml-2 text-sm text-gray-700">
-                Nur Daueraufträge anzeigen
-              </label>
-            </div>
           </div>
         </div>
 
@@ -248,11 +235,6 @@ export default function ExpensesPage() {
                       >
                         {CATEGORIES.find(c => c.value === expense.category)?.label || expense.category}
                       </span>
-                      {expense.recurringExpenseId && (
-                        <span className="rounded bg-green-100 px-2 py-1 text-xs font-medium text-green-800">
-                          Dauerauftrag: {expense.recurringExpense?.name || 'Unbekannt'}
-                        </span>
-                      )}
                     </div>
                     <p className="text-sm text-gray-600 mb-2">
                       {format(new Date(expense.date), 'dd.MM.yyyy')}

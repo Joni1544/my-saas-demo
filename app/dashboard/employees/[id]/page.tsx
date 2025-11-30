@@ -58,10 +58,10 @@ export default function EmployeeDetailPage() {
     employmentType: 'FULL_TIME' as 'FULL_TIME' | 'PART_TIME' | 'MINI_JOB' | 'FREELANCER',
     salaryType: 'FIXED' as 'FIXED' | 'HOURLY' | 'COMMISSION' | 'MIXED',
     baseSalary: null as number | null,
-    salary: 0 as number,
+    salary: null as number | null,
     hourlyRate: null as number | null,
     commissionRate: null as number | null,
-    payoutDay: 1 as number,
+    payoutDay: null as number | null,
   })
 
   useEffect(() => {
@@ -89,10 +89,10 @@ export default function EmployeeDetailPage() {
         employmentType: data.employee.employmentType || 'FULL_TIME',
         salaryType: data.employee.salaryType || 'FIXED',
         baseSalary: data.employee.baseSalary ? parseFloat(data.employee.baseSalary.toString()) : null,
-        salary: data.employee.salary ? parseFloat(data.employee.salary.toString()) : (data.employee.baseSalary ? parseFloat(data.employee.baseSalary.toString()) : 0),
+        salary: data.employee.salary ? parseFloat(data.employee.salary.toString()) : null,
         hourlyRate: data.employee.hourlyRate ? parseFloat(data.employee.hourlyRate.toString()) : null,
         commissionRate: data.employee.commissionRate ? parseFloat(data.employee.commissionRate.toString()) : null,
-        payoutDay: data.employee.payoutDay || 1,
+        payoutDay: data.employee.payoutDay || null,
       })
     } catch (error) {
       console.error('Fehler:', error)
@@ -211,10 +211,13 @@ export default function EmployeeDetailPage() {
               <div className="flex items-center gap-2">
                 {inviteLink ? (
                   <div className="flex items-center gap-2 rounded-md bg-green-50 p-3 border border-green-200">
+                    <label htmlFor="invite-link-input" className="sr-only">Einladungslink</label>
                     <input
+                      id="invite-link-input"
                       type="text"
                       value={inviteLink}
                       readOnly
+                      aria-label="Einladungslink"
                       className="text-sm text-gray-700 bg-white border border-gray-300 rounded px-2 py-1 min-w-[300px]"
                     />
                     <button
@@ -253,6 +256,32 @@ export default function EmployeeDetailPage() {
                   className={`mt-1 ${inputBase}`}
                 />
               </div>
+              
+              {/* Gehalt-Anzeige */}
+              {(formData.salary !== null && formData.salary > 0) || formData.payoutDay !== null ? (
+                <div className="rounded-md bg-gray-50 p-4 border border-gray-200">
+                  <h3 className="text-sm font-semibold text-gray-700 mb-2">Gehalt</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    {formData.salary !== null && formData.salary > 0 ? (
+                      <div>
+                        <span className="text-xs text-gray-500">Monatliches Gehalt</span>
+                        <p className="text-lg font-semibold text-gray-900">
+                          {new Intl.NumberFormat('de-DE', {
+                            style: 'currency',
+                            currency: 'EUR',
+                          }).format(formData.salary)}
+                        </p>
+                      </div>
+                    ) : null}
+                    {formData.payoutDay !== null ? (
+                      <div>
+                        <span className="text-xs text-gray-500">Auszahlungstag</span>
+                        <p className="text-lg font-semibold text-gray-900">{formData.payoutDay}. des Monats</p>
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              ) : null}
               <div>
                 <label className="block text-sm font-medium text-gray-700">Kalender-Farbe</label>
                 <div className="mt-1 flex items-center gap-3">
@@ -384,32 +413,40 @@ export default function EmployeeDetailPage() {
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <label htmlFor="salary" className="block text-sm font-medium text-gray-700">
-                    Gehalt (€/Monat) <span className="text-red-500">*</span>
+                    Gehalt (€/Monat)
                   </label>
                   <input
                     id="salary"
                     type="number"
                     step="0.01"
                     min="0"
-                    required
-                    value={formData.salary}
-                    onChange={(e) => setFormData({ ...formData, salary: parseFloat(e.target.value) || 0 })}
-                    className={`mt-1 ${inputBase}`}
-                    placeholder="0.00"
+                    value={formData.salary ?? ''}
+                    onChange={(e) => {
+                      const value = e.target.value === '' ? null : parseFloat(e.target.value)
+                      setFormData({ ...formData, salary: value })
+                    }}
+                    className={`mt-1 ${inputBase} [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
+                    placeholder="Gehalt eingeben"
                   />
                 </div>
                 <div>
                   <label htmlFor="payoutDay" className="block text-sm font-medium text-gray-700">
-                    Auszahlungstag (1-31)
+                    Auszahlungstag
                   </label>
                   <input
                     id="payoutDay"
                     type="number"
                     min="1"
                     max="31"
-                    value={formData.payoutDay}
-                    onChange={(e) => setFormData({ ...formData, payoutDay: parseInt(e.target.value) || 1 })}
-                    className={`mt-1 ${inputBase}`}
+                    value={formData.payoutDay ?? ''}
+                    onChange={(e) => {
+                      const value = e.target.value === '' ? null : parseInt(e.target.value)
+                      if (value === null || (value >= 1 && value <= 31)) {
+                        setFormData({ ...formData, payoutDay: value })
+                      }
+                    }}
+                    className={`mt-1 ${inputBase} [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
+                    placeholder="Auszahlungstag (1–31)"
                   />
                 </div>
               </div>

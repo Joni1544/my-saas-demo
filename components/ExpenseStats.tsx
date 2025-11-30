@@ -29,18 +29,24 @@ export default function ExpenseStats() {
           method: 'POST',
         })
 
-        // Hole Daueraufträge
-        const recurringRes = await fetch('/api/recurring-expenses')
-        const recurringData = await recurringRes.json()
-
-        // Berechne monatliche Fixkosten (nur aktive monatliche Daueraufträge)
-        const monthlyRecurring = recurringData.recurringExpenses
-          ?.filter((rec: { isActive: boolean; interval: string }) => 
-            rec.isActive && rec.interval === 'MONTHLY'
-          )
-          .reduce((sum: number, rec: { amount: number }) => 
-            sum + parseFloat(rec.amount.toString()), 0
-          ) || 0
+        // Berechne monatliche Fixkosten (Gehälter aus RecurringExpenses)
+        // Nur für interne Verwendung - keine UI mehr für Daueraufträge
+        let monthlyRecurring = 0
+        try {
+          const recurringRes = await fetch('/api/recurring-expenses')
+          if (recurringRes.ok) {
+            const recurringData = await recurringRes.json()
+            monthlyRecurring = recurringData.recurringExpenses
+              ?.filter((rec: { isActive: boolean; interval: string }) => 
+                rec.isActive && rec.interval === 'MONTHLY'
+              )
+              .reduce((sum: number, rec: { amount: number }) => 
+                sum + parseFloat(rec.amount.toString()), 0
+              ) || 0
+          }
+        } catch (error) {
+          // Ignoriere Fehler - API könnte nicht mehr existieren
+        }
 
         // Hole Ausgaben für diesen Monat
         const now = new Date()
@@ -107,7 +113,7 @@ export default function ExpenseStats() {
       value: formatCurrency(stats.monthlyRecurring),
       icon: '💰',
       color: 'bg-red-500',
-      link: '/dashboard/recurring-expenses',
+      link: '/dashboard/expenses',
     },
     {
       title: 'Ausgaben diesen Monat',

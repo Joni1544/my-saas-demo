@@ -5,6 +5,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
+import Link from 'next/link'
 import { inputBase } from '@/lib/inputStyles'
 import DateSelector from '@/components/DateSelector'
 import {
@@ -198,9 +199,25 @@ export default function FinanceDashboardPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Finanz-Dashboard</h1>
-          <p className="mt-2 text-gray-600">Übersicht über Umsatz, Ausgaben und Gewinn</p>
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Finanz-Dashboard</h1>
+            <p className="mt-2 text-gray-600">Übersicht über Umsatz, Ausgaben und Gewinn</p>
+          </div>
+          <div className="flex gap-3">
+            <Link
+              href="/dashboard/revenue"
+              className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 transition-colors"
+            >
+              Umsätze →
+            </Link>
+            <Link
+              href="/dashboard/expenses"
+              className="rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 transition-colors"
+            >
+              Ausgaben →
+            </Link>
+          </div>
         </div>
 
         {/* Key Metrics Cards */}
@@ -223,7 +240,7 @@ export default function FinanceDashboardPage() {
               {formatCurrency(stats.profit)}
             </div>
             <div className="mt-1 text-xs text-gray-500">
-              Umsatz - Ausgaben - Daueraufträge
+              Umsatz - Ausgaben
             </div>
           </div>
         </div>

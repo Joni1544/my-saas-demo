@@ -32,7 +32,7 @@ interface Appointment {
   price: number | null
 }
 
-const AVAILABLE_TAGS = ['VIP', 'Problemkunde', 'No-Show', 'Neu', 'Stammkunde', 'Wichtig']
+const AVAILABLE_TAGS = ['Normal', 'VIP', 'Problemkunde', 'No-Show', 'Neu', 'Stammkunde', 'Wichtig']
 
 export default function CustomerDetailPage() {
   const params = useParams()

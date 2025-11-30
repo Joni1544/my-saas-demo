@@ -95,18 +95,19 @@ model Employee {
   employmentType EmploymentType @default(FULL_TIME)
   salaryType     SalaryType     @default(FIXED)
   baseSalary     Float? // Monatliches Grundgehalt (veraltet, verwende salary)
-  salary         Float  @default(0) // Bruttogehalt
+  salary         Float? // Bruttogehalt (nullable, kein Default)
   hourlyRate     Float? // Stundenlohn
   commissionRate Float? // Provisionssatz (in Prozent)
-  payoutDay      Int    @default(1) // Auszahlungstag im Monat (1-31)
+  payoutDay      Int? // Auszahlungstag im Monat (1-31, nullable)
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
 
   // Beziehungen
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  shop         Shop          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  appointments Appointment[]
-  expenses     Expense[] // Ausgaben die dem Mitarbeiter zugeordnet sind
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shop              Shop               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  appointments      Appointment[]
+  expenses          Expense[] // Ausgaben die dem Mitarbeiter zugeordnet sind
+  recurringExpenses RecurringExpense[] // Daueraufträge für Gehälter
 
   @@index([tenantId])
   @@index([userId])
@@ -259,17 +260,21 @@ model RecurringExpense {
   nextRun     DateTime // Nächstes Ausführungsdatum
   description String?
   isActive    Boolean           @default(true)
+  employeeId  String? // Optional: Mitarbeiter-ID für Gehalts-Daueraufträge
+  dayOfMonth  Int? // Optional: Tag im Monat für monatliche Ausführung (1-31)
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
 
   // Beziehungen
   shop     Shop      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  employee Employee? @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   expenses Expense[] // Alle generierten Ausgaben aus diesem Dauerauftrag
 
   @@index([tenantId])
   @@index([nextRun])
   @@index([isActive])
   @@index([category])
+  @@index([employeeId])
 }
 
 // Ausgaben-Modell (Finanzmodul)
@@ -335,6 +340,8 @@ model InventoryItem {
   minThreshold Int      @default(0)
   category     String?
   pricePerUnit Float?
+  link         String? // Optional: Link zum Produkt
+  manufacturer String? // Optional: Firma/Hersteller
   lastUpdated  DateTime @default(now())
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt

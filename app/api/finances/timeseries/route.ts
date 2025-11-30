@@ -35,6 +35,7 @@ const getDateRange = (mode: string, now: Date) => {
   }
 }
 
+export const dynamic = 'force-dynamic' // Route muss dynamisch sein, da auth() headers verwendet
 export const revalidate = 60 // Cache für 60 Sekunden
 
 export async function GET(request: Request) {

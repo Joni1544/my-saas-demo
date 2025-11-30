@@ -94,6 +94,14 @@ export async function PUT(
 
     const employee = await prisma.employee.findUnique({
       where: { id },
+      include: {
+        user: {
+          select: {
+            name: true,
+            email: true,
+          },
+        },
+      },
     })
 
     if (!employee || employee.tenantId !== session.user.tenantId) {
@@ -103,6 +111,19 @@ export async function PUT(
       )
     }
 
+    // Parse salary und payoutDay (nullable)
+    const parsedSalary = salary !== undefined && salary !== null && salary !== '' ? parseFloat(salary) : null
+    const parsedPayoutDay = payoutDay !== undefined && payoutDay !== null && payoutDay !== '' ? parseInt(payoutDay) : null
+
+    // Validiere payoutDay falls vorhanden
+    if (parsedPayoutDay !== null && (parsedPayoutDay < 1 || parsedPayoutDay > 31)) {
+      return NextResponse.json(
+        { error: 'Auszahlungstag muss zwischen 1 und 31 liegen' },
+        { status: 400 }
+      )
+    }
+
+    // Update Employee
     const updatedEmployee = await prisma.employee.update({
       where: { id },
       data: {
@@ -113,10 +134,10 @@ export async function PUT(
         ...(employmentType !== undefined && { employmentType }),
         ...(salaryType !== undefined && { salaryType }),
         ...(baseSalary !== undefined && { baseSalary: baseSalary ? parseFloat(baseSalary) : null }),
-        ...(salary !== undefined && { salary: parseFloat(salary) || 0 }),
+        ...(salary !== undefined && { salary: parsedSalary }),
         ...(hourlyRate !== undefined && { hourlyRate: hourlyRate ? parseFloat(hourlyRate) : null }),
         ...(commissionRate !== undefined && { commissionRate: commissionRate ? parseFloat(commissionRate) : null }),
-        ...(payoutDay !== undefined && { payoutDay: parseInt(payoutDay) || 1 }),
+        ...(payoutDay !== undefined && { payoutDay: parsedPayoutDay }),
         ...(workHours !== undefined && { workHours }),
         ...(isActive !== undefined && { isActive }),
         ...(active !== undefined && { active }),
@@ -132,6 +153,73 @@ export async function PUT(
         },
       },
     })
+
+    // Automatisch RecurringExpense für Gehalt erstellen/aktualisieren
+    if (parsedSalary !== null && parsedSalary > 0 && parsedPayoutDay !== null && parsedPayoutDay >= 1 && parsedPayoutDay <= 31) {
+      // Suche nach existierendem RecurringExpense für diesen Mitarbeiter
+      const existingRecurringExpense = await prisma.recurringExpense.findFirst({
+        where: {
+          tenantId: session.user.tenantId,
+          employeeId: id,
+          category: 'GEHALT',
+        },
+      })
+
+      const employeeName = employee.user.name || employee.user.email
+      const now = new Date()
+      const nextRun = new Date(now.getFullYear(), now.getMonth(), parsedPayoutDay)
+      if (nextRun < now) {
+        nextRun.setMonth(nextRun.getMonth() + 1)
+      }
+
+      if (existingRecurringExpense) {
+        // Aktualisiere existierenden RecurringExpense
+        await prisma.recurringExpense.update({
+          where: { id: existingRecurringExpense.id },
+          data: {
+            name: `Gehalt • ${employeeName}`,
+            amount: parsedSalary,
+            dayOfMonth: parsedPayoutDay,
+            nextRun,
+            isActive: true,
+            description: `Automatisch generiertes Gehalt für ${employeeName}`,
+          },
+        })
+      } else {
+        // Erstelle neuen RecurringExpense
+        await prisma.recurringExpense.create({
+          data: {
+            tenantId: session.user.tenantId,
+            name: `Gehalt • ${employeeName}`,
+            amount: parsedSalary,
+            category: 'GEHALT',
+            interval: 'MONTHLY',
+            startDate: now,
+            nextRun,
+            dayOfMonth: parsedPayoutDay,
+            employeeId: id,
+            isActive: true,
+            description: `Automatisch generiertes Gehalt für ${employeeName}`,
+          },
+        })
+      }
+    } else {
+      // Wenn kein Gehalt oder kein Auszahlungstag: Deaktiviere RecurringExpense
+      const existingRecurringExpense = await prisma.recurringExpense.findFirst({
+        where: {
+          tenantId: session.user.tenantId,
+          employeeId: id,
+          category: 'GEHALT',
+        },
+      })
+
+      if (existingRecurringExpense) {
+        await prisma.recurringExpense.update({
+          where: { id: existingRecurringExpense.id },
+          data: { isActive: false },
+        })
+      }
+    }
 
     return NextResponse.json({ employee: updatedEmployee })
   } catch (error) {

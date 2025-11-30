@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { name, quantity, minThreshold, category, pricePerUnit } = body
+    const { name, quantity, minThreshold, category, pricePerUnit, link, manufacturer } = body
 
     if (!name) {
       return NextResponse.json(
@@ -75,6 +75,8 @@ export async function POST(request: NextRequest) {
         minThreshold: parseInt(minThreshold) || 0,
         category: category || null,
         pricePerUnit: pricePerUnit ? parseFloat(pricePerUnit) : null,
+        link: link || null,
+        manufacturer: manufacturer || null,
         tenantId: session.user.tenantId,
       },
     })
