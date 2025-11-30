@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
       where: {
         tenantId: session.user.tenantId,
         status: 'COMPLETED',
-        price: { not: null },
+        price: { gt: 0 },
         startTime: {
           gte: dateStart,
           lte: dateEnd,

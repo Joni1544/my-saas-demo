@@ -187,29 +187,31 @@ export default function DashboardStats() {
   ]
 
   return (
-    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-      {cards.map((card) => (
+    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+      {cards.map((card, index) => (
         <div
           key={card.title}
-          className="overflow-hidden rounded-lg bg-white shadow"
+          className="group relative overflow-hidden rounded-2xl bg-white shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100"
         >
-          <div className="p-5">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <span className="text-3xl">{card.icon}</span>
+          <div className="absolute inset-0 bg-gradient-to-br from-white to-gray-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          <div className="relative p-6">
+            <div className="flex flex-col">
+              <div className="flex items-center justify-between mb-4">
+                <div className={`${card.color} rounded-xl p-3 shadow-lg transform group-hover:scale-110 transition-transform duration-300`}>
+                  <span className="text-2xl block">{card.icon}</span>
+                </div>
               </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">
-                    {card.title}
-                  </dt>
-                  <dd className="text-2xl font-semibold text-gray-900">
-                    {card.value}
-                  </dd>
-                </dl>
+              <div className="flex-1">
+                <dt className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+                  {card.title}
+                </dt>
+                <dd className="text-2xl font-bold text-gray-900 group-hover:text-indigo-600 transition-colors duration-300">
+                  {card.value}
+                </dd>
               </div>
             </div>
           </div>
+          <div className={`absolute bottom-0 left-0 right-0 h-1 ${card.color} transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left`} />
         </div>
       ))}
     </div>

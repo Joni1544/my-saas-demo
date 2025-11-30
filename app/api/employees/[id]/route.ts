@@ -90,7 +90,7 @@ export async function PUT(
     }
 
     const body = await request.json()
-    const { position, color, workHours, isActive, active, employmentType, salaryType, baseSalary, hourlyRate, commissionRate } = body
+    const { position, color, workHours, isActive, active, employmentType, salaryType, baseSalary, salary, hourlyRate, commissionRate, payoutDay } = body
 
     const employee = await prisma.employee.findUnique({
       where: { id },
@@ -113,10 +113,13 @@ export async function PUT(
         ...(employmentType !== undefined && { employmentType }),
         ...(salaryType !== undefined && { salaryType }),
         ...(baseSalary !== undefined && { baseSalary: baseSalary ? parseFloat(baseSalary) : null }),
+        ...(salary !== undefined && { salary: parseFloat(salary) || 0 }),
         ...(hourlyRate !== undefined && { hourlyRate: hourlyRate ? parseFloat(hourlyRate) : null }),
         ...(commissionRate !== undefined && { commissionRate: commissionRate ? parseFloat(commissionRate) : null }),
+        ...(payoutDay !== undefined && { payoutDay: parseInt(payoutDay) || 1 }),
         ...(workHours !== undefined && { workHours }),
         ...(isActive !== undefined && { isActive }),
+        ...(active !== undefined && { active }),
       },
       include: {
         user: {

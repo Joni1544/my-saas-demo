@@ -153,7 +153,7 @@ export async function PUT(
         ...(endTime && { endTime: new Date(endTime) }),
         ...(status && { status }),
         ...(customerId !== undefined && { customerId }),
-        ...(price !== undefined && { price: price ? parseFloat(price.toString()) : null }),
+        ...(price !== undefined && { price: price ? parseFloat(price.toString()) : 0 }),
         ...(finalColor !== undefined && { color: finalColor }),
       },
     })

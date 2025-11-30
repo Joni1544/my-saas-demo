@@ -1,13 +1,14 @@
 /**
  * Aufgabenverwaltung
  * Liste aller Aufgaben mit Filter und Status
+ * NEU: Deadline-Feature + Filter
  */
 'use client'
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { format } from 'date-fns'
-import { selectBase } from '@/lib/inputStyles'
+import { format, isPast, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns'
+import { inputBase, selectBase } from '@/lib/inputStyles'
 
 interface Task {
   id: string
@@ -16,7 +17,13 @@ interface Task {
   status: string
   priority: string
   dueDate: string | null
+  deadline: string | null
   assignedTo: string | null
+  assignedToUser: {
+    id: string
+    name: string | null
+    email: string
+  } | null
   _count?: {
     comments: number
   }
@@ -50,16 +57,19 @@ const STATUS_COLORS: Record<string, string> = {
   CANCELLED: 'bg-red-100 text-red-800',
 }
 
+type DeadlineFilter = 'all' | 'today' | 'thisWeek' | 'thisMonth' | 'overdue'
+
 export default function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState<string>('')
   const [priorityFilter, setPriorityFilter] = useState<string>('')
+  const [deadlineFilter, setDeadlineFilter] = useState<DeadlineFilter>('all')
 
   useEffect(() => {
     fetchTasks()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statusFilter, priorityFilter])
+  }, [statusFilter, priorityFilter, deadlineFilter])
 
   const fetchTasks = async () => {
     try {
@@ -69,11 +79,48 @@ export default function TasksPage() {
       const data = await response.json()
       
       let filtered = data.tasks || []
+      
+      // Status-Filter
       if (statusFilter) {
         filtered = filtered.filter((task: Task) => task.status === statusFilter)
       }
+      
+      // Prioritäts-Filter
       if (priorityFilter) {
         filtered = filtered.filter((task: Task) => task.priority === priorityFilter)
+      }
+      
+      // Deadline-Filter
+      if (deadlineFilter !== 'all') {
+        const now = new Date()
+        filtered = filtered.filter((task: Task) => {
+          const deadline = task.deadline || task.dueDate
+          if (!deadline) return false
+          
+          const deadlineDate = new Date(deadline as string)
+          
+          switch (deadlineFilter) {
+            case 'today':
+              return (
+                deadlineDate >= startOfDay(now) &&
+                deadlineDate <= endOfDay(now)
+              )
+            case 'thisWeek':
+              return (
+                deadlineDate >= startOfWeek(now, { weekStartsOn: 1 }) &&
+                deadlineDate <= endOfWeek(now, { weekStartsOn: 1 })
+              )
+            case 'thisMonth':
+              return (
+                deadlineDate >= startOfMonth(now) &&
+                deadlineDate <= endOfMonth(now)
+              )
+            case 'overdue':
+              return isPast(deadlineDate) && task.status !== 'DONE'
+            default:
+              return true
+          }
+        })
       }
       
       setTasks(filtered)
@@ -99,6 +146,12 @@ export default function TasksPage() {
     }
   }
 
+  const isOverdue = (task: Task) => {
+    const deadline = task.deadline || task.dueDate
+    if (!deadline) return false
+    return isPast(new Date(deadline)) && task.status !== 'DONE'
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -118,7 +171,8 @@ export default function TasksPage() {
 
         {/* Filter */}
         <div className="mb-6 space-y-4 rounded-lg bg-white p-4 shadow">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            {/* Status Filter */}
             <div>
               <label htmlFor="status" className="block text-sm font-medium text-gray-700">
                 Status
@@ -137,6 +191,8 @@ export default function TasksPage() {
                 ))}
               </select>
             </div>
+
+            {/* Prioritäts-Filter */}
             <div>
               <label htmlFor="priority" className="block text-sm font-medium text-gray-700">
                 Priorität
@@ -155,6 +211,25 @@ export default function TasksPage() {
                 ))}
               </select>
             </div>
+
+            {/* Deadline-Filter */}
+            <div>
+              <label htmlFor="deadline" className="block text-sm font-medium text-gray-700">
+                Deadline
+              </label>
+              <select
+                id="deadline"
+                value={deadlineFilter}
+                onChange={(e) => setDeadlineFilter(e.target.value as DeadlineFilter)}
+                className={`mt-1 ${selectBase}`}
+              >
+                <option value="all">Alle</option>
+                <option value="today">Heute</option>
+                <option value="thisWeek">Diese Woche</option>
+                <option value="thisMonth">Diesen Monat</option>
+                <option value="overdue">Überfällig</option>
+              </select>
+            </div>
           </div>
         </div>
 
@@ -169,70 +244,78 @@ export default function TasksPage() {
           </div>
         ) : (
           <div className="space-y-4">
-            {tasks.map((task) => (
-              <div
-                key={task.id}
-                className="rounded-lg bg-white p-6 shadow hover:shadow-md transition-shadow"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-lg font-semibold text-gray-900">{task.title}</h3>
-                      <span
-                        className={`rounded px-2 py-1 text-xs font-medium ${STATUS_COLORS[task.status] || STATUS_COLORS.TODO}`}
-                      >
-                        {STATUS_LABELS[task.status] || task.status}
-                      </span>
-                      <span
-                        className={`rounded px-2 py-1 text-xs font-medium ${PRIORITY_COLORS[task.priority] || PRIORITY_COLORS.MEDIUM}`}
-                      >
-                        {PRIORITY_LABELS[task.priority] || task.priority}
-                      </span>
-                    </div>
+            {tasks.map((task) => {
+              const deadline = task.deadline || task.dueDate
+              const overdue = isOverdue(task)
+              
+              return (
+                <div
+                  key={task.id}
+                  className="rounded-lg bg-white p-6 shadow hover:shadow-md transition-shadow"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <h3 className="text-lg font-semibold text-gray-900">{task.title}</h3>
+                        <span className={`rounded px-2 py-1 text-xs font-medium ${STATUS_COLORS[task.status] || 'bg-gray-100 text-gray-800'}`}>
+                          {STATUS_LABELS[task.status] || task.status}
+                        </span>
+                        <span className={`rounded px-2 py-1 text-xs font-medium ${PRIORITY_COLORS[task.priority] || 'bg-gray-100 text-gray-800'}`}>
+                          {PRIORITY_LABELS[task.priority] || task.priority}
+                        </span>
+                      </div>
 
-                    {task.description && (
-                      <p className="mb-2 text-sm text-gray-600 line-clamp-2">{task.description}</p>
-                    )}
-
-                    <div className="flex items-center gap-4 text-sm text-gray-500">
-                      {task.dueDate && (
-                        <div>
-                          <span className="font-medium">Fällig:</span>{' '}
-                          {format(new Date(task.dueDate), 'dd.MM.yyyy')}
-                          {new Date(task.dueDate) < new Date() && task.status !== 'DONE' && (
-                            <span className="ml-2 text-red-600 font-medium">Überfällig!</span>
+                      <div className="space-y-1 text-sm text-gray-600">
+                        <p>
+                          <span className="font-medium">Zuständig:</span>{' '}
+                          {task.assignedToUser ? (
+                            <span className="text-gray-900">{task.assignedToUser.name || task.assignedToUser.email}</span>
+                          ) : (
+                            <span className="text-gray-400 italic">Nicht zugewiesen</span>
                           )}
-                        </div>
-                      )}
-                      {task._count && task._count.comments > 0 && (
-                        <div>
-                          <span className="font-medium">Kommentare:</span> {task._count.comments}
-                        </div>
-                      )}
+                        </p>
+                        {deadline && (
+                          <p className={overdue ? 'text-red-600 font-semibold flex items-center gap-1' : ''}>
+                            {overdue && (
+                              <span className="text-red-600">⚠️</span>
+                            )}
+                            <span className="font-medium">Deadline:</span>{' '}
+                            {format(new Date(deadline as string), 'dd.MM.yyyy')}
+                            {overdue && <span className="ml-2 text-xs">(Überfällig)</span>}
+                          </p>
+                        )}
+                        {task.description && (
+                          <p className="text-gray-500 line-clamp-2">{task.description}</p>
+                        )}
+                        {task._count && task._count.comments > 0 && (
+                          <p className="text-xs text-gray-400">
+                            {task._count.comments} Kommentar{task._count.comments !== 1 ? 'e' : ''}
+                          </p>
+                        )}
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="flex gap-2">
-                    <Link
-                      href={`/dashboard/tasks/${task.id}`}
-                      className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500"
-                    >
-                      Öffnen
-                    </Link>
-                    <button
-                      onClick={() => handleDelete(task.id)}
-                      className="rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-500"
-                    >
-                      Löschen
-                    </button>
+                    <div className="flex gap-2">
+                      <Link
+                        href={`/dashboard/tasks/${task.id}`}
+                        className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500"
+                      >
+                        Bearbeiten
+                      </Link>
+                      <button
+                        onClick={() => handleDelete(task.id)}
+                        className="rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-500"
+                      >
+                        Löschen
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </div>
     </div>
   )
 }
-

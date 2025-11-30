@@ -34,8 +34,8 @@ const MONTHS = [
 export default function DateSelector({
   value,
   onChange,
-  minYear = 2020,
-  maxYear = 2040,
+  minYear = 2000,
+  maxYear = 2080,
   className = '',
 }: DateSelectorProps) {
   const now = new Date()

@@ -114,7 +114,7 @@ export default function NewAppointmentPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
-          price: formData.price ? parseFloat(formData.price) : null,
+          price: formData.price ? parseFloat(formData.price) : 0,
           customerId: formData.customerId || null,
           employeeId: formData.employeeId || null,
         }),
@@ -264,6 +264,7 @@ export default function NewAppointmentPage() {
                 className={`mt-1 ${inputBase}`}
                 placeholder="0.00"
               />
+              <p className="mt-1 text-xs text-gray-500">Optional: Standard ist 0,00 €</p>
             </div>
           </div>
 

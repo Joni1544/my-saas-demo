@@ -127,39 +127,28 @@ export default function ExpenseStats() {
 
   return (
     <div className="mb-8">
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-gray-900">Finanzen & Ausgaben</h2>
-        <div className="flex gap-2">
-          <Link
-            href="/dashboard/recurring-expenses"
-            className="text-sm text-indigo-600 hover:text-indigo-500"
-          >
-            Daueraufträge →
-          </Link>
-          <Link
-            href="/dashboard/expenses"
-            className="text-sm text-indigo-600 hover:text-indigo-500"
-          >
-            Ausgaben →
-          </Link>
-        </div>
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-gray-900">Finanzen & Ausgaben</h2>
+        <p className="text-gray-600 mt-1">Übersicht über Ihre Finanzen</p>
       </div>
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
         {cards.map((card, index) => (
           <Link
             key={index}
             href={card.link}
-            className="group relative overflow-hidden rounded-lg bg-white p-6 shadow hover:shadow-md transition-shadow"
+            className="group relative overflow-hidden rounded-2xl bg-white p-6 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100"
           >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">{card.title}</p>
-                <p className="mt-2 text-2xl font-bold text-gray-900">{card.value}</p>
+            <div className="absolute inset-0 bg-gradient-to-br from-white to-gray-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            <div className="relative flex items-center justify-between">
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">{card.title}</p>
+                <p className="text-3xl font-bold text-gray-900 group-hover:text-indigo-600 transition-colors duration-300">{card.value}</p>
               </div>
-              <div className={`${card.color} rounded-full p-3 text-2xl`}>
-                {card.icon}
+              <div className={`${card.color} rounded-2xl p-4 shadow-lg transform group-hover:scale-110 group-hover:rotate-3 transition-all duration-300`}>
+                <span className="text-3xl block">{card.icon}</span>
               </div>
             </div>
+            <div className={`absolute bottom-0 left-0 right-0 h-1 ${card.color} transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left`} />
           </Link>
         ))}
       </div>

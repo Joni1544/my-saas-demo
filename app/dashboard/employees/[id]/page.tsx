@@ -58,8 +58,10 @@ export default function EmployeeDetailPage() {
     employmentType: 'FULL_TIME' as 'FULL_TIME' | 'PART_TIME' | 'MINI_JOB' | 'FREELANCER',
     salaryType: 'FIXED' as 'FIXED' | 'HOURLY' | 'COMMISSION' | 'MIXED',
     baseSalary: null as number | null,
+    salary: 0 as number,
     hourlyRate: null as number | null,
     commissionRate: null as number | null,
+    payoutDay: 1 as number,
   })
 
   useEffect(() => {
@@ -87,8 +89,10 @@ export default function EmployeeDetailPage() {
         employmentType: data.employee.employmentType || 'FULL_TIME',
         salaryType: data.employee.salaryType || 'FIXED',
         baseSalary: data.employee.baseSalary ? parseFloat(data.employee.baseSalary.toString()) : null,
+        salary: data.employee.salary ? parseFloat(data.employee.salary.toString()) : (data.employee.baseSalary ? parseFloat(data.employee.baseSalary.toString()) : 0),
         hourlyRate: data.employee.hourlyRate ? parseFloat(data.employee.hourlyRate.toString()) : null,
         commissionRate: data.employee.commissionRate ? parseFloat(data.employee.commissionRate.toString()) : null,
+        payoutDay: data.employee.payoutDay || 1,
       })
     } catch (error) {
       console.error('Fehler:', error)
@@ -376,12 +380,45 @@ export default function EmployeeDetailPage() {
                 </select>
               </div>
 
-              {/* Gehaltsfelder - abhängig von salaryType */}
+              {/* Gehaltsfelder */}
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <label htmlFor="salary" className="block text-sm font-medium text-gray-700">
+                    Gehalt (€/Monat) <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    id="salary"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    required
+                    value={formData.salary}
+                    onChange={(e) => setFormData({ ...formData, salary: parseFloat(e.target.value) || 0 })}
+                    className={`mt-1 ${inputBase}`}
+                    placeholder="0.00"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="payoutDay" className="block text-sm font-medium text-gray-700">
+                    Auszahlungstag (1-31)
+                  </label>
+                  <input
+                    id="payoutDay"
+                    type="number"
+                    min="1"
+                    max="31"
+                    value={formData.payoutDay}
+                    onChange={(e) => setFormData({ ...formData, payoutDay: parseInt(e.target.value) || 1 })}
+                    className={`mt-1 ${inputBase}`}
+                  />
+                </div>
+              </div>
+              {/* Gehaltsfelder - abhängig von salaryType (Legacy Support) */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 {(formData.salaryType === 'FIXED' || formData.salaryType === 'MIXED') && (
                   <div>
                     <label htmlFor="baseSalary" className="block text-sm font-medium text-gray-700">
-                      Grundgehalt (€/Monat)
+                      Grundgehalt (€/Monat) - Legacy
                     </label>
                     <input
                       id="baseSalary"

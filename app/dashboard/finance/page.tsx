@@ -37,7 +37,8 @@ interface TimeSeriesData {
   profit: number[]
 }
 
-type TimeMode = 'week' | 'month' | 'year'
+
+type TimeMode = 'day' | 'week' | 'month' | 'year'
 
 export default function FinanceDashboardPage() {
   const [stats, setStats] = useState<FinanceStats | null>(null)
@@ -45,10 +46,27 @@ export default function FinanceDashboardPage() {
   const [loading, setLoading] = useState(true)
   const [timeMode, setTimeMode] = useState<TimeMode>('month')
   const [selectedMonth, setSelectedMonth] = useState({ month: new Date().getMonth(), year: new Date().getFullYear() })
+  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0])
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear())
   const [filters, setFilters] = useState({
     startDate: new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0],
     endDate: new Date().toISOString().split('T')[0],
   })
+
+  useEffect(() => {
+    // Auto-Generate Gehälter beim Laden
+    generateSalaryExpenses()
+  }, [])
+
+  const generateSalaryExpenses = async () => {
+    try {
+      await fetch('/api/expenses/generate-salary', {
+        method: 'POST',
+      })
+    } catch (error) {
+      console.error('Fehler beim Generieren der Gehälter:', error)
+    }
+  }
 
   // Chart-Daten formatieren
   const chartData = useMemo(() => {
@@ -66,7 +84,7 @@ export default function FinanceDashboardPage() {
     fetchStats()
     fetchTimeSeries()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters, timeMode, selectedMonth])
+  }, [filters, timeMode, selectedMonth, selectedDate, selectedYear])
 
   const fetchStats = async () => {
     try {
@@ -96,11 +114,19 @@ export default function FinanceDashboardPage() {
       let from: string
       let to: string
 
-      if (timeMode === 'month') {
+      if (timeMode === 'day') {
+        from = selectedDate
+        to = selectedDate
+      } else if (timeMode === 'month') {
         const monthStart = new Date(selectedMonth.year, selectedMonth.month, 1)
         const monthEnd = new Date(selectedMonth.year, selectedMonth.month + 1, 0, 23, 59, 59)
         from = monthStart.toISOString().split('T')[0]
         to = monthEnd.toISOString().split('T')[0]
+      } else if (timeMode === 'year') {
+        const yearStart = new Date(selectedYear, 0, 1)
+        const yearEnd = new Date(selectedYear, 11, 31, 23, 59, 59)
+        from = yearStart.toISOString().split('T')[0]
+        to = yearEnd.toISOString().split('T')[0]
       } else {
         from = filters.startDate
         to = filters.endDate
@@ -210,46 +236,40 @@ export default function FinanceDashboardPage() {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Zeitraum
               </label>
-              <div className="flex rounded-lg border border-gray-300 overflow-hidden">
-                {(['week', 'month', 'year'] as TimeMode[]).map((mode) => (
+              <div className="flex gap-2">
+                {(['day', 'week', 'month', 'year'] as TimeMode[]).map((mode) => (
                   <button
                     key={mode}
                     onClick={() => setTimeMode(mode)}
-                    className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
+                    className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                       timeMode === mode
                         ? 'bg-indigo-600 text-white'
-                        : 'bg-white text-gray-700 hover:bg-gray-50'
-                    } ${mode === 'week' ? '' : 'border-l border-gray-300'}`}
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    }`}
                   >
-                    {mode === 'week' ? 'Woche' : mode === 'month' ? 'Monat' : 'Jahr'}
+                    {mode === 'day' ? 'Tag' : mode === 'week' ? 'Woche' : mode === 'month' ? 'Monat' : 'Jahr'}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Monat & Jahr Selector (nur für Monats-Modus) */}
-            {timeMode === 'month' && (
+            {/* Datumsauswahl basierend auf Modus */}
+            {timeMode === 'day' && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Monat & Jahr
+                <label htmlFor="day" className="block text-sm font-medium text-gray-700">
+                  Datum
                 </label>
-                <DateSelector
-                  value={selectedMonth}
-                  onChange={(value) => {
-                    setSelectedMonth(value)
-                    const monthStart = new Date(value.year, value.month, 1)
-                    const monthEnd = new Date(value.year, value.month + 1, 0, 23, 59, 59)
-                    setFilters({
-                      startDate: monthStart.toISOString().split('T')[0],
-                      endDate: monthEnd.toISOString().split('T')[0],
-                    })
-                  }}
+                <input
+                  type="date"
+                  id="day"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  className={`mt-1 ${inputBase}`}
                 />
               </div>
             )}
 
-            {/* Custom Date Range (für Woche und Jahr) */}
-            {(timeMode === 'week' || timeMode === 'year') && (
+            {timeMode === 'week' && (
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label htmlFor="startDate" className="block text-sm font-medium text-gray-700">
@@ -275,6 +295,46 @@ export default function FinanceDashboardPage() {
                     className={`mt-1 ${inputBase}`}
                   />
                 </div>
+              </div>
+            )}
+
+            {timeMode === 'month' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Monat & Jahr
+                </label>
+                <DateSelector
+                  value={selectedMonth}
+                  onChange={(value) => {
+                    setSelectedMonth(value)
+                    const monthStart = new Date(value.year, value.month, 1)
+                    const monthEnd = new Date(value.year, value.month + 1, 0, 23, 59, 59)
+                    setFilters({
+                      startDate: monthStart.toISOString().split('T')[0],
+                      endDate: monthEnd.toISOString().split('T')[0],
+                    })
+                  }}
+                />
+              </div>
+            )}
+
+            {timeMode === 'year' && (
+              <div>
+                <label htmlFor="year" className="block text-sm font-medium text-gray-700">
+                  Jahr
+                </label>
+                <select
+                  id="year"
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                  className={`mt-1 ${inputBase}`}
+                >
+                  {Array.from({ length: 80 }, (_, i) => 2000 + i).map((year) => (
+                    <option key={year} value={year}>
+                      {year}
+                    </option>
+                  ))}
+                </select>
               </div>
             )}
           </div>

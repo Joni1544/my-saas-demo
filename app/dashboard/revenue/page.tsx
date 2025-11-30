@@ -1,13 +1,29 @@
 /**
  * Umsatz-Dashboard
- * Statistiken: Tag, Woche, Monat, Jahr
- * Top Kunden, No-Shows, Wiederkehrende Kunden
+ * NEU: Vier Zeitmodi (Tag/Woche/Monat/Jahr) + Graph mit gelber Farbe
  */
 'use client'
 
-import { useState, useEffect } from 'react'
-import { format } from 'date-fns'
+import { useState, useEffect, useMemo } from 'react'
+import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, getWeek } from 'date-fns'
 import DateSelector from '@/components/DateSelector'
+import { inputBase } from '@/lib/inputStyles'
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts'
+
+interface RevenueData {
+  labels: string[]
+  revenue: number[]
+  total: number
+}
 
 interface RevenueStats {
   period: string
@@ -37,29 +53,71 @@ interface RevenueStats {
   recurringCustomers: number
 }
 
-type Period = 'day' | 'week' | 'month' | 'year' | 'custom'
+type TimeMode = 'day' | 'week' | 'month' | 'year'
 
 export default function RevenuePage() {
-  const [period, setPeriod] = useState<Period>('month')
-  const [customStartDate, setCustomStartDate] = useState('')
-  const [customEndDate, setCustomEndDate] = useState('')
+  const [timeMode, setTimeMode] = useState<TimeMode>('month')
+  const [selectedDate, setSelectedDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'))
+  const [selectedWeek, setSelectedWeek] = useState<string>(format(new Date(), 'yyyy-MM-dd'))
   const [selectedMonth, setSelectedMonth] = useState({ month: new Date().getMonth(), year: new Date().getFullYear() })
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear())
+  const [revenueData, setRevenueData] = useState<RevenueData | null>(null)
   const [stats, setStats] = useState<RevenueStats | null>(null)
   const [loading, setLoading] = useState(true)
 
+  useEffect(() => {
+    fetchRevenueData()
+    fetchStats()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timeMode, selectedDate, selectedWeek, selectedMonth, selectedYear])
+
+  const fetchRevenueData = async () => {
+    try {
+      let dateParam: string
+      
+      if (timeMode === 'day') {
+        dateParam = selectedDate
+      } else if (timeMode === 'week') {
+        dateParam = selectedWeek
+      } else if (timeMode === 'month') {
+        dateParam = format(new Date(selectedMonth.year, selectedMonth.month, 1), 'yyyy-MM-dd')
+      } else {
+        dateParam = format(new Date(selectedYear, 0, 1), 'yyyy-MM-dd')
+      }
+
+      const response = await fetch(`/api/revenue?mode=${timeMode}&date=${dateParam}`)
+      if (!response.ok) throw new Error('Fehler beim Laden der Umsatz-Daten')
+      const data = await response.json()
+      setRevenueData(data)
+    } catch (error) {
+      console.error('Fehler:', error)
+    }
+  }
+
   const fetchStats = async () => {
     try {
-      setLoading(true)
-      let url = `/api/stats/revenue?period=${period}`
-      if (customStartDate && customEndDate) {
-        url += `&startDate=${customStartDate}&endDate=${customEndDate}`
-      } else if (period === 'month' && selectedMonth) {
-        // Verwende selectedMonth für Monatsansicht
-        const monthStart = new Date(selectedMonth.year, selectedMonth.month, 1)
-        const monthEnd = new Date(selectedMonth.year, selectedMonth.month + 1, 0, 23, 59, 59)
-        url += `&startDate=${monthStart.toISOString()}&endDate=${monthEnd.toISOString()}`
+      let startDate: Date
+      let endDate: Date
+
+      if (timeMode === 'day') {
+        const date = new Date(selectedDate)
+        startDate = startOfDay(date)
+        endDate = endOfDay(date)
+      } else if (timeMode === 'week') {
+        const date = new Date(selectedWeek)
+        startDate = startOfWeek(date, { weekStartsOn: 1 })
+        endDate = endOfWeek(date, { weekStartsOn: 1 })
+      } else if (timeMode === 'month') {
+        startDate = new Date(selectedMonth.year, selectedMonth.month, 1)
+        endDate = new Date(selectedMonth.year, selectedMonth.month + 1, 0, 23, 59, 59)
+      } else {
+        startDate = new Date(selectedYear, 0, 1)
+        endDate = new Date(selectedYear, 11, 31, 23, 59, 59)
       }
-      const response = await fetch(url)
+
+      const response = await fetch(
+        `/api/stats/revenue?period=${timeMode}&startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`
+      )
       if (!response.ok) throw new Error('Fehler beim Laden der Statistiken')
       const data = await response.json()
       setStats(data)
@@ -70,18 +128,6 @@ export default function RevenuePage() {
     }
   }
 
-  useEffect(() => {
-    fetchStats()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [period, customStartDate, customEndDate, selectedMonth])
-
-  useEffect(() => {
-    if (period === 'month') {
-      fetchStats()
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedMonth, period])
-
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('de-DE', {
       style: 'currency',
@@ -89,31 +135,41 @@ export default function RevenuePage() {
     }).format(amount)
   }
 
-  const getPeriodLabel = () => {
-    switch (period) {
-      case 'day':
-        return 'Heute'
-      case 'week':
-        return 'Diese Woche'
-      case 'month':
-        return 'Dieser Monat'
-      case 'year':
-        return 'Dieses Jahr'
+  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ name: string; value: number; color: string }>; label?: string }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="rounded-lg bg-white p-4 shadow-lg border border-gray-200">
+          <p className="font-semibold text-gray-900 mb-2">{label}</p>
+          {payload.map((entry, index) => (
+            <p key={index} className="text-sm" style={{ color: entry.color }}>
+              {entry.name}: {formatCurrency(entry.value)}
+            </p>
+          ))}
+        </div>
+      )
     }
+    return null
+  }
+
+  const chartData = useMemo(() => {
+    if (!revenueData) return []
+    return revenueData.labels.map((label, index) => ({
+      name: label,
+      Umsatz: revenueData.revenue[index],
+    }))
+  }, [revenueData])
+
+  const getWeekLabel = () => {
+    if (timeMode !== 'week') return ''
+    const date = new Date(selectedWeek)
+    const week = getWeek(date, { weekStartsOn: 1 })
+    return `KW ${week}/${date.getFullYear()}`
   }
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <p className="text-gray-500">Lade Statistiken...</p>
-      </div>
-    )
-  }
-
-  if (!stats) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-500">Keine Daten verfügbar</p>
       </div>
     )
   }
@@ -127,239 +183,239 @@ export default function RevenuePage() {
           <p className="mt-2 text-gray-600">Detaillierte Umsatz-Statistiken und Analysen</p>
         </div>
 
-        {/* Period Selector & Custom Date Range */}
+        {/* Zeitmodus-Auswahl */}
         <div className="mb-6 rounded-lg bg-white p-6 shadow">
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            {/* Period Buttons */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Zeitraum</label>
-              <div className="flex rounded-lg border border-gray-300 overflow-hidden">
-                {(['day', 'week', 'month', 'year'] as Period[]).map((p) => (
-                  <button
-                    key={p}
-                    onClick={() => {
-                      setPeriod(p)
-                      setCustomStartDate('')
-                      setCustomEndDate('')
-                    }}
-                    className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
-                      period === p && !customStartDate
-                        ? 'bg-indigo-600 text-white'
-                        : 'bg-white text-gray-700 hover:bg-gray-50'
-                    } ${p === 'day' ? '' : 'border-l border-gray-300'}`}
-                  >
-                    {p === 'day' ? 'Tag' : p === 'week' ? 'Woche' : p === 'month' ? 'Monat' : 'Jahr'}
-                  </button>
-                ))}
-              </div>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Zeitraum</label>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setTimeMode('day')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  timeMode === 'day'
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                Tag
+              </button>
+              <button
+                onClick={() => setTimeMode('week')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  timeMode === 'week'
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                Woche
+              </button>
+              <button
+                onClick={() => setTimeMode('month')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  timeMode === 'month'
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                Monat
+              </button>
+              <button
+                onClick={() => setTimeMode('year')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  timeMode === 'year'
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                Jahr
+              </button>
             </div>
+          </div>
 
-            {/* DateSelector für Monatsansicht */}
-            {period === 'month' && (
+          {/* Datumsauswahl basierend auf Modus */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {timeMode === 'day' && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Monat & Jahr</label>
-                <DateSelector
-                  value={selectedMonth}
-                  onChange={(value) => {
-                    setSelectedMonth(value)
-                    setPeriod('month')
-                  }}
+                <label htmlFor="day" className="block text-sm font-medium text-gray-700">
+                  Datum
+                </label>
+                <input
+                  type="date"
+                  id="day"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  className={`mt-1 ${inputBase}`}
                 />
               </div>
             )}
 
-            {/* Custom Date Range */}
-            {period === 'custom' && (
+            {timeMode === 'week' && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Eigener Zeitraum</label>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <input
-                      type="date"
-                      value={customStartDate}
-                      onChange={(e) => {
-                        setCustomStartDate(e.target.value)
-                        if (e.target.value && customEndDate) {
-                          setPeriod('custom' as Period)
-                        }
-                      }}
-                      className="block w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-base text-black shadow-sm transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                      placeholder="Von"
-                    />
-                  </div>
-                  <div>
-                    <input
-                      type="date"
-                      value={customEndDate}
-                      onChange={(e) => {
-                        setCustomEndDate(e.target.value)
-                        if (customStartDate && e.target.value) {
-                          setPeriod('custom' as Period)
-                        }
-                      }}
-                      className="block w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-base text-black shadow-sm transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                      placeholder="Bis"
-                    />
-                  </div>
-                </div>
+                <label htmlFor="week" className="block text-sm font-medium text-gray-700">
+                  Woche (Datum auswählen)
+                </label>
+                <input
+                  type="date"
+                  id="week"
+                  value={selectedWeek}
+                  onChange={(e) => setSelectedWeek(e.target.value)}
+                  className={`mt-1 ${inputBase}`}
+                />
+                {getWeekLabel() && (
+                  <p className="mt-1 text-sm text-gray-600">{getWeekLabel()}</p>
+                )}
+              </div>
+            )}
+
+            {timeMode === 'month' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Monat & Jahr
+                </label>
+                <DateSelector
+                  value={selectedMonth}
+                  onChange={(value) => setSelectedMonth(value)}
+                />
+              </div>
+            )}
+
+            {timeMode === 'year' && (
+              <div>
+                <label htmlFor="year" className="block text-sm font-medium text-gray-700">
+                  Jahr
+                </label>
+                <select
+                  id="year"
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                  className={`mt-1 ${inputBase}`}
+                >
+                  {Array.from({ length: 20 }, (_, i) => new Date().getFullYear() - 10 + i).map((year) => (
+                    <option key={year} value={year}>
+                      {year}
+                    </option>
+                  ))}
+                </select>
               </div>
             )}
           </div>
         </div>
 
         {/* Key Metrics */}
-        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-lg bg-white p-6 shadow">
-            <div className="text-sm font-medium text-gray-600">Gesamtumsatz</div>
-            <div className="mt-2 text-3xl font-bold text-gray-900">
-              {formatCurrency(stats.totalRevenue)}
-            </div>
-            <div className="mt-1 text-xs text-gray-500">{getPeriodLabel()}</div>
-          </div>
-
-          <div className="rounded-lg bg-white p-6 shadow">
-            <div className="text-sm font-medium text-gray-600">Anzahl Termine</div>
-            <div className="mt-2 text-3xl font-bold text-gray-900">{stats.appointmentCount}</div>
-            <div className="mt-1 text-xs text-gray-500">Abgeschlossen</div>
-          </div>
-
-          <div className="rounded-lg bg-white p-6 shadow">
-            <div className="text-sm font-medium text-gray-600">Durchschnitt</div>
-            <div className="mt-2 text-3xl font-bold text-gray-900">
-              {stats.appointmentCount > 0
-                ? formatCurrency(stats.totalRevenue / stats.appointmentCount)
-                : formatCurrency(0)}
-            </div>
-            <div className="mt-1 text-xs text-gray-500">Pro Termin</div>
-          </div>
-
-          <div className="rounded-lg bg-white p-6 shadow">
-            <div className="text-sm font-medium text-gray-600">No-Shows</div>
-            <div className="mt-2 text-3xl font-bold text-red-600">{stats.noShows}</div>
-            <div className="mt-1 text-xs text-gray-500">Stornierte Termine</div>
-          </div>
-        </div>
-
-        <div className="grid gap-6 lg:grid-cols-2">
-          {/* Top Kunden */}
-          <div className="rounded-lg bg-white p-6 shadow">
-            <h2 className="mb-4 text-xl font-semibold text-gray-900">Top Kunden</h2>
-            {stats.topCustomers.length > 0 ? (
-              <div className="space-y-3">
-                {stats.topCustomers.map((customer, index) => (
-                  <div key={customer.id} className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-100 text-sm font-semibold text-indigo-600">
-                        {index + 1}
-                      </div>
-                      <div>
-                        <div className="font-medium text-gray-900">{customer.name}</div>
-                        <div className="text-sm text-gray-500">{customer.count} Termine</div>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-semibold text-gray-900">
-                        {formatCurrency(customer.revenue)}
-                      </div>
-                    </div>
-                  </div>
-                ))}
+        {stats && (
+          <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="rounded-lg bg-white p-6 shadow">
+              <div className="text-sm font-medium text-gray-600">Gesamtumsatz</div>
+              <div className="mt-2 text-3xl font-bold text-yellow-600">
+                {formatCurrency(stats.totalRevenue)}
               </div>
-            ) : (
-              <p className="text-sm text-gray-500">Keine Daten verfügbar</p>
-            )}
+            </div>
+            <div className="rounded-lg bg-white p-6 shadow">
+              <div className="text-sm font-medium text-gray-600">Anzahl Termine</div>
+              <div className="mt-2 text-3xl font-bold text-gray-900">{stats.appointmentCount}</div>
+              <div className="mt-1 text-xs text-gray-500">Abgeschlossen</div>
+            </div>
+            <div className="rounded-lg bg-white p-6 shadow">
+              <div className="text-sm font-medium text-gray-600">Durchschnitt</div>
+              <div className="mt-2 text-3xl font-bold text-gray-900">
+                {stats.appointmentCount > 0
+                  ? formatCurrency(stats.totalRevenue / stats.appointmentCount)
+                  : formatCurrency(0)}
+              </div>
+              <div className="mt-1 text-xs text-gray-500">Pro Termin</div>
+            </div>
+            <div className="rounded-lg bg-white p-6 shadow">
+              <div className="text-sm font-medium text-gray-600">No-Shows</div>
+              <div className="mt-2 text-3xl font-bold text-red-600">{stats.noShows}</div>
+              <div className="mt-1 text-xs text-gray-500">Stornierte Termine</div>
+            </div>
           </div>
+        )}
 
-          {/* Umsatz pro Mitarbeiter */}
-          <div className="rounded-lg bg-white p-6 shadow">
-            <h2 className="mb-4 text-xl font-semibold text-gray-900">Umsatz pro Mitarbeiter</h2>
-            {stats.revenueByEmployee.length > 0 ? (
-              <div className="space-y-3">
-                {stats.revenueByEmployee.map((employee) => (
-                  <div key={employee.id} className="flex items-center justify-between">
-                    <div>
-                      <div className="font-medium text-gray-900">{employee.name}</div>
-                      <div className="text-sm text-gray-500">{employee.count} Termine</div>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-semibold text-gray-900">
-                        {formatCurrency(employee.revenue)}
+        {/* Umsatz-Graph */}
+        {revenueData && (
+          <div className="mb-6 rounded-lg bg-white p-6 shadow-md">
+            <h2 className="mb-4 text-lg font-semibold text-gray-900">Umsatz-Verlauf</h2>
+            <ResponsiveContainer width="100%" height={400}>
+              <LineChart
+                data={chartData}
+                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e0e0e0" />
+                <XAxis dataKey="name" />
+                <YAxis tickFormatter={(value) => formatCurrency(value)} />
+                <Tooltip content={<CustomTooltip />} />
+                <Legend />
+                <Line
+                  type="monotone"
+                  dataKey="Umsatz"
+                  stroke="#facc15"
+                  strokeWidth={3}
+                  dot={{ fill: '#facc15', r: 4 }}
+                  activeDot={{ r: 6 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+
+        {/* Statistiken */}
+        {stats && (
+          <div className="grid gap-6 lg:grid-cols-2">
+            {/* Top Kunden */}
+            <div className="rounded-lg bg-white p-6 shadow">
+              <h2 className="mb-4 text-xl font-semibold text-gray-900">Top Kunden</h2>
+              {stats.topCustomers.length > 0 ? (
+                <div className="space-y-3">
+                  {stats.topCustomers.map((customer, index) => (
+                    <div key={customer.id} className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-100 text-sm font-semibold text-indigo-600">
+                          {index + 1}
+                        </div>
+                        <div>
+                          <div className="font-medium text-gray-900">{customer.name}</div>
+                          <div className="text-sm text-gray-500">{customer.count} Termine</div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-semibold text-gray-900">
+                          {formatCurrency(customer.revenue)}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-gray-500">Keine Daten verfügbar</p>
-            )}
-          </div>
-        </div>
-
-        {/* Umsatz pro Kunde (vollständige Liste) */}
-        <div className="mt-6 rounded-lg bg-white p-6 shadow">
-          <h2 className="mb-4 text-xl font-semibold text-gray-900">Umsatz pro Kunde</h2>
-          {stats.revenueByCustomer.length > 0 ? (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                      Kunde
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                      Termine
-                    </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
-                      Umsatz
-                    </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
-                      Durchschnitt
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200 bg-white">
-                  {stats.revenueByCustomer.map((customer) => (
-                    <tr key={customer.id}>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">
-                        {customer.name}
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
-                        {customer.count}
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-semibold text-gray-900">
-                        {formatCurrency(customer.revenue)}
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-right text-sm text-gray-500">
-                        {formatCurrency(customer.revenue / customer.count)}
-                      </td>
-                    </tr>
                   ))}
-                </tbody>
-              </table>
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500">Keine Daten verfügbar</p>
+              )}
             </div>
-          ) : (
-            <p className="text-sm text-gray-500">Keine Daten verfügbar</p>
-          )}
-        </div>
 
-        {/* Zusätzliche Metriken */}
-        <div className="mt-6 grid gap-4 sm:grid-cols-2">
-          <div className="rounded-lg bg-white p-6 shadow">
-            <h3 className="mb-2 text-lg font-semibold text-gray-900">Wiederkehrende Kunden</h3>
-            <div className="text-3xl font-bold text-indigo-600">{stats.recurringCustomers}</div>
-            <div className="mt-1 text-sm text-gray-500">Kunden mit mehr als 1 Termin</div>
-          </div>
-
-          <div className="rounded-lg bg-white p-6 shadow">
-            <h3 className="mb-2 text-lg font-semibold text-gray-900">Zeitraum</h3>
-            <div className="text-sm text-gray-600">
-              {format(new Date(stats.dateStart), 'dd.MM.yyyy')} -{' '}
-              {format(new Date(stats.dateEnd), 'dd.MM.yyyy')}
+            {/* Umsatz pro Mitarbeiter */}
+            <div className="rounded-lg bg-white p-6 shadow">
+              <h2 className="mb-4 text-xl font-semibold text-gray-900">Umsatz pro Mitarbeiter</h2>
+              {stats.revenueByEmployee.length > 0 ? (
+                <div className="space-y-3">
+                  {stats.revenueByEmployee.map((employee) => (
+                    <div key={employee.id} className="flex items-center justify-between">
+                      <div>
+                        <div className="font-medium text-gray-900">{employee.name}</div>
+                        <div className="text-sm text-gray-500">{employee.count} Termine</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-semibold text-gray-900">
+                          {formatCurrency(employee.revenue)}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500">Keine Daten verfügbar</p>
+              )}
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   )
 }
-

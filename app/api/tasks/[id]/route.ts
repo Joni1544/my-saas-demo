@@ -30,6 +30,13 @@ export async function GET(
         tenantId: session.user.tenantId,
       },
       include: {
+        assignedToUser: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
         comments: {
           include: {
             user: {
@@ -79,7 +86,26 @@ export async function PUT(
     }
 
     const body = await request.json()
-    const { title, description, status, priority, dueDate, assignedTo } = body
+    const { title, description, status, priority, dueDate, deadline, assignedTo } = body
+
+    // Validierung: assignedTo muss ein gültiger User sein
+    if (assignedTo) {
+      const user = await prisma.user.findFirst({
+        where: {
+          id: assignedTo,
+          tenantId: session.user.tenantId,
+        },
+      })
+      if (!user) {
+        return NextResponse.json(
+          { error: 'Ungültiger Mitarbeiter' },
+          { status: 400 }
+        )
+      }
+    }
+
+    // Unterstütze sowohl dueDate als auch deadline (Kompatibilität)
+    const finalDeadline = deadline || dueDate
 
     const task = await prisma.task.updateMany({
       where: {
@@ -91,8 +117,11 @@ export async function PUT(
         ...(description !== undefined && { description }),
         ...(status && { status }),
         ...(priority && { priority }),
-        ...(dueDate !== undefined && { dueDate: dueDate ? new Date(dueDate) : null }),
-        ...(assignedTo !== undefined && { assignedTo }),
+        ...(finalDeadline !== undefined && { 
+          dueDate: finalDeadline ? new Date(finalDeadline) : null,
+          deadline: finalDeadline ? new Date(finalDeadline) : null,
+        }),
+        ...(assignedTo !== undefined && { assignedTo: assignedTo || null }),
       },
     })
 

@@ -60,7 +60,12 @@ export default function ExpensesPage() {
 
   const generateAutoExpenses = async () => {
     try {
+      // Generiere Daueraufträge
       await fetch('/api/expenses/generate-auto', {
+        method: 'POST',
+      })
+      // Generiere Gehälter
+      await fetch('/api/expenses/generate-salary', {
         method: 'POST',
       })
     } catch (error) {
@@ -224,8 +229,24 @@ export default function ExpensesPage() {
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
                       <h3 className="text-lg font-semibold text-gray-900">{expense.name}</h3>
-                      <span className="rounded bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800">
-                        {expense.category}
+                      <span
+                        className={`rounded px-2 py-1 text-xs font-medium ${
+                          expense.category === 'GEHALT'
+                            ? 'bg-red-100 text-red-800'
+                            : expense.category === 'MIETE'
+                            ? 'bg-orange-100 text-orange-800'
+                            : expense.category === 'MARKETING'
+                            ? 'bg-purple-100 text-purple-800'
+                            : expense.category === 'MATERIAL'
+                            ? 'bg-blue-100 text-blue-800'
+                            : expense.category === 'VERSICHERUNG'
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : expense.category === 'STEUERN'
+                            ? 'bg-gray-100 text-gray-800'
+                            : 'bg-gray-100 text-gray-800'
+                        }`}
+                      >
+                        {CATEGORIES.find(c => c.value === expense.category)?.label || expense.category}
                       </span>
                       {expense.recurringExpenseId && (
                         <span className="rounded bg-green-100 px-2 py-1 text-xs font-medium text-green-800">
@@ -246,7 +267,7 @@ export default function ExpensesPage() {
                     )}
                   </div>
                   <div className="ml-4 flex items-center gap-4">
-                    <p className="text-xl font-bold text-red-600">
+                    <p className={`text-xl font-bold ${expense.category === 'GEHALT' ? 'text-red-600' : 'text-gray-900'}`}>
                       {new Intl.NumberFormat('de-DE', {
                         style: 'currency',
                         currency: 'EUR',

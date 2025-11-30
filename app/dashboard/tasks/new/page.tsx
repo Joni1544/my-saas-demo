@@ -3,7 +3,7 @@
  */
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { inputBase, textareaBase, selectBase } from '@/lib/inputStyles'
@@ -21,16 +21,43 @@ const STATUS_OPTIONS = [
   { value: 'DONE', label: 'Erledigt' },
 ]
 
+interface Employee {
+  id: string
+  user: {
+    id: string
+    name: string | null
+    email: string
+  }
+}
+
 export default function NewTaskPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
+  const [employees, setEmployees] = useState<Employee[]>([])
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     status: 'TODO',
     priority: 'MEDIUM',
-    dueDate: '',
+    deadline: '',
+    assignedTo: '',
   })
+
+  useEffect(() => {
+    fetchEmployees()
+  }, [])
+
+  const fetchEmployees = async () => {
+    try {
+      const response = await fetch('/api/employees')
+      if (response.ok) {
+        const data = await response.json()
+        setEmployees(data.employees || [])
+      }
+    } catch (error) {
+      console.error('Fehler beim Laden der Mitarbeiter:', error)
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -42,7 +69,8 @@ export default function NewTaskPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
-          dueDate: formData.dueDate || null,
+          deadline: formData.deadline || null,
+          assignedTo: formData.assignedTo || null,
         }),
       })
 
@@ -120,14 +148,35 @@ export default function NewTaskPage() {
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Fälligkeitsdatum</label>
-            <input
-              type="date"
-              value={formData.dueDate}
-              onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-              className={`mt-1 ${inputBase}`}
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Mitarbeiter auswählen <span className="text-red-500">*</span>
+              </label>
+              <select
+                required
+                value={formData.assignedTo}
+                onChange={(e) => setFormData({ ...formData, assignedTo: e.target.value })}
+                className={`mt-1 ${selectBase}`}
+              >
+                <option value="">Bitte wählen...</option>
+                {employees.map((emp) => (
+                  <option key={emp.user.id} value={emp.user.id}>
+                    {emp.user.name || emp.user.email}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Deadline</label>
+              <input
+                type="date"
+                value={formData.deadline}
+                onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
+                className={`mt-1 ${inputBase}`}
+              />
+              <p className="mt-1 text-xs text-gray-500">Optional: Fälligkeitsdatum für die Aufgabe</p>
+            </div>
           </div>
 
           <div>

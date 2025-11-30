@@ -34,6 +34,13 @@ export async function GET() {
     const tasks = await prisma.task.findMany({
       where,
       include: {
+        assignedToUser: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
         _count: {
           select: {
             comments: true,
@@ -70,7 +77,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { title, description, priority, dueDate, assignedTo } = body
+    const { title, description, priority, dueDate, deadline, assignedTo } = body
 
     if (!title) {
       return NextResponse.json(
@@ -79,12 +86,16 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Unterstütze sowohl dueDate als auch deadline (Kompatibilität)
+    const finalDeadline = deadline || dueDate
+
     const task = await prisma.task.create({
       data: {
         title,
         description: description || null,
         priority: priority || 'MEDIUM',
-        dueDate: dueDate ? new Date(dueDate) : null,
+        dueDate: finalDeadline ? new Date(finalDeadline) : null,
+        deadline: finalDeadline ? new Date(finalDeadline) : null,
         assignedTo: assignedTo || null,
         tenantId: session.user.tenantId,
       },

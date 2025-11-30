@@ -17,7 +17,13 @@ interface Task {
   status: string
   priority: string
   dueDate: string | null
+  deadline: string | null
   assignedTo: string | null
+  assignedToUser: {
+    id: string
+    name: string | null
+    email: string
+  } | null
   comments: Array<{
     id: string
     content: string
@@ -72,7 +78,7 @@ export default function TaskDetailPage() {
     description: '',
     status: 'TODO',
     priority: 'MEDIUM',
-    dueDate: '',
+    deadline: '',
   })
 
   useEffect(() => {
@@ -88,13 +94,14 @@ export default function TaskDetailPage() {
       if (!response.ok) throw new Error('Aufgabe nicht gefunden')
       const data = await response.json()
       setTask(data.task)
+      const deadline = data.task.deadline || data.task.dueDate
       setFormData({
         title: data.task.title,
         description: data.task.description || '',
         status: data.task.status,
         priority: data.task.priority,
-        dueDate: data.task.dueDate
-          ? format(new Date(data.task.dueDate), 'yyyy-MM-dd')
+        deadline: deadline
+          ? format(new Date(deadline), 'yyyy-MM-dd')
           : '',
       })
     } catch (error) {
@@ -112,7 +119,8 @@ export default function TaskDetailPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
-          dueDate: formData.dueDate || null,
+          deadline: formData.deadline || null,
+          assignedTo: formData.assignedTo || null,
         }),
       })
       if (!response.ok) throw new Error('Fehler beim Speichern')
@@ -198,11 +206,11 @@ export default function TaskDetailPage() {
                 >
                   {PRIORITY_OPTIONS.find((p) => p.value === task.priority)?.label || task.priority}
                 </span>
-                {task.dueDate && (
-                  <span className="text-sm text-gray-600">
-                    Fällig: {format(new Date(task.dueDate), 'dd.MM.yyyy')}
-                    {new Date(task.dueDate) < new Date() && task.status !== 'DONE' && (
-                      <span className="ml-2 text-red-600 font-medium">Überfällig!</span>
+                {(task.deadline || task.dueDate) && (
+                  <span className={`text-sm ${new Date(task.deadline || task.dueDate || '') < new Date() && task.status !== 'DONE' ? 'text-red-600 font-semibold' : 'text-gray-600'}`}>
+                    Deadline: {format(new Date(task.deadline || task.dueDate || ''), 'dd.MM.yyyy')}
+                    {new Date(task.deadline || task.dueDate || '') < new Date() && task.status !== 'DONE' && (
+                      <span className="ml-2">⚠️ Überfällig!</span>
                     )}
                   </span>
                 )}
@@ -312,11 +320,11 @@ export default function TaskDetailPage() {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Fälligkeitsdatum</label>
+                    <label className="block text-sm font-medium text-gray-700">Deadline</label>
                     <input
                       type="date"
-                      value={formData.dueDate}
-                      onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+                      value={formData.deadline}
+                      onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
                       className={`mt-1 ${selectBase}`}
                     />
                   </div>
@@ -390,10 +398,13 @@ export default function TaskDetailPage() {
                   <span className="font-medium">Priorität:</span>{' '}
                   {PRIORITY_OPTIONS.find((p) => p.value === task.priority)?.label || task.priority}
                 </p>
-                {task.dueDate && (
-                  <p>
-                    <span className="font-medium">Fällig:</span>{' '}
-                    {format(new Date(task.dueDate), 'dd.MM.yyyy')}
+                {(task.deadline || task.dueDate) && (
+                  <p className={new Date(task.deadline || task.dueDate || '') < new Date() && task.status !== 'DONE' ? 'text-red-600 font-semibold' : ''}>
+                    <span className="font-medium">Deadline:</span>{' '}
+                    {format(new Date(task.deadline || task.dueDate || ''), 'dd.MM.yyyy')}
+                    {new Date(task.deadline || task.dueDate || '') < new Date() && task.status !== 'DONE' && (
+                      <span className="ml-2">⚠️ Überfällig</span>
+                    )}
                   </p>
                 )}
                 <p>

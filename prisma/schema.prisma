@@ -14,19 +14,20 @@ datasource db {
 model User {
   id        String   @id @default(cuid())
   email     String   @unique
-  password  String   // Gehashtes Passwort
+  password  String // Gehashtes Passwort
   name      String?
   role      Role     @default(MITARBEITER) // Admin oder Mitarbeiter
-  tenantId  String?  // Referenz zur Firma (Shop)
+  tenantId  String? // Referenz zur Firma (Shop)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // Beziehungen
-  shop      Shop?      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  employee  Employee?
-  taskComments TaskComment[] // Kommentare die der User erstellt hat
-  invitationsCreated Invitation[] @relation("InvitationCreator") // Einladungen die der User erstellt hat
-  invitationsUsed Invitation[] @relation("InvitationUsedBy") // Einladungen die der User verwendet hat
+  shop               Shop?         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  employee           Employee?
+  taskComments       TaskComment[] // Kommentare die der User erstellt hat
+  tasksAssigned      Task[]        @relation("TaskAssignee") // Aufgaben die dem User zugewiesen sind
+  invitationsCreated Invitation[]  @relation("InvitationCreator") // Einladungen die der User erstellt hat
+  invitationsUsed    Invitation[]  @relation("InvitationUsedBy") // Einladungen die der User verwendet hat
 
   @@index([tenantId])
   @@index([email])
@@ -34,44 +35,45 @@ model User {
 
 // Firma/Tenant-Modell
 model Shop {
-  id          String   @id @default(cuid())
-  name        String
-  tenantId    String   @unique // Eindeutige Tenant-ID
-  address     String?
-  phone       String?
-  email       String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  name      String
+  tenantId  String   @unique // Eindeutige Tenant-ID
+  address   String?
+  phone     String?
+  email     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Beziehungen
-  users       User[]
-  customers   Customer[]
-  employees   Employee[]
-  appointments Appointment[]
-  invitations Invitation[] // Einladungen für diesen Tenant
-  expenses    Expense[]    // Ausgaben für diesen Tenant
+  users             User[]
+  customers         Customer[]
+  employees         Employee[]
+  appointments      Appointment[]
+  invitations       Invitation[] // Einladungen für diesen Tenant
+  expenses          Expense[] // Ausgaben für diesen Tenant
   recurringExpenses RecurringExpense[] // Daueraufträge für diesen Tenant
+  inventoryItems    InventoryItem[] // Inventar-Artikel für diesen Tenant
 
   @@index([tenantId])
 }
 
 // Kunden-Modell (gehört zu einem Tenant)
 model Customer {
-  id          String   @id @default(cuid())
-  firstName   String
-  lastName    String
-  email       String?
-  phone       String?
-  address     String?
-  notes       String?  // Notizen zum Kunden
-  tags        String[] @default([]) // Tags: VIP, Problemkunde, No-Show, Neu, etc.
-  isArchived  Boolean  @default(false) // Archiviert statt gelöscht
-  tenantId    String   // Referenz zur Firma
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String   @id @default(cuid())
+  firstName  String
+  lastName   String
+  email      String?
+  phone      String?
+  address    String?
+  notes      String? // Notizen zum Kunden
+  tags       String[] @default([]) // Tags: VIP, Problemkunde, No-Show, Neu, etc.
+  isArchived Boolean  @default(false) // Archiviert statt gelöscht
+  tenantId   String // Referenz zur Firma
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   // Beziehungen
-  shop        Shop          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  shop         Shop          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   appointments Appointment[]
 
   @@index([tenantId])
@@ -82,27 +84,29 @@ model Customer {
 
 // Mitarbeiter-Modell (Verknüpfung User <-> Shop)
 model Employee {
-  id              String         @id @default(cuid())
-  userId          String         @unique
-  tenantId        String         // Referenz zur Firma
-  position        String?        // Position/Abteilung
-  color           String?        // Farbe im Kalender (Hex-Code, z.B. #3B82F6)
-  isActive        Boolean        @default(true) // Aktiv/Inaktiv
-  active          Boolean        @default(true) // Alias für isActive (für Kompatibilität)
-  workHours       Json?          // Arbeitszeiten: { monday: { start: "09:00", end: "17:00" }, ... }
-  employmentType  EmploymentType @default(FULL_TIME)
-  salaryType      SalaryType     @default(FIXED)
-  baseSalary      Float?         // Monatliches Grundgehalt
-  hourlyRate      Float?         // Stundenlohn
-  commissionRate  Float?         // Provisionssatz (in Prozent)
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+  id             String         @id @default(cuid())
+  userId         String         @unique
+  tenantId       String // Referenz zur Firma
+  position       String? // Position/Abteilung
+  color          String? // Farbe im Kalender (Hex-Code, z.B. #3B82F6)
+  isActive       Boolean        @default(true) // Aktiv/Inaktiv
+  active         Boolean        @default(true) // Alias für isActive (für Kompatibilität)
+  workHours      Json? // Arbeitszeiten: { monday: { start: "09:00", end: "17:00" }, ... }
+  employmentType EmploymentType @default(FULL_TIME)
+  salaryType     SalaryType     @default(FIXED)
+  baseSalary     Float? // Monatliches Grundgehalt (veraltet, verwende salary)
+  salary         Float  @default(0) // Bruttogehalt
+  hourlyRate     Float? // Stundenlohn
+  commissionRate Float? // Provisionssatz (in Prozent)
+  payoutDay      Int    @default(1) // Auszahlungstag im Monat (1-31)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
 
   // Beziehungen
-  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  shop            Shop          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  appointments    Appointment[]
-  expenses        Expense[]     // Ausgaben die dem Mitarbeiter zugeordnet sind
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shop         Shop          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  appointments Appointment[]
+  expenses     Expense[] // Ausgaben die dem Mitarbeiter zugeordnet sind
 
   @@index([tenantId])
   @@index([userId])
@@ -112,25 +116,25 @@ model Employee {
 
 // Termin-Modell
 model Appointment {
-  id          String   @id @default(cuid())
+  id          String            @id @default(cuid())
   title       String
   description String?
-  notes       String?  // Termin-Notizen
+  notes       String? // Termin-Notizen
   startTime   DateTime
   endTime     DateTime
   status      AppointmentStatus @default(OPEN)
-  price       Decimal? @db.Decimal(10, 2) // Preis/Umsatz
-  color       String?  // Farbe nach Status (Hex-Code)
-  tenantId    String   // Referenz zur Firma
-  customerId  String?  // Optional: Kunde
-  employeeId  String?  // Optional: Mitarbeiter
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  price       Decimal           @default(0) @db.Decimal(10, 2) // Preis/Umsatz (Standard: 0)
+  color       String? // Farbe nach Status (Hex-Code)
+  tenantId    String // Referenz zur Firma
+  customerId  String? // Optional: Kunde
+  employeeId  String? // Optional: Mitarbeiter
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
 
   // Beziehungen
-  shop        Shop      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  customer    Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
-  employee    Employee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+  shop     Shop      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  employee Employee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
 
   @@index([tenantId])
   @@index([employeeId])
@@ -141,17 +145,19 @@ model Appointment {
 
 // Aufgaben-Modell (für Dashboard)
 model Task {
-  id          String   @id @default(cuid())
+  id          String        @id @default(cuid())
   title       String
   description String?
-  status      TaskStatus @default(TODO)
-  priority    TaskPriority @default(MEDIUM)
-  tenantId    String   // Referenz zur Firma
-  assignedTo  String?  // User-ID
-  dueDate     DateTime?
+  status      TaskStatus    @default(TODO)
+  priority    TaskPriority  @default(MEDIUM)
+  tenantId    String // Referenz zur Firma
+  assignedTo  String? // User-ID
+  dueDate     DateTime? // Alias für deadline (Kompatibilität)
+  deadline    DateTime? // Deadline für die Aufgabe
   comments    TaskComment[] // Kommentare zur Aufgabe
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  assignedToUser User? @relation("TaskAssignee", fields: [assignedTo], references: [id], onDelete: SetNull)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 
   @@index([tenantId])
   @@index([assignedTo])
@@ -162,14 +168,14 @@ model Task {
 model TaskComment {
   id        String   @id @default(cuid())
   taskId    String
-  userId    String   // User der den Kommentar erstellt hat
+  userId    String // User der den Kommentar erstellt hat
   content   String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // Beziehungen
-  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([taskId])
   @@index([userId])
@@ -183,19 +189,19 @@ enum Role {
 
 // Termin-Status-Enum
 enum AppointmentStatus {
-  OPEN        // Offen
-  ACCEPTED    // Angenommen
-  CANCELLED   // Storniert
+  OPEN // Offen
+  ACCEPTED // Angenommen
+  CANCELLED // Storniert
   RESCHEDULED // Verschoben
-  COMPLETED   // Abgeschlossen (für Historie)
+  COMPLETED // Abgeschlossen (für Historie)
 }
 
 // Aufgaben-Status-Enum
 enum TaskStatus {
-  TODO        // To-Do
+  TODO // To-Do
   IN_PROGRESS // In Bearbeitung
-  DONE        // Erledigt
-  CANCELLED   // Abgebrochen
+  DONE // Erledigt
+  CANCELLED // Abgebrochen
 }
 
 // Aufgaben-Priorität-Enum
@@ -208,18 +214,18 @@ enum TaskPriority {
 
 // Beschäftigungsart-Enum
 enum EmploymentType {
-  FULL_TIME   // Vollzeit
-  PART_TIME   // Teilzeit
-  MINI_JOB    // Minijob
-  FREELANCER  // Freelancer
+  FULL_TIME // Vollzeit
+  PART_TIME // Teilzeit
+  MINI_JOB // Minijob
+  FREELANCER // Freelancer
 }
 
 // Gehaltsart-Enum
 enum SalaryType {
-  FIXED       // Festgehalt
-  HOURLY      // Stundenlohn
-  COMMISSION  // Provision
-  MIXED       // Gemischt (Festgehalt + Provision)
+  FIXED // Festgehalt
+  HOURLY // Stundenlohn
+  COMMISSION // Provision
+  MIXED // Gemischt (Festgehalt + Provision)
 }
 
 // Wiederkehrende Intervalle für Ausgaben
@@ -244,21 +250,21 @@ enum ExpenseCategory {
 // Dauerauftrag-Modell (Recurring Expense)
 model RecurringExpense {
   id          String            @id @default(cuid())
-  tenantId    String            // Referenz zur Firma
+  tenantId    String // Referenz zur Firma
   name        String
   amount      Decimal           @db.Decimal(10, 2)
-  category    ExpenseCategory   // ENUM für Kategorien
+  category    ExpenseCategory // ENUM für Kategorien
   interval    RecurringInterval @default(MONTHLY)
   startDate   DateTime
-  nextRun     DateTime          // Nächstes Ausführungsdatum
+  nextRun     DateTime // Nächstes Ausführungsdatum
   description String?
   isActive    Boolean           @default(true)
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
 
   // Beziehungen
-  shop        Shop      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  expenses    Expense[] // Alle generierten Ausgaben aus diesem Dauerauftrag
+  shop     Shop      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  expenses Expense[] // Alle generierten Ausgaben aus diesem Dauerauftrag
 
   @@index([tenantId])
   @@index([nextRun])
@@ -268,23 +274,23 @@ model RecurringExpense {
 
 // Ausgaben-Modell (Finanzmodul)
 model Expense {
-  id                String            @id @default(cuid())
-  tenantId          String            // Referenz zur Firma
-  name              String            // Name der Ausgabe
-  amount            Decimal           @db.Decimal(10, 2)
-  date              DateTime
-  category          ExpenseCategory   // ENUM für Kategorien
-  description       String?
-  employeeId        String?           // Optional: Mitarbeiter dem die Ausgabe zugeordnet ist
-  recurringExpenseId String?          // Optional: Referenz zum Dauerauftrag
-  invoiceUrl        String?           // Optional: URL zum hochgeladenen Dokument
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
+  id                 String          @id @default(cuid())
+  tenantId           String // Referenz zur Firma
+  name               String // Name der Ausgabe
+  amount             Decimal         @db.Decimal(10, 2)
+  date               DateTime
+  category           ExpenseCategory // ENUM für Kategorien
+  description        String?
+  employeeId         String? // Optional: Mitarbeiter dem die Ausgabe zugeordnet ist
+  recurringExpenseId String? // Optional: Referenz zum Dauerauftrag
+  invoiceUrl         String? // Optional: URL zum hochgeladenen Dokument
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
 
   // Beziehungen
-  shop              Shop              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  employee          Employee?         @relation(fields: [employeeId], references: [id], onDelete: SetNull)
-  recurringExpense  RecurringExpense? @relation(fields: [recurringExpenseId], references: [id], onDelete: SetNull)
+  shop             Shop              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  employee         Employee?         @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+  recurringExpense RecurringExpense? @relation(fields: [recurringExpenseId], references: [id], onDelete: SetNull)
 
   @@index([tenantId])
   @@index([employeeId])
@@ -295,29 +301,49 @@ model Expense {
 
 // Einladungs-Modell für Multi-Tenant Invite-System
 model Invitation {
-  id        String   @id @default(cuid())
-  token     String   @unique // Eindeutiger Invite-Token
-  email     String?  // Optional: Email des Eingeladenen
-  tenantId  String   // Referenz zur Firma
-  role      Role     @default(MITARBEITER) // Rolle die vergeben wird
+  id        String    @id @default(cuid())
+  token     String    @unique // Eindeutiger Invite-Token
+  email     String? // Optional: Email des Eingeladenen
+  tenantId  String // Referenz zur Firma
+  role      Role      @default(MITARBEITER) // Rolle die vergeben wird
   expiresAt DateTime // Ablaufdatum der Einladung
-  used      Boolean  @default(false) // Wurde die Einladung bereits verwendet?
-  usedBy    String?  // User-ID der die Einladung verwendet hat
+  used      Boolean   @default(false) // Wurde die Einladung bereits verwendet?
+  usedBy    String? // User-ID der die Einladung verwendet hat
   usedAt    DateTime? // Wann wurde die Einladung verwendet
-  createdBy String   // User-ID des Admins der die Einladung erstellt hat
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdBy String // User-ID des Admins der die Einladung erstellt hat
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
   // Beziehungen
-  shop      Shop      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  creator   User      @relation("InvitationCreator", fields: [createdBy], references: [id], onDelete: Cascade)
-  usedByUser User?    @relation("InvitationUsedBy", fields: [usedBy], references: [id], onDelete: SetNull)
+  shop       Shop  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  creator    User  @relation("InvitationCreator", fields: [createdBy], references: [id], onDelete: Cascade)
+  usedByUser User? @relation("InvitationUsedBy", fields: [usedBy], references: [id], onDelete: SetNull)
 
   @@index([token])
   @@index([tenantId])
   @@index([email])
   @@index([used])
   @@index([expiresAt])
+}
+
+// Inventar-Modell
+model InventoryItem {
+  id           String   @id @default(cuid())
+  tenantId     String // Referenz zur Firma
+  name         String
+  quantity     Int      @default(0)
+  minThreshold Int      @default(0)
+  category     String?
+  pricePerUnit Float?
+  lastUpdated  DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Beziehungen
+  shop Shop @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([category])
 }
 
 // Session & Account Models werden nicht mehr benötigt

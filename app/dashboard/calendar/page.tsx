@@ -437,7 +437,7 @@ export default function CalendarPage() {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => navigateDate('prev')}
-                className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-black hover:bg-gray-50 hover:text-gray-700 transition-colors"
               >
                 ←
               </button>
@@ -449,12 +449,12 @@ export default function CalendarPage() {
               </button>
               <button
                 onClick={() => navigateDate('next')}
-                className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-black hover:bg-gray-50 hover:text-gray-700 transition-colors"
               >
                 →
               </button>
               <div className="ml-4 flex items-center gap-2">
-                <span className="text-lg font-semibold text-gray-900">
+                <span className="text-lg font-semibold text-black">
                   {viewMode === 'day'
                     ? format(currentDate, 'EEEE, d. MMMM yyyy', { locale: undefined })
                     : viewMode === 'week'

@@ -22,9 +22,12 @@ export default function Navbar() {
     { name: 'Kalender', href: '/dashboard/calendar' },
     { name: 'Termine', href: '/dashboard/appointments' },
     { name: 'Mitarbeiter', href: '/dashboard/employees' },
-    { name: 'Ausgaben', href: '/dashboard/expenses' },
+    { name: 'Kunden', href: '/dashboard/customers' },
     { name: 'Umsatz', href: '/dashboard/revenue' },
+    { name: 'Ausgaben', href: '/dashboard/expenses' },
     { name: 'Finanzen', href: '/dashboard/finance' },
+    { name: 'Daueraufträge', href: '/dashboard/recurring-expenses' },
+    { name: 'Inventar', href: '/dashboard/inventory' },
     { name: 'Aufgaben', href: '/dashboard/tasks' },
     { name: 'Admin', href: '/dashboard/admin' },
   ]

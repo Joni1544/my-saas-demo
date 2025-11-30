@@ -1,6 +1,7 @@
 /**
  * Termine-Verwaltung
  * Liste aller Termine mit Filter und Suche
+ * NEU: Zeitfilter (Tag/Monat/Jahr) + Preis-Anzeige
  */
 'use client'
 
@@ -51,55 +52,85 @@ const STATUS_LABELS: Record<string, string> = {
   COMPLETED: 'Abgeschlossen',
 }
 
+type TimeFilterMode = 'day' | 'month' | 'year'
+
 export default function AppointmentsPage() {
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('')
-  const [dateFilter, setDateFilter] = useState<string>('')
-  const [monthFilter, setMonthFilter] = useState<{ month: number; year: number } | null>(null)
+  const [employeeFilter, setEmployeeFilter] = useState<string>('')
+  const [timeFilterMode, setTimeFilterMode] = useState<TimeFilterMode>('month')
+  const [dayFilter, setDayFilter] = useState<string>(format(new Date(), 'yyyy-MM-dd'))
+  const [monthFilter, setMonthFilter] = useState<{ month: number; year: number }>({
+    month: new Date().getMonth(),
+    year: new Date().getFullYear(),
+  })
+  const [yearFilter, setYearFilter] = useState<number>(new Date().getFullYear())
+  const [employees, setEmployees] = useState<Array<{ id: string; user: { name: string | null; email: string } }>>([])
+
+  useEffect(() => {
+    fetchEmployees()
+  }, [])
 
   useEffect(() => {
     fetchAppointments()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statusFilter, dateFilter, monthFilter])
+  }, [statusFilter, employeeFilter, timeFilterMode, dayFilter, monthFilter, yearFilter])
 
   // Beim Laden der Seite prüfen, ob wir von einer neuen Termin-Erstellung kommen
   useEffect(() => {
-    // Prüfe URL-Parameter für Refresh
     const urlParams = new URLSearchParams(window.location.search)
     if (urlParams.get('refresh') === 'true') {
       fetchAppointments()
-      // Entferne Parameter aus URL
       window.history.replaceState({}, '', window.location.pathname)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  const fetchEmployees = async () => {
+    try {
+      const response = await fetch('/api/employees')
+      if (response.ok) {
+        const data = await response.json()
+        setEmployees(data.employees || [])
+      }
+    } catch (error) {
+      console.error('Fehler beim Laden der Mitarbeiter:', error)
+    }
+  }
+
   const fetchAppointments = async () => {
     try {
       setLoading(true)
       const params = new URLSearchParams()
+      
       if (statusFilter) params.append('status', statusFilter)
-      if (dateFilter) {
-        const date = new Date(dateFilter)
-        const startDate = new Date(date.setHours(0, 0, 0, 0))
-        const endDate = new Date(date.setHours(23, 59, 59, 999))
-        params.append('startDate', startDate.toISOString())
-        params.append('endDate', endDate.toISOString())
-      } else if (monthFilter) {
-        const monthStart = new Date(monthFilter.year, monthFilter.month, 1)
-        const monthEnd = new Date(monthFilter.year, monthFilter.month + 1, 0, 23, 59, 59)
-        params.append('startDate', monthStart.toISOString())
-        params.append('endDate', monthEnd.toISOString())
+      if (employeeFilter) params.append('employeeId', employeeFilter)
+
+      // Zeitfilter basierend auf Modus
+      let startDate: Date
+      let endDate: Date
+
+      if (timeFilterMode === 'day') {
+        const date = new Date(dayFilter)
+        startDate = new Date(date.setHours(0, 0, 0, 0))
+        endDate = new Date(date.setHours(23, 59, 59, 999))
+      } else if (timeFilterMode === 'month') {
+        startDate = new Date(monthFilter.year, monthFilter.month, 1)
+        endDate = new Date(monthFilter.year, monthFilter.month + 1, 0, 23, 59, 59)
+      } else if (timeFilterMode === 'year') {
+        startDate = new Date(yearFilter, 0, 1)
+        endDate = new Date(yearFilter, 11, 31, 23, 59, 59)
       } else {
-        // Standard: Aktueller Monat + nächste 2 Monate (damit neue Termine sichtbar sind)
+        // Fallback: Aktueller Monat
         const now = new Date()
-        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
-        const monthEnd = new Date(now.getFullYear(), now.getMonth() + 3, 0, 23, 59, 59)
-        params.append('startDate', monthStart.toISOString())
-        params.append('endDate', monthEnd.toISOString())
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1)
+        endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59)
       }
+
+      params.append('startDate', startDate.toISOString())
+      params.append('endDate', endDate.toISOString())
 
       const response = await fetch(`/api/appointments?${params.toString()}`)
       if (!response.ok) throw new Error('Fehler beim Laden der Termine')
@@ -146,6 +177,14 @@ export default function AppointmentsPage() {
     return STATUS_COLORS[appointment.status] || '#3B82F6'
   }
 
+  const formatCurrency = (amount: number | null) => {
+    if (amount === null || amount === 0) return '–'
+    return new Intl.NumberFormat('de-DE', {
+      style: 'currency',
+      currency: 'EUR',
+    }).format(amount)
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -164,8 +203,95 @@ export default function AppointmentsPage() {
         </div>
 
         {/* Filter */}
-        <div className="mb-6 space-y-4 rounded-lg bg-white p-4 shadow">
+        <div className="mb-6 space-y-4 rounded-lg bg-white p-6 shadow">
+          {/* Zeitfilter Tabs */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Zeitraum
+            </label>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setTimeFilterMode('day')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  timeFilterMode === 'day'
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                Tag
+              </button>
+              <button
+                onClick={() => setTimeFilterMode('month')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  timeFilterMode === 'month'
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                Monat
+              </button>
+              <button
+                onClick={() => setTimeFilterMode('year')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  timeFilterMode === 'year'
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                Jahr
+              </button>
+            </div>
+          </div>
+
+          {/* Zeitfilter Inputs */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {timeFilterMode === 'day' && (
+              <div>
+                <label htmlFor="day" className="block text-sm font-medium text-gray-700">
+                  Datum
+                </label>
+                <input
+                  type="date"
+                  id="day"
+                  value={dayFilter}
+                  onChange={(e) => setDayFilter(e.target.value)}
+                  className={`mt-1 ${inputBase}`}
+                />
+              </div>
+            )}
+
+            {timeFilterMode === 'month' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Monat & Jahr
+                </label>
+                <DateSelector
+                  value={monthFilter}
+                  onChange={(value) => setMonthFilter(value)}
+                />
+              </div>
+            )}
+
+            {timeFilterMode === 'year' && (
+              <div>
+                <label htmlFor="year" className="block text-sm font-medium text-gray-700">
+                  Jahr
+                </label>
+                <select
+                  id="year"
+                  value={yearFilter}
+                  onChange={(e) => setYearFilter(parseInt(e.target.value))}
+                  className={`mt-1 ${inputBase}`}
+                >
+                  {Array.from({ length: 20 }, (_, i) => new Date().getFullYear() - 10 + i).map((year) => (
+                    <option key={year} value={year}>
+                      {year}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             {/* Suche */}
             <div>
               <label htmlFor="search" className="block text-sm font-medium text-gray-700">
@@ -201,34 +327,24 @@ export default function AppointmentsPage() {
               </select>
             </div>
 
-            {/* Monat & Jahr Filter */}
+            {/* Mitarbeiter Filter */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Monat & Jahr
+              <label htmlFor="employee" className="block text-sm font-medium text-gray-700">
+                Mitarbeiter
               </label>
-              <DateSelector
-                value={monthFilter || { month: new Date().getMonth(), year: new Date().getFullYear() }}
-                onChange={(value) => {
-                  setMonthFilter(value)
-                  setDateFilter('') // Clear date filter when using month filter
-                }}
-              />
-            </div>
-            {/* Oder spezifisches Datum */}
-            <div>
-              <label htmlFor="date" className="block text-sm font-medium text-gray-700">
-                Oder spezifisches Datum
-              </label>
-              <input
-                type="date"
-                id="date"
-                value={dateFilter}
-                onChange={(e) => {
-                  setDateFilter(e.target.value)
-                  setMonthFilter(null) // Clear month filter when using date filter
-                }}
+              <select
+                id="employee"
+                value={employeeFilter}
+                onChange={(e) => setEmployeeFilter(e.target.value)}
                 className={`mt-1 ${inputBase}`}
-              />
+              >
+                <option value="">Alle Mitarbeiter</option>
+                {employees.map((emp) => (
+                  <option key={emp.id} value={emp.id}>
+                    {emp.user.name || emp.user.email}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
         </div>
@@ -271,6 +387,12 @@ export default function AppointmentsPage() {
                         {format(new Date(appointment.startTime), 'EEEE, d. MMMM yyyy, HH:mm')} -{' '}
                         {format(new Date(appointment.endTime), 'HH:mm')}
                       </p>
+                      <p>
+                        <span className="font-medium">Preis:</span>{' '}
+                        <span className="font-semibold text-gray-900">
+                          {formatCurrency(appointment.price)}
+                        </span>
+                      </p>
                       {appointment.customer && (
                         <p>
                           <span className="font-medium">Kunde:</span> {appointment.customer.firstName}{' '}
@@ -281,14 +403,6 @@ export default function AppointmentsPage() {
                         <p>
                           <span className="font-medium">Mitarbeiter:</span>{' '}
                           {appointment.employee.user.name || appointment.employee.user.email}
-                        </p>
-                      )}
-                      {appointment.price && (
-                        <p>
-                          <span className="font-medium">Preis:</span>{' '}
-                          <span className="font-semibold text-gray-900">
-                            {Number(appointment.price).toFixed(2)} €
-                          </span>
                         </p>
                       )}
                       {appointment.description && (
@@ -320,4 +434,3 @@ export default function AppointmentsPage() {
     </div>
   )
 }
-

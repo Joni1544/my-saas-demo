@@ -160,7 +160,7 @@ export async function POST(request: NextRequest) {
         startTime: new Date(startTime),
         endTime: new Date(endTime),
         status: status || 'OPEN',
-        price: price ? parseFloat(price.toString()) : null,
+        price: price ? parseFloat(price.toString()) : 0,
         color: finalColor || null,
         customerId: customerId || null,
         employeeId: finalEmployeeId || null,

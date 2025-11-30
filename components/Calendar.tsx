@@ -79,32 +79,32 @@ export default function Calendar() {
     : []
 
   return (
-    <div className="bg-white shadow rounded-lg p-6">
+    <div className="bg-white shadow-xl rounded-2xl p-6 border border-gray-100">
       <div className="mb-6">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-6">
           <button
             onClick={prevMonth}
-            className="p-2 hover:bg-gray-100 rounded"
+            className="p-2.5 hover:bg-indigo-50 rounded-xl text-black hover:text-indigo-600 transition-all duration-200 transform hover:scale-110 font-bold text-lg"
           >
             ←
           </button>
-          <h2 className="text-xl font-semibold">
+          <h2 className="text-2xl font-bold text-black">
             {format(currentDate, 'MMMM yyyy')}
           </h2>
           <button
             onClick={nextMonth}
-            className="p-2 hover:bg-gray-100 rounded"
+            className="p-2.5 hover:bg-indigo-50 rounded-xl text-black hover:text-indigo-600 transition-all duration-200 transform hover:scale-110 font-bold text-lg"
           >
             →
           </button>
         </div>
 
         {/* Kalender-Grid */}
-        <div className="grid grid-cols-7 gap-1 mb-4">
+        <div className="grid grid-cols-7 gap-2 mb-6">
           {['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].map((day) => (
             <div
               key={day}
-              className="text-center text-sm font-medium text-gray-700 py-2"
+              className="text-center text-sm font-bold text-gray-600 py-3"
             >
               {day}
             </div>
@@ -120,24 +120,23 @@ export default function Calendar() {
                 key={day.toISOString()}
                 onClick={() => setSelectedDate(day)}
                 className={`
-                  relative p-2 text-sm rounded
+                  relative p-3 text-sm rounded-xl transition-all duration-200 transform hover:scale-105
                   ${!isCurrentMonth ? 'text-gray-300' : 'text-gray-900'}
-                  ${isSelected ? 'bg-indigo-100 ring-2 ring-indigo-500' : ''}
-                  ${isToday && !isSelected ? 'bg-blue-50' : ''}
-                  hover:bg-gray-100
+                  ${isSelected ? 'bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-lg ring-2 ring-indigo-300' : ''}
+                  ${isToday && !isSelected ? 'bg-gradient-to-br from-blue-50 to-indigo-50 ring-2 ring-blue-200 font-bold' : ''}
+                  hover:bg-indigo-50 hover:shadow-md
                 `}
               >
                 <div className="flex flex-col items-center">
-                  <span
-                    className={`
-                      ${isToday ? 'font-bold' : ''}
-                      ${isSelected ? 'text-indigo-700' : ''}
-                    `}
-                  >
+                  <span className={isSelected ? 'text-white font-bold' : isToday ? 'text-indigo-600' : ''}>
                     {format(day, 'd')}
                   </span>
                   {dayAppointments.length > 0 && (
-                    <span className="text-xs text-indigo-600 mt-1">
+                    <span className={`text-xs mt-1.5 px-1.5 py-0.5 rounded-full font-semibold ${
+                      isSelected 
+                        ? 'bg-white/30 text-white' 
+                        : 'bg-indigo-100 text-indigo-700'
+                    }`}>
                       {dayAppointments.length}
                     </span>
                   )}
@@ -150,32 +149,38 @@ export default function Calendar() {
 
       {/* Tagesliste */}
       {selectedDate && (
-        <div className="border-t pt-4">
-          <h3 className="text-lg font-semibold mb-3">
+        <div className="border-t border-gray-200 pt-6">
+          <h3 className="text-xl font-bold text-gray-900 mb-4">
             Termine am {format(selectedDate, 'dd.MM.yyyy')}
           </h3>
           {loading ? (
-            <p className="text-gray-500">Lade Termine...</p>
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600"></div>
+              <p className="ml-3 text-gray-500">Lade Termine...</p>
+            </div>
           ) : dayAppointments.length === 0 ? (
-            <p className="text-gray-500">Keine Termine an diesem Tag</p>
+            <div className="text-center py-8 rounded-xl bg-gray-50">
+              <p className="text-gray-500 font-medium">Keine Termine an diesem Tag</p>
+            </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-3">
               {dayAppointments.map((apt) => (
                 <div
                   key={apt.id}
-                  className="border rounded-lg p-3 hover:bg-gray-50"
+                  className="border border-gray-200 rounded-xl p-4 hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50 hover:border-indigo-300 transition-all duration-200 shadow-sm hover:shadow-md"
                 >
                   <div className="flex justify-between items-start">
-                    <div>
-                      <p className="font-medium">{apt.title}</p>
+                    <div className="flex-1">
+                      <p className="font-bold text-gray-900 mb-1">{apt.title}</p>
                       {apt.customer && (
                         <p className="text-sm text-gray-600">
-                          {apt.customer.firstName} {apt.customer.lastName}
+                          👤 {apt.customer.firstName} {apt.customer.lastName}
                         </p>
                       )}
                     </div>
-                    <div className="text-right text-sm text-gray-500">
+                    <div className="text-right text-sm font-semibold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-lg">
                       <p>{format(new Date(apt.startTime), 'HH:mm')}</p>
+                      <p className="text-gray-400">-</p>
                       <p>{format(new Date(apt.endTime), 'HH:mm')}</p>
                     </div>
                   </div>
