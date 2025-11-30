@@ -7,7 +7,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { format } from 'date-fns'
-import { inputBase, selectBase } from '@/lib/inputStyles'
+import { inputBase } from '@/lib/inputStyles'
 import DateSelector from '@/components/DateSelector'
 
 interface Appointment {
@@ -61,6 +61,7 @@ export default function AppointmentsPage() {
 
   useEffect(() => {
     fetchAppointments()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusFilter, dateFilter, monthFilter])
 
   // Beim Laden der Seite prüfen, ob wir von einer neuen Termin-Erstellung kommen
@@ -72,6 +73,7 @@ export default function AppointmentsPage() {
       // Entferne Parameter aus URL
       window.history.replaceState({}, '', window.location.pathname)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const fetchAppointments = async () => {

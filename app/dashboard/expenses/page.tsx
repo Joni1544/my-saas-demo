@@ -55,6 +55,7 @@ export default function ExpensesPage() {
     // Auto-Generate bei Page-Load
     generateAutoExpenses()
     fetchExpenses()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters])
 
   const generateAutoExpenses = async () => {

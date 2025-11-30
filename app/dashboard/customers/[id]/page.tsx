@@ -57,6 +57,7 @@ export default function CustomerDetailPage() {
       fetchCustomer()
       fetchAppointments()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [customerId])
 
   const fetchCustomer = async () => {

@@ -60,13 +60,11 @@ export async function GET(request: NextRequest) {
     }
 
     // Umsatz abrufen (nur abgeschlossene Termine mit Preis)
-    // Status: COMPLETED oder DONE zählen als Umsatz
+    // Status: COMPLETED zählt als Umsatz
     const appointments = await prisma.appointment.findMany({
       where: {
         tenantId: session.user.tenantId,
-        status: {
-          in: ['COMPLETED', 'DONE'],
-        },
+        status: 'COMPLETED',
         price: { not: null },
         startTime: {
           gte: dateStart,

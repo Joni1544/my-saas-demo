@@ -66,6 +66,7 @@ export default function EmployeeDetailPage() {
     if (employeeId) {
       fetchEmployee()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [employeeId])
 
   const fetchEmployee = async () => {

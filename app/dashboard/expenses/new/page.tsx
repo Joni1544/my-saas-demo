@@ -18,13 +18,6 @@ const CATEGORIES = [
   { value: 'SONSTIGES', label: 'Sonstiges' },
 ]
 
-const FREQUENCIES = [
-  { value: 'DAILY', label: 'Täglich' },
-  { value: 'WEEKLY', label: 'Wöchentlich' },
-  { value: 'MONTHLY', label: 'Monatlich' },
-  { value: 'YEARLY', label: 'Jährlich' },
-]
-
 export default function NewExpensePage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)

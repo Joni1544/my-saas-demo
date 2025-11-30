@@ -8,7 +8,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { format } from 'date-fns'
-import { inputBase, textareaBase, selectBase } from '@/lib/inputStyles'
+import { inputBase, textareaBase } from '@/lib/inputStyles'
 
 interface Appointment {
   id: string
@@ -92,6 +92,7 @@ export default function AppointmentDetailPage() {
       fetchCustomers()
       fetchEmployees()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [appointmentId])
 
   const formatDateTimeLocal = (dateString: string) => {

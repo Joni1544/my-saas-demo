@@ -6,7 +6,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns'
+import { format } from 'date-fns'
 import DateSelector from '@/components/DateSelector'
 
 interface RevenueStats {
@@ -79,7 +79,8 @@ export default function RevenuePage() {
     if (period === 'month') {
       fetchStats()
     }
-  }, [selectedMonth])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedMonth, period])
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('de-DE', {

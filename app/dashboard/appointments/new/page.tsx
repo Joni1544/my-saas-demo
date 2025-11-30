@@ -125,7 +125,7 @@ export default function NewAppointmentPage() {
         throw new Error(error.error || 'Fehler beim Erstellen')
       }
 
-      const data = await response.json()
+      await response.json()
       // Zurück zur Termin-Liste mit Refresh-Parameter, damit der neue Termin sofort sichtbar ist
       router.push('/dashboard/appointments?refresh=true')
       router.refresh()

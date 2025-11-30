@@ -16,7 +16,6 @@ import {
   eachDayOfInterval,
   isSameMonth,
   isSameDay,
-  isSameWeek,
   addMonths,
   subMonths,
   addWeeks,
@@ -26,7 +25,7 @@ import {
   getWeek,
 } from 'date-fns'
 import Link from 'next/link'
-import { selectBase, inputBase } from '@/lib/inputStyles'
+import { inputBase } from '@/lib/inputStyles'
 import DateSelector from '@/components/DateSelector'
 
 interface Appointment {
@@ -95,6 +94,7 @@ export default function CalendarPage() {
 
   useEffect(() => {
     fetchAppointments()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentDate, viewMode, selectedEmployeeId, selectedCustomerId, selectedStatus])
 
   const fetchEmployees = async () => {

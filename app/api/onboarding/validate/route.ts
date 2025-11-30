@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
         role: string
         email: string
       }
-    } catch (error) {
+    } catch {
       return NextResponse.json(
         { error: 'Ungültiger oder abgelaufener Token' },
         { status: 401 }

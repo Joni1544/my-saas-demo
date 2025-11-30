@@ -44,6 +44,7 @@ export default function EditExpensePage() {
       fetchEmployees()
       fetchRecurringExpenses()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [expenseId])
 
   const fetchRecurringExpenses = async () => {

@@ -100,17 +100,16 @@ export async function GET(request: Request) {
     })
 
     // Zeitreihen-Daten generieren
-    let labels: string[] = []
-    let revenue: number[] = []
-    let expensesData: number[] = []
-    let profit: number[] = []
+    const labels: string[] = []
+    const revenue: number[] = []
+    const expensesData: number[] = []
+    const profit: number[] = []
 
     if (mode === 'week') {
       // Woche: Täglich
       const days = eachDayOfInterval({ start: dateStart, end: dateEnd })
-      labels = days.map(day => format(day, 'EEE', { locale: de }))
-      
       days.forEach(day => {
+        labels.push(format(day, 'EEE', { locale: de }))
         const dayStart = new Date(day)
         dayStart.setHours(0, 0, 0, 0)
         const dayEnd = new Date(day)
@@ -137,9 +136,8 @@ export async function GET(request: Request) {
     } else if (mode === 'month') {
       // Monat: Täglich
       const days = eachDayOfInterval({ start: dateStart, end: dateEnd })
-      labels = days.map(day => format(day, 'dd.MM'))
-      
       days.forEach(day => {
+        labels.push(format(day, 'dd.MM'))
         const dayStart = new Date(day)
         dayStart.setHours(0, 0, 0, 0)
         const dayEnd = new Date(day)
@@ -166,9 +164,8 @@ export async function GET(request: Request) {
     } else if (mode === 'year') {
       // Jahr: Monatlich
       const months = eachMonthOfInterval({ start: dateStart, end: dateEnd })
-      labels = months.map(month => format(month, 'MMM yyyy', { locale: de }))
-      
       months.forEach(month => {
+        labels.push(format(month, 'MMM yyyy', { locale: de }))
         const monthStart = startOfMonth(month)
         const monthEnd = endOfMonth(month)
         

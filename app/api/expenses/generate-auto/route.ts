@@ -96,8 +96,8 @@ export async function POST() {
       count: generatedExpenses.length,
       generatedExpenses,
     })
-  } catch (error) {
-    console.error('Fehler beim Generieren der Ausgaben:', error)
+    } catch {
+      console.error('Fehler beim Generieren der Ausgaben')
     return NextResponse.json(
       { error: 'Fehler beim Generieren der Ausgaben' },
       { status: 500 }

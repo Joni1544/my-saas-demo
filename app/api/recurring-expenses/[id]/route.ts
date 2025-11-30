@@ -90,7 +90,7 @@ export async function PATCH(
       name?: string
       amount?: number
       category?: 'GEHALT' | 'MIETE' | 'MARKETING' | 'MATERIAL' | 'VERSICHERUNG' | 'STEUERN' | 'SONSTIGES'
-      interval?: string
+      interval?: 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY'
       startDate?: Date
       nextRun?: Date
       description?: string | null
@@ -113,7 +113,7 @@ export async function PATCH(
           { status: 400 }
         )
       }
-      updateData.interval = interval
+      updateData.interval = interval as 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY'
     }
     if (startDate !== undefined) updateData.startDate = new Date(startDate)
     if (nextRun !== undefined) updateData.nextRun = new Date(nextRun)

@@ -6,7 +6,6 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 
 interface Customer {
   id: string
@@ -26,7 +25,6 @@ interface Customer {
 const AVAILABLE_TAGS = ['VIP', 'Problemkunde', 'No-Show', 'Neu', 'Stammkunde', 'Wichtig']
 
 export default function CustomersPage() {
-  const router = useRouter()
   const [customers, setCustomers] = useState<Customer[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -37,6 +35,7 @@ export default function CustomersPage() {
 
   useEffect(() => {
     fetchCustomers()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search, selectedTag, showArchived, sortBy, sortOrder])
 
   const fetchCustomers = async () => {

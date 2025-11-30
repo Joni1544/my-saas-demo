@@ -7,7 +7,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { inputBase, selectBase } from '@/lib/inputStyles'
+import { selectBase } from '@/lib/inputStyles'
 
 interface User {
   id: string
