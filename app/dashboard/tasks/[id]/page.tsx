@@ -73,20 +73,35 @@ export default function TaskDetailPage() {
   const [editing, setEditing] = useState(false)
   const [commentText, setCommentText] = useState('')
   const [submittingComment, setSubmittingComment] = useState(false)
+  const [employees, setEmployees] = useState<Array<{ id: string; user: { id: string; name: string | null; email: string } }>>([])
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     status: 'TODO',
     priority: 'MEDIUM',
     deadline: '',
+    assignedTo: '',
   })
 
   useEffect(() => {
     if (taskId) {
       fetchTask()
+      fetchEmployees()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [taskId])
+
+  const fetchEmployees = async () => {
+    try {
+      const response = await fetch('/api/employees')
+      if (response.ok) {
+        const data = await response.json()
+        setEmployees(data.employees || [])
+      }
+    } catch (error) {
+      console.error('Fehler beim Laden der Mitarbeiter:', error)
+    }
+  }
 
   const fetchTask = async () => {
     try {
@@ -103,6 +118,7 @@ export default function TaskDetailPage() {
         deadline: deadline
           ? format(new Date(deadline), 'yyyy-MM-dd')
           : '',
+        assignedTo: data.task.assignedTo || '',
       })
     } catch (error) {
       console.error('Fehler:', error)
@@ -327,6 +343,21 @@ export default function TaskDetailPage() {
                       onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
                       className={`mt-1 ${selectBase}`}
                     />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Mitarbeiter zuweisen</label>
+                    <select
+                      value={formData.assignedTo}
+                      onChange={(e) => setFormData({ ...formData, assignedTo: e.target.value })}
+                      className={`mt-1 ${selectBase}`}
+                    >
+                      <option value="">Nicht zugewiesen</option>
+                      {employees.map((emp) => (
+                        <option key={emp.id} value={emp.user.id}>
+                          {emp.user.name || emp.user.email}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
               </div>

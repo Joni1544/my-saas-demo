@@ -3,7 +3,7 @@
  * POST: Prüft fällige Daueraufträge und erstellt automatisch Ausgaben
  * Wird vom Frontend bei jedem Dashboard/Ausgaben-Page-Load aufgerufen
  */
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
