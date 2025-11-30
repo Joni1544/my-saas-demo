@@ -37,6 +37,7 @@ export default function InvitationsList() {
 
   useEffect(() => {
     fetchInvitations()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [includeUsed])
 
   const fetchInvitations = async () => {

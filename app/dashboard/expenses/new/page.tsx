@@ -256,7 +256,7 @@ export default function NewExpensePage() {
             </div>
             {formData.recurringExpenseId && (
               <p className="mt-1 text-xs text-gray-500">
-                Klicken Sie auf "Übernehmen", um Betrag, Kategorie und Beschreibung aus dem Dauerauftrag zu übernehmen.
+                Klicken Sie auf &quot;Übernehmen&quot;, um Betrag, Kategorie und Beschreibung aus dem Dauerauftrag zu übernehmen.
               </p>
             )}
           </div>

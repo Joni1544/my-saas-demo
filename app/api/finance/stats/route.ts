@@ -25,13 +25,11 @@ export async function GET(request: NextRequest) {
     const dateEnd = endDate ? new Date(endDate) : new Date()
 
     // Umsatz (aus abgeschlossenen Terminen)
-    // Status: COMPLETED oder DONE zählen als Umsatz
+    // Status: COMPLETED zählt als Umsatz
     const completedAppointments = await prisma.appointment.findMany({
       where: {
         tenantId: session.user.tenantId,
-        status: {
-          in: ['COMPLETED', 'DONE'],
-        },
+        status: 'COMPLETED',
         startTime: {
           gte: dateStart,
           lte: dateEnd,
@@ -94,14 +92,17 @@ export async function GET(request: NextRequest) {
     // Revenue by Customer
     const revenueByCustomerMap = new Map<string, { id: string; name: string; revenue: number }>()
     completedAppointments.forEach((apt) => {
-      if (apt.customerId && apt.customer) {
-        const current = revenueByCustomerMap.get(apt.customerId) || {
-          id: apt.customerId,
-          name: `${apt.customer.firstName} ${apt.customer.lastName}`,
-          revenue: 0,
+      if (apt.customerId) {
+        const customer = apt.customer
+        if (customer) {
+          const current = revenueByCustomerMap.get(apt.customerId) || {
+            id: apt.customerId,
+            name: `${customer.firstName} ${customer.lastName}`,
+            revenue: 0,
+          }
+          current.revenue += apt.price?.toNumber() || 0
+          revenueByCustomerMap.set(apt.customerId, current)
         }
-        current.revenue += apt.price?.toNumber() || 0
-        revenueByCustomerMap.set(apt.customerId, current)
       }
     })
     const revenueByCustomer = Array.from(revenueByCustomerMap.values())
@@ -111,14 +112,17 @@ export async function GET(request: NextRequest) {
     // Revenue by Employee
     const revenueByEmployeeMap = new Map<string, { id: string; name: string; revenue: number }>()
     completedAppointments.forEach((apt) => {
-      if (apt.employeeId && apt.employee?.user) {
-        const current = revenueByEmployeeMap.get(apt.employeeId) || {
-          id: apt.employeeId,
-          name: apt.employee.user.name || apt.employee.user.email,
-          revenue: 0,
+      if (apt.employeeId) {
+        const employee = apt.employee
+        if (employee && employee.user) {
+          const current = revenueByEmployeeMap.get(apt.employeeId) || {
+            id: apt.employeeId,
+            name: employee.user.name || employee.user.email,
+            revenue: 0,
+          }
+          current.revenue += apt.price?.toNumber() || 0
+          revenueByEmployeeMap.set(apt.employeeId, current)
         }
-        current.revenue += apt.price?.toNumber() || 0
-        revenueByEmployeeMap.set(apt.employeeId, current)
       }
     })
     const revenueByEmployee = Array.from(revenueByEmployeeMap.values())

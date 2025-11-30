@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
     const where: {
       tenantId: string
       date?: { gte: Date; lte: Date }
-      category?: string
+      category?: 'GEHALT' | 'MIETE' | 'MARKETING' | 'MATERIAL' | 'VERSICHERUNG' | 'STEUERN' | 'SONSTIGES'
       employeeId?: string
       recurringExpenseId?: { not: null }
     } = {
@@ -54,7 +54,11 @@ export async function GET(request: NextRequest) {
 
     // Kategoriefilter
     if (category) {
-      where.category = category
+      // Validiere Kategorie
+      const validCategories = ['GEHALT', 'MIETE', 'MARKETING', 'MATERIAL', 'VERSICHERUNG', 'STEUERN', 'SONSTIGES']
+      if (validCategories.includes(category)) {
+        where.category = category as 'GEHALT' | 'MIETE' | 'MARKETING' | 'MATERIAL' | 'VERSICHERUNG' | 'STEUERN' | 'SONSTIGES'
+      }
     }
 
     // Mitarbeiterfilter
@@ -126,12 +130,21 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Validiere Kategorie
+    const validCategories = ['GEHALT', 'MIETE', 'MARKETING', 'MATERIAL', 'VERSICHERUNG', 'STEUERN', 'SONSTIGES']
+    if (!validCategories.includes(category)) {
+      return NextResponse.json(
+        { error: 'Ungültige Kategorie' },
+        { status: 400 }
+      )
+    }
+
     const expense = await prisma.expense.create({
       data: {
         name: expenseName,
         amount: parseFloat(amount),
         date: new Date(date),
-        category,
+        category: category as 'GEHALT' | 'MIETE' | 'MARKETING' | 'MATERIAL' | 'VERSICHERUNG' | 'STEUERN' | 'SONSTIGES',
         description: description || null,
         employeeId: employeeId || null,
         recurringExpenseId: recurringExpenseId || null,

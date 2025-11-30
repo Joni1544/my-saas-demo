@@ -89,7 +89,7 @@ export async function PATCH(
     const updateData: {
       name?: string
       amount?: number
-      category?: string
+      category?: 'GEHALT' | 'MIETE' | 'MARKETING' | 'MATERIAL' | 'VERSICHERUNG' | 'STEUERN' | 'SONSTIGES'
       interval?: string
       startDate?: Date
       nextRun?: Date
@@ -99,7 +99,13 @@ export async function PATCH(
 
     if (name !== undefined) updateData.name = name
     if (amount !== undefined) updateData.amount = parseFloat(amount)
-    if (category !== undefined) updateData.category = category
+    if (category !== undefined) {
+      // Validiere Kategorie
+      const validCategories = ['GEHALT', 'MIETE', 'MARKETING', 'MATERIAL', 'VERSICHERUNG', 'STEUERN', 'SONSTIGES']
+      if (validCategories.includes(category)) {
+        updateData.category = category as 'GEHALT' | 'MIETE' | 'MARKETING' | 'MATERIAL' | 'VERSICHERUNG' | 'STEUERN' | 'SONSTIGES'
+      }
+    }
     if (interval !== undefined) {
       if (!['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY'].includes(interval)) {
         return NextResponse.json(

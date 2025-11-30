@@ -31,17 +31,9 @@ function RegisterPageContent() {
   })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const [validatingInvite, setValidatingInvite] = useState(false)
-
-  useEffect(() => {
-    if (inviteToken) {
-      validateInvite()
-    }
-  }, [inviteToken])
 
   const validateInvite = async () => {
     try {
-      setValidatingInvite(true)
       const response = await fetch(`/api/invitations/validate?token=${inviteToken}`)
       const data = await response.json()
 
@@ -66,10 +58,15 @@ function RegisterPageContent() {
     } catch (err) {
       console.error('Fehler beim Validieren:', err)
       setError('Fehler beim Laden der Einladung')
-    } finally {
-      setValidatingInvite(false)
     }
   }
+
+  useEffect(() => {
+    if (inviteToken) {
+      validateInvite()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inviteToken])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -235,4 +232,5 @@ export default function RegisterPage() {
     </Suspense>
   )
 }
+
 

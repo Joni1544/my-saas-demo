@@ -65,6 +65,7 @@ export default function FinanceDashboardPage() {
   useEffect(() => {
     fetchStats()
     fetchTimeSeries()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters, timeMode, selectedMonth])
 
   const fetchStats = async () => {
@@ -126,12 +127,22 @@ export default function FinanceDashboardPage() {
     }).format(amount)
   }
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  interface TooltipProps {
+    active?: boolean
+    payload?: Array<{
+      name: string
+      value: number
+      color: string
+    }>
+    label?: string
+  }
+
+  const CustomTooltip = ({ active, payload, label }: TooltipProps) => {
     if (active && payload && payload.length) {
       return (
         <div className="rounded-lg bg-white p-4 shadow-lg border border-gray-200">
           <p className="font-semibold text-gray-900 mb-2">{label}</p>
-          {payload.map((entry: any, index: number) => (
+          {payload.map((entry, index: number) => (
             <p key={index} className="text-sm" style={{ color: entry.color }}>
               {entry.name}: {formatCurrency(entry.value)}
             </p>

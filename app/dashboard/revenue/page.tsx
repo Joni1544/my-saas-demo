@@ -72,6 +72,7 @@ export default function RevenuePage() {
 
   useEffect(() => {
     fetchStats()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [period, customStartDate, customEndDate, selectedMonth])
 
   useEffect(() => {

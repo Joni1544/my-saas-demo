@@ -9,6 +9,32 @@ import { prisma } from '@/lib/prisma'
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, eachDayOfInterval, eachMonthOfInterval } from 'date-fns'
 import { de } from 'date-fns/locale'
 
+// Diese Funktionen werden für die Datumsberechnung verwendet
+const getDateRange = (mode: string, now: Date) => {
+  switch (mode) {
+    case 'week':
+      return {
+        start: startOfWeek(now, { weekStartsOn: 1 }),
+        end: endOfWeek(now, { weekStartsOn: 1 }),
+      }
+    case 'month':
+      return {
+        start: startOfMonth(now),
+        end: endOfMonth(now),
+      }
+    case 'year':
+      return {
+        start: startOfYear(now),
+        end: endOfYear(now),
+      }
+    default:
+      return {
+        start: startOfMonth(now),
+        end: endOfMonth(now),
+      }
+  }
+}
+
 export const revalidate = 60 // Cache für 60 Sekunden
 
 export async function GET(request: Request) {
@@ -37,32 +63,16 @@ export async function GET(request: Request) {
       dateEnd = new Date(toParam)
     } else {
       // Standard: basierend auf mode
-      switch (mode) {
-        case 'week':
-          dateStart = startOfWeek(now, { weekStartsOn: 1 })
-          dateEnd = endOfWeek(now, { weekStartsOn: 1 })
-          break
-        case 'month':
-          dateStart = startOfMonth(now)
-          dateEnd = endOfMonth(now)
-          break
-        case 'year':
-          dateStart = startOfYear(now)
-          dateEnd = endOfYear(now)
-          break
-        default:
-          dateStart = startOfMonth(now)
-          dateEnd = endOfMonth(now)
-      }
+      const range = getDateRange(mode, now)
+      dateStart = range.start
+      dateEnd = range.end
     }
 
     // Umsatz (abgeschlossene Termine)
     const completedAppointments = await prisma.appointment.findMany({
       where: {
         tenantId: session.user.tenantId,
-        status: {
-          in: ['COMPLETED', 'DONE'],
-        },
+        status: 'COMPLETED',
         startTime: {
           gte: dateStart,
           lte: dateEnd,
@@ -90,10 +100,10 @@ export async function GET(request: Request) {
     })
 
     // Zeitreihen-Daten generieren
-    const labels: string[] = []
-    const revenue: number[] = []
-    const expensesData: number[] = []
-    const profit: number[] = []
+    let labels: string[] = []
+    let revenue: number[] = []
+    let expensesData: number[] = []
+    let profit: number[] = []
 
     if (mode === 'week') {
       // Woche: Täglich

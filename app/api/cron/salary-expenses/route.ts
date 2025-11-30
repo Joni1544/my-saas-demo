@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
         where: {
           tenantId: employee.tenantId,
           employeeId: employee.id,
-          category: 'Gehalt',
+          category: 'GEHALT',
           date: {
             gte: firstOfMonth,
             lt: new Date(today.getFullYear(), today.getMonth() + 1, 1),
@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
           name: `Gehalt ${employee.user.name || employee.user.email} - ${firstOfMonth.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' })}`,
           amount: employee.baseSalary!,
           date: firstOfMonth,
-          category: 'Gehalt',
+          category: 'GEHALT',
           description: `Automatisch generiertes Gehalt für ${employee.user.name || employee.user.email}`,
           employeeId: employee.id,
           tenantId: employee.tenantId,

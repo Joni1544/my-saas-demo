@@ -58,6 +58,7 @@ export default function TasksPage() {
 
   useEffect(() => {
     fetchTasks()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusFilter, priorityFilter])
 
   const fetchTasks = async () => {

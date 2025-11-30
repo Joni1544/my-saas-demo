@@ -8,8 +8,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { format } from 'date-fns'
-import { inputBase, textareaBase, selectBase } from '@/lib/inputStyles'
-import { useSession } from 'next-auth/react'
+import { inputBase, selectBase } from '@/lib/inputStyles'
 
 interface Task {
   id: string
@@ -62,7 +61,6 @@ const STATUS_COLORS: Record<string, string> = {
 export default function TaskDetailPage() {
   const params = useParams()
   const router = useRouter()
-  const { data: session } = useSession()
   const taskId = params.id as string
   const [task, setTask] = useState<Task | null>(null)
   const [loading, setLoading] = useState(true)
@@ -81,6 +79,7 @@ export default function TaskDetailPage() {
     if (taskId) {
       fetchTask()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [taskId])
 
   const fetchTask = async () => {

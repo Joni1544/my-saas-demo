@@ -122,11 +122,20 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Validiere Kategorie
+    const validCategories = ['GEHALT', 'MIETE', 'MARKETING', 'MATERIAL', 'VERSICHERUNG', 'STEUERN', 'SONSTIGES']
+    if (!validCategories.includes(category)) {
+      return NextResponse.json(
+        { error: 'Ungültige Kategorie' },
+        { status: 400 }
+      )
+    }
+
     const recurringExpense = await prisma.recurringExpense.create({
       data: {
         name,
         amount: parseFloat(amount),
-        category,
+        category: category as 'GEHALT' | 'MIETE' | 'MARKETING' | 'MATERIAL' | 'VERSICHERUNG' | 'STEUERN' | 'SONSTIGES',
         interval,
         startDate: new Date(startDate),
         nextRun,
