@@ -18,12 +18,6 @@ const CATEGORIES = [
   'Sonstiges',
 ]
 
-const FREQUENCIES = [
-  { value: 'DAILY', label: 'Täglich' },
-  { value: 'WEEKLY', label: 'Wöchentlich' },
-  { value: 'MONTHLY', label: 'Monatlich' },
-  { value: 'YEARLY', label: 'Jährlich' },
-]
 
 export default function EditExpensePage() {
   const params = useParams()
@@ -31,7 +25,8 @@ export default function EditExpensePage() {
   const expenseId = params.id as string
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [employees, setEmployees] = useState<any[]>([])
+  const [employees, setEmployees] = useState<Array<{ id: string; user: { name: string | null; email: string } }>>([])
+  const [recurringExpenses, setRecurringExpenses] = useState<Array<{ id: string; name: string }>>([])
   const [formData, setFormData] = useState({
     name: '',
     amount: '',
@@ -47,8 +42,21 @@ export default function EditExpensePage() {
     if (expenseId) {
       fetchExpense()
       fetchEmployees()
+      fetchRecurringExpenses()
     }
   }, [expenseId])
+
+  const fetchRecurringExpenses = async () => {
+    try {
+      const response = await fetch('/api/recurring-expenses')
+      if (response.ok) {
+        const data = await response.json()
+        setRecurringExpenses(data.recurringExpenses || [])
+      }
+    } catch (error) {
+      console.error('Fehler beim Laden der Daueraufträge:', error)
+    }
+  }
 
   const fetchExpense = async () => {
     try {
@@ -98,7 +106,7 @@ export default function EditExpensePage() {
           ...formData,
           amount: parseFloat(formData.amount),
           employeeId: formData.employeeId || null,
-          nextExecution: formData.recurring && formData.nextExecution ? formData.nextExecution : null,
+          recurringExpenseId: formData.recurringExpenseId || null,
         }),
       })
 
@@ -140,15 +148,15 @@ export default function EditExpensePage() {
         <form onSubmit={handleSubmit} className="space-y-6 rounded-lg bg-white p-6 shadow">
           {/* Gleiche Felder wie New Page */}
           <div>
-            <label htmlFor="title" className="block text-sm font-medium text-gray-700">
-              Titel <span className="text-red-500">*</span>
+            <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+              Name <span className="text-red-500">*</span>
             </label>
             <input
-              id="title"
+              id="name"
               type="text"
               required
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               className={`mt-1 ${inputBase}`}
             />
           </div>
@@ -236,53 +244,23 @@ export default function EditExpensePage() {
             />
           </div>
 
-          <div className="rounded-md border border-gray-200 p-4">
-            <div className="flex items-center mb-4">
-              <input
-                id="recurring"
-                type="checkbox"
-                checked={formData.recurring}
-                onChange={(e) => setFormData({ ...formData, recurring: e.target.checked })}
-                className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-              />
-              <label htmlFor="recurring" className="ml-2 text-sm font-medium text-gray-700">
-                Wiederkehrende Ausgabe
-              </label>
-            </div>
-
-            {formData.recurring && (
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="frequency" className="block text-sm font-medium text-gray-700">
-                    Häufigkeit
-                  </label>
-                  <select
-                    id="frequency"
-                    value={formData.frequency}
-                    onChange={(e) => setFormData({ ...formData, frequency: e.target.value })}
-                    className={`mt-1 ${selectBase}`}
-                  >
-                    {FREQUENCIES.map((freq) => (
-                      <option key={freq.value} value={freq.value}>
-                        {freq.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label htmlFor="nextExecution" className="block text-sm font-medium text-gray-700">
-                    Nächste Ausführung
-                  </label>
-                  <input
-                    id="nextExecution"
-                    type="date"
-                    value={formData.nextExecution}
-                    onChange={(e) => setFormData({ ...formData, nextExecution: e.target.value })}
-                    className={`mt-1 ${inputBase}`}
-                  />
-                </div>
-              </div>
-            )}
+          <div>
+            <label htmlFor="recurringExpenseId" className="block text-sm font-medium text-gray-700">
+              Dauerauftrag (optional)
+            </label>
+            <select
+              id="recurringExpenseId"
+              value={formData.recurringExpenseId}
+              onChange={(e) => setFormData({ ...formData, recurringExpenseId: e.target.value })}
+              className={`mt-1 ${selectBase}`}
+            >
+              <option value="">Kein Dauerauftrag</option>
+              {recurringExpenses.map((rec) => (
+                <option key={rec.id} value={rec.id}>
+                  {rec.name}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div>

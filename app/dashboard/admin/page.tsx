@@ -4,7 +4,6 @@
  */
 import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
-import InviteModal from '@/components/InviteModal'
 import InvitationsList from '@/components/InvitationsList'
 import EmployeesList from '@/components/EmployeesList'
 

@@ -6,6 +6,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import InviteModal from '@/components/InviteModal'
 
 interface Employee {
   id: string

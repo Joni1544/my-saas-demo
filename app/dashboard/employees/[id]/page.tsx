@@ -274,7 +274,7 @@ export default function EmployeeDetailPage() {
                 <select
                   id="employmentType"
                   value={formData.employmentType}
-                  onChange={(e) => setFormData({ ...formData, employmentType: e.target.value as any })}
+                  onChange={(e) => setFormData({ ...formData, employmentType: e.target.value as 'FULL_TIME' | 'PART_TIME' | 'MINI_JOB' | 'FREELANCER' })}
                   className={`mt-1 ${selectBase}`}
                 >
                   <option value="FULL_TIME">Vollzeit</option>
@@ -292,7 +292,7 @@ export default function EmployeeDetailPage() {
                 <select
                   id="salaryType"
                   value={formData.salaryType}
-                  onChange={(e) => setFormData({ ...formData, salaryType: e.target.value as any })}
+                  onChange={(e) => setFormData({ ...formData, salaryType: e.target.value as 'FIXED' | 'HOURLY' | 'COMMISSION' | 'MIXED' })}
                   className={`mt-1 ${selectBase}`}
                 >
                   <option value="FIXED">Festgehalt</option>

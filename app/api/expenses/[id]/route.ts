@@ -9,10 +9,10 @@ import { prisma } from '@/lib/prisma'
 // GET: Einzelne Ausgabe abrufen
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params
+    const { id } = await params
     const session = await auth()
 
     if (!session?.user?.tenantId || session.user.role !== 'ADMIN') {
@@ -68,10 +68,10 @@ export async function GET(
 // PUT: Ausgabe aktualisieren
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params
+    const { id } = await params
     const session = await auth()
 
     if (!session?.user?.tenantId || session.user.role !== 'ADMIN') {
@@ -147,10 +147,10 @@ export async function PUT(
 // DELETE: Ausgabe löschen
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params
+    const { id } = await params
     const session = await auth()
 
     if (!session?.user?.tenantId || session.user.role !== 'ADMIN') {

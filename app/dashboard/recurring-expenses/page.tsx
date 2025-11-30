@@ -5,7 +5,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import Link from 'next/link'
 import { format } from 'date-fns'
 import { inputBase, selectBase, textareaBase } from '@/lib/inputStyles'
 
@@ -376,7 +375,7 @@ export default function RecurringExpensesPage() {
                       id="interval"
                       required
                       value={formData.interval}
-                      onChange={(e) => setFormData({ ...formData, interval: e.target.value as any })}
+                      onChange={(e) => setFormData({ ...formData, interval: e.target.value as 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY' })}
                       className={`mt-1 ${selectBase}`}
                     >
                       {INTERVALS.map((int) => (

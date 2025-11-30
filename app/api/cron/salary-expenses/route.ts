@@ -56,15 +56,12 @@ export async function GET(request: NextRequest) {
       // Erstelle Gehalts-Ausgabe
       const expense = await prisma.expense.create({
         data: {
-          title: `Gehalt ${employee.user.name || employee.user.email} - ${firstOfMonth.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' })}`,
+          name: `Gehalt ${employee.user.name || employee.user.email} - ${firstOfMonth.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' })}`,
           amount: employee.baseSalary!,
           date: firstOfMonth,
           category: 'Gehalt',
           description: `Automatisch generiertes Gehalt für ${employee.user.name || employee.user.email}`,
           employeeId: employee.id,
-          recurring: true,
-          frequency: 'MONTHLY',
-          nextExecution: new Date(today.getFullYear(), today.getMonth() + 1, 1),
           tenantId: employee.tenantId,
         },
       })

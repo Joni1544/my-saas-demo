@@ -9,10 +9,10 @@ import { prisma } from '@/lib/prisma'
 // GET: Einzelnen Dauerauftrag abrufen
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params
+    const { id } = await params
     const session = await auth()
 
     if (!session?.user?.tenantId || session.user.role !== 'ADMIN') {
@@ -55,10 +55,10 @@ export async function GET(
 // PATCH: Dauerauftrag aktualisieren
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params
+    const { id } = await params
     const session = await auth()
 
     if (!session?.user?.tenantId || session.user.role !== 'ADMIN') {
@@ -132,10 +132,10 @@ export async function PATCH(
 // DELETE: Dauerauftrag löschen
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params
+    const { id } = await params
     const session = await auth()
 
     if (!session?.user?.tenantId || session.user.role !== 'ADMIN') {

@@ -26,6 +26,7 @@ import {
   getWeek,
 } from 'date-fns'
 import Link from 'next/link'
+import { selectBase, inputBase } from '@/lib/inputStyles'
 
 interface Appointment {
   id: string
@@ -473,11 +474,14 @@ export default function CalendarPage() {
                       className={`${selectBase} text-sm`}
                       aria-label="Monat auswählen"
                     >
-                      {Array.from({ length: 12 }, (_, i) => (
-                        <option key={i} value={i}>
-                          {format(new Date(2024, i, 1), 'MMMM')}
-                        </option>
-                      ))}
+                      {Array.from({ length: 12 }, (_, i) => {
+                        const monthDate = new Date(2024, i, 1)
+                        return (
+                          <option key={i} value={i}>
+                            {format(monthDate, 'MMMM')}
+                          </option>
+                        )
+                      })}
                     </select>
                     <label htmlFor="yearSelect" className="sr-only">
                       Jahr auswählen

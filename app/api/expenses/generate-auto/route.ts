@@ -7,7 +7,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
     const session = await auth()
 
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
       })
 
       // Berechne nächstes Ausführungsdatum
-      let nextRun = new Date(today)
+      const nextRun = new Date(today)
       switch (recurring.interval) {
         case 'DAILY':
           nextRun.setDate(nextRun.getDate() + 1)

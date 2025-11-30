@@ -28,8 +28,8 @@ const FREQUENCIES = [
 export default function NewExpensePage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
-  const [employees, setEmployees] = useState<any[]>([])
-  const [recurringExpenses, setRecurringExpenses] = useState<any[]>([])
+  const [employees, setEmployees] = useState<Array<{ id: string; user: { name: string | null; email: string } }>>([])
+  const [recurringExpenses, setRecurringExpenses] = useState<Array<{ id: string; name: string }>>([])
   const [formData, setFormData] = useState({
     name: '',
     amount: '',
