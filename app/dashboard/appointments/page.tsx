@@ -61,6 +61,17 @@ export default function AppointmentsPage() {
     fetchAppointments()
   }, [statusFilter, dateFilter])
 
+  // Beim Laden der Seite prüfen, ob wir von einer neuen Termin-Erstellung kommen
+  useEffect(() => {
+    // Prüfe URL-Parameter für Refresh
+    const urlParams = new URLSearchParams(window.location.search)
+    if (urlParams.get('refresh') === 'true') {
+      fetchAppointments()
+      // Entferne Parameter aus URL
+      window.history.replaceState({}, '', window.location.pathname)
+    }
+  }, [])
+
   const fetchAppointments = async () => {
     try {
       setLoading(true)
@@ -73,10 +84,10 @@ export default function AppointmentsPage() {
         params.append('startDate', startDate.toISOString())
         params.append('endDate', endDate.toISOString())
       } else {
-        // Standard: Aktueller Monat
+        // Standard: Aktueller Monat + nächste 2 Monate (damit neue Termine sichtbar sind)
         const now = new Date()
         const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
-        const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59)
+        const monthEnd = new Date(now.getFullYear(), now.getMonth() + 3, 0, 23, 59, 59)
         params.append('startDate', monthStart.toISOString())
         params.append('endDate', monthEnd.toISOString())
       }

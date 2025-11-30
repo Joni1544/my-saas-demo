@@ -25,6 +25,8 @@ model User {
   shop      Shop?      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   employee  Employee?
   taskComments TaskComment[] // Kommentare die der User erstellt hat
+  invitationsCreated Invitation[] @relation("InvitationCreator") // Einladungen die der User erstellt hat
+  invitationsUsed Invitation[] @relation("InvitationUsedBy") // Einladungen die der User verwendet hat
 
   @@index([tenantId])
   @@index([email])
@@ -46,6 +48,9 @@ model Shop {
   customers   Customer[]
   employees   Employee[]
   appointments Appointment[]
+  invitations Invitation[] // Einladungen für diesen Tenant
+  expenses    Expense[]    // Ausgaben für diesen Tenant
+  recurringExpenses RecurringExpense[] // Daueraufträge für diesen Tenant
 
   @@index([tenantId])
 }
@@ -77,24 +82,32 @@ model Customer {
 
 // Mitarbeiter-Modell (Verknüpfung User <-> Shop)
 model Employee {
-  id          String   @id @default(cuid())
-  userId      String   @unique
-  tenantId    String   // Referenz zur Firma
-  position    String?  // Position/Abteilung
-  color       String?  // Farbe im Kalender (Hex-Code, z.B. #3B82F6)
-  isActive    Boolean  @default(true) // Aktiv/Inaktiv
-  workHours   Json?    // Arbeitszeiten: { monday: { start: "09:00", end: "17:00" }, ... }
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id              String         @id @default(cuid())
+  userId          String         @unique
+  tenantId        String         // Referenz zur Firma
+  position        String?        // Position/Abteilung
+  color           String?        // Farbe im Kalender (Hex-Code, z.B. #3B82F6)
+  isActive        Boolean        @default(true) // Aktiv/Inaktiv
+  active          Boolean        @default(true) // Alias für isActive (für Kompatibilität)
+  workHours       Json?          // Arbeitszeiten: { monday: { start: "09:00", end: "17:00" }, ... }
+  employmentType  EmploymentType @default(FULL_TIME)
+  salaryType      SalaryType     @default(FIXED)
+  baseSalary      Float?         // Monatliches Grundgehalt
+  hourlyRate      Float?         // Stundenlohn
+  commissionRate  Float?         // Provisionssatz (in Prozent)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
 
   // Beziehungen
-  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  shop        Shop          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  appointments Appointment[]
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shop            Shop          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  appointments    Appointment[]
+  expenses        Expense[]     // Ausgaben die dem Mitarbeiter zugeordnet sind
 
   @@index([tenantId])
   @@index([userId])
   @@index([isActive])
+  @@index([active])
 }
 
 // Termin-Modell
@@ -191,6 +204,100 @@ enum TaskPriority {
   MEDIUM
   HIGH
   URGENT
+}
+
+// Beschäftigungsart-Enum
+enum EmploymentType {
+  FULL_TIME   // Vollzeit
+  PART_TIME   // Teilzeit
+  MINI_JOB    // Minijob
+  FREELANCER  // Freelancer
+}
+
+// Gehaltsart-Enum
+enum SalaryType {
+  FIXED       // Festgehalt
+  HOURLY      // Stundenlohn
+  COMMISSION  // Provision
+  MIXED       // Gemischt (Festgehalt + Provision)
+}
+
+// Dauerauftrag-Modell (Recurring Expense)
+model RecurringExpense {
+  id          String   @id @default(cuid())
+  tenantId    String   // Referenz zur Firma
+  name        String
+  amount      Decimal  @db.Decimal(10, 2)
+  category    String   // z.B. "Miete", "Gehalt", "Marketing", "Material"
+  interval    String   // 'DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY'
+  startDate   DateTime
+  nextRun     DateTime // Nächstes Ausführungsdatum
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Beziehungen
+  shop        Shop      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  expenses    Expense[] // Alle generierten Ausgaben aus diesem Dauerauftrag
+
+  @@index([tenantId])
+  @@index([nextRun])
+  @@index([isActive])
+}
+
+// Ausgaben-Modell (Finanzmodul)
+model Expense {
+  id                String   @id @default(cuid())
+  tenantId          String   // Referenz zur Firma
+  name              String   // Name der Ausgabe
+  amount            Decimal  @db.Decimal(10, 2)
+  date              DateTime
+  category          String   // z.B. "Miete", "Gehalt", "Marketing", "Material"
+  description       String?
+  employeeId       String?  // Optional: Mitarbeiter dem die Ausgabe zugeordnet ist
+  recurringExpenseId String? // Optional: Referenz zum Dauerauftrag
+  invoiceUrl        String?  // Optional: URL zum hochgeladenen Dokument
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Beziehungen
+  shop              Shop            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  employee          Employee?       @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+  recurringExpense  RecurringExpense? @relation(fields: [recurringExpenseId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([employeeId])
+  @@index([date])
+  @@index([category])
+  @@index([recurringExpenseId])
+}
+
+// Einladungs-Modell für Multi-Tenant Invite-System
+model Invitation {
+  id        String   @id @default(cuid())
+  token     String   @unique // Eindeutiger Invite-Token
+  email     String?  // Optional: Email des Eingeladenen
+  tenantId  String   // Referenz zur Firma
+  role      Role     @default(MITARBEITER) // Rolle die vergeben wird
+  expiresAt DateTime // Ablaufdatum der Einladung
+  used      Boolean  @default(false) // Wurde die Einladung bereits verwendet?
+  usedBy    String?  // User-ID der die Einladung verwendet hat
+  usedAt    DateTime? // Wann wurde die Einladung verwendet
+  createdBy String   // User-ID des Admins der die Einladung erstellt hat
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Beziehungen
+  shop      Shop      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  creator   User      @relation("InvitationCreator", fields: [createdBy], references: [id], onDelete: Cascade)
+  usedByUser User?    @relation("InvitationUsedBy", fields: [usedBy], references: [id], onDelete: SetNull)
+
+  @@index([token])
+  @@index([tenantId])
+  @@index([email])
+  @@index([used])
+  @@index([expiresAt])
 }
 
 // Session & Account Models werden nicht mehr benötigt

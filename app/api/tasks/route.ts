@@ -19,10 +19,20 @@ export async function GET() {
       )
     }
 
+    const where: {
+      tenantId: string
+      assignedTo?: string
+    } = {
+      tenantId: session.user.tenantId,
+    }
+
+    // Mitarbeiter sieht nur eigene Aufgaben
+    if (session.user.role === 'MITARBEITER') {
+      where.assignedTo = session.user.id
+    }
+
     const tasks = await prisma.task.findMany({
-      where: {
-        tenantId: session.user.tenantId,
-      },
+      where,
       include: {
         _count: {
           select: {

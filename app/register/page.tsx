@@ -4,12 +4,25 @@
  */
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+
+interface InvitationData {
+  email: string | null
+  role: string
+  shopName: string
+  shopId: string
+  tenantId: string
+  createdBy: string
+}
 
 export default function RegisterPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const inviteToken = searchParams.get('invite')
+  
+  const [invitation, setInvitation] = useState<InvitationData | null>(null)
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -18,6 +31,45 @@ export default function RegisterPage() {
   })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [validatingInvite, setValidatingInvite] = useState(false)
+
+  useEffect(() => {
+    if (inviteToken) {
+      validateInvite()
+    }
+  }, [inviteToken])
+
+  const validateInvite = async () => {
+    try {
+      setValidatingInvite(true)
+      const response = await fetch(`/api/invitations/validate?token=${inviteToken}`)
+      const data = await response.json()
+
+      if (!response.ok) {
+        setError(data.error || 'Ungültiger Einladungslink')
+        return
+      }
+
+      setInvitation(data.invitation)
+      // Setze Email voraus, wenn in Einladung vorhanden
+      if (data.invitation.email) {
+        setFormData(prev => ({
+          ...prev,
+          email: data.invitation.email,
+        }))
+      }
+      // Shop-Name wird nicht benötigt bei Invite
+      setFormData(prev => ({
+        ...prev,
+        shopName: data.invitation.shopName,
+      }))
+    } catch (err) {
+      console.error('Fehler beim Validieren:', err)
+      setError('Fehler beim Laden der Einladung')
+    } finally {
+      setValidatingInvite(false)
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -30,7 +82,10 @@ export default function RegisterPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          inviteToken: inviteToken || undefined, // Füge Token hinzu, falls vorhanden
+        }),
       })
 
       const data = await response.json()
@@ -61,17 +116,28 @@ export default function RegisterPage() {
       <div className="w-full max-w-md space-y-8">
         <div>
           <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">
-            Neues Konto erstellen
+            {invitation ? 'Konto erstellen' : 'Neues Konto erstellen'}
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Oder{' '}
-            <Link
-              href="/login"
-              className="font-medium text-indigo-600 hover:text-indigo-500"
-            >
-              melden Sie sich an
-            </Link>
-          </p>
+          {invitation ? (
+            <div className="mt-4 rounded-md bg-indigo-50 p-4">
+              <p className="text-center text-sm text-indigo-800">
+                <strong>Sie wurden eingeladen!</strong>
+                <br />
+                Sie werden bei <strong>{invitation.shopName}</strong> als{' '}
+                <strong>{invitation.role === 'ADMIN' ? 'Administrator' : 'Mitarbeiter'}</strong> arbeiten.
+              </p>
+            </div>
+          ) : (
+            <p className="mt-2 text-center text-sm text-gray-600">
+              Oder{' '}
+              <Link
+                href="/login"
+                className="font-medium text-indigo-600 hover:text-indigo-500"
+              >
+                melden Sie sich an
+              </Link>
+            </p>
+          )}
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           {error && (
@@ -80,21 +146,23 @@ export default function RegisterPage() {
             </div>
           )}
           <div className="space-y-4 rounded-md shadow-sm">
-            <div>
-              <label htmlFor="shopName" className="block text-sm font-medium text-gray-700">
-                Firmenname *
-              </label>
-              <input
-                id="shopName"
-                name="shopName"
-                type="text"
-                required
-                value={formData.shopName}
-                onChange={handleChange}
-                className="mt-1 block w-full rounded-md border-0 px-3 py-2 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-                placeholder="Ihr Firmenname"
-              />
-            </div>
+            {!invitation && (
+              <div>
+                <label htmlFor="shopName" className="block text-sm font-medium text-gray-700">
+                  Firmenname *
+                </label>
+                <input
+                  id="shopName"
+                  name="shopName"
+                  type="text"
+                  required={!invitation}
+                  value={formData.shopName}
+                  onChange={handleChange}
+                  className="mt-1 block w-full rounded-md border-0 px-3 py-2 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                  placeholder="Ihr Firmenname"
+                />
+              </div>
+            )}
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-gray-700">
                 Ihr Name
@@ -121,7 +189,8 @@ export default function RegisterPage() {
                 required
                 value={formData.email}
                 onChange={handleChange}
-                className="mt-1 block w-full rounded-md border-0 px-3 py-2 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                disabled={!!invitation?.email} // Disable wenn Email aus Invite kommt
+                className="mt-1 block w-full rounded-md border-0 px-3 py-2 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 disabled:bg-gray-100 disabled:cursor-not-allowed sm:text-sm sm:leading-6"
                 placeholder="ihre@email.de"
               />
             </div>

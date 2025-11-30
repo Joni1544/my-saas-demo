@@ -8,7 +8,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { inputBase, textareaBase } from '@/lib/inputStyles'
 
-const AVAILABLE_TAGS = ['VIP', 'Problemkunde', 'No-Show', 'Neu', 'Stammkunde', 'Wichtig']
+const AVAILABLE_TAGS = ['Normal', 'VIP', 'Problemkunde', 'No-Show', 'Neu', 'Stammkunde', 'Wichtig']
 
 export default function NewCustomerPage() {
   const router = useRouter()
@@ -20,7 +20,7 @@ export default function NewCustomerPage() {
     phone: '',
     address: '',
     notes: '',
-    tags: [] as string[],
+    tags: ['Normal'] as string[], // "Normal" als Standard-Tag
   })
 
   const toggleTag = (tag: string) => {

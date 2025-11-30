@@ -8,6 +8,7 @@ import DashboardStats from '@/components/DashboardStats'
 import Calendar from '@/components/Calendar'
 import QuickActions from '@/components/QuickActions'
 import UpcomingAppointments from '@/components/UpcomingAppointments'
+import ExpenseStats from '@/components/ExpenseStats'
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -34,13 +35,20 @@ export default async function DashboardPage() {
           <QuickActions role={session.user.role} />
         </div>
 
-        {/* Statistiken */}
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">
-            Übersicht
-          </h2>
-          <DashboardStats />
-        </div>
+            {/* Statistiken */}
+            <div className="mb-8">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                Übersicht
+              </h2>
+              <DashboardStats />
+            </div>
+
+            {/* Finanzen & Ausgaben (nur für Admin) */}
+            {session.user.role === 'ADMIN' && (
+              <div className="mb-8">
+                <ExpenseStats />
+              </div>
+            )}
 
         <div className="grid gap-6 lg:grid-cols-2">
           {/* Nächste Termine */}

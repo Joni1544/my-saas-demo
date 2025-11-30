@@ -84,6 +84,7 @@ export default function CalendarPage() {
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('')
   const [selectedStatus, setSelectedStatus] = useState<string>('')
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null)
+  const [jumpToDate, setJumpToDate] = useState('')
 
   useEffect(() => {
     fetchEmployees()
@@ -164,21 +165,51 @@ export default function CalendarPage() {
   }
 
   const navigateDate = (direction: 'prev' | 'next') => {
+    let newDate: Date
     switch (viewMode) {
       case 'day':
-        setCurrentDate(direction === 'next' ? addDays(currentDate, 1) : subDays(currentDate, 1))
+        newDate = direction === 'next' ? addDays(currentDate, 1) : subDays(currentDate, 1)
         break
       case 'week':
-        setCurrentDate(direction === 'next' ? addWeeks(currentDate, 1) : subWeeks(currentDate, 1))
+        newDate = direction === 'next' ? addWeeks(currentDate, 1) : subWeeks(currentDate, 1)
         break
       case 'month':
-        setCurrentDate(direction === 'next' ? addMonths(currentDate, 1) : subMonths(currentDate, 1))
+        newDate = direction === 'next' ? addMonths(currentDate, 1) : subMonths(currentDate, 1)
         break
+      default:
+        newDate = currentDate
+    }
+    
+    // Prüfe ob Datum bis 2035
+    if (newDate.getFullYear() <= 2035) {
+      setCurrentDate(newDate)
     }
   }
 
   const goToToday = () => {
     setCurrentDate(new Date())
+  }
+
+  const handleJumpToDate = () => {
+    if (jumpToDate) {
+      const date = new Date(jumpToDate)
+      if (!isNaN(date.getTime())) {
+        // Prüfe ob Datum bis 2035
+        if (date.getFullYear() <= 2035) {
+          setCurrentDate(date)
+          setJumpToDate('')
+        } else {
+          alert('Datum darf nicht nach 2035 sein')
+        }
+      }
+    }
+  }
+
+  const handleMonthYearChange = (month: number, year: number) => {
+    if (year <= 2035) {
+      const newDate = new Date(year, month, 1)
+      setCurrentDate(newDate)
+    }
   }
 
   // Render Functions
@@ -420,13 +451,74 @@ export default function CalendarPage() {
               >
                 →
               </button>
-              <div className="ml-4 text-lg font-semibold text-gray-900">
-                {viewMode === 'day'
-                  ? format(currentDate, 'EEEE, d. MMMM yyyy', { locale: undefined })
-                  : viewMode === 'week'
-                  ? `Woche ${getWeek(currentDate)} - ${format(currentDate, 'MMMM yyyy')}`
-                  : format(currentDate, 'MMMM yyyy')}
+              <div className="ml-4 flex items-center gap-2">
+                <span className="text-lg font-semibold text-gray-900">
+                  {viewMode === 'day'
+                    ? format(currentDate, 'EEEE, d. MMMM yyyy', { locale: undefined })
+                    : viewMode === 'week'
+                    ? `Woche ${getWeek(currentDate)} - ${format(currentDate, 'MMMM yyyy')}`
+                    : format(currentDate, 'MMMM yyyy')}
+                </span>
+                
+                {/* Monat/Jahr Dropdown (nur für Monatsansicht) */}
+                {viewMode === 'month' && (
+                  <div className="flex gap-2">
+                    <label htmlFor="monthSelect" className="sr-only">
+                      Monat auswählen
+                    </label>
+                    <select
+                      id="monthSelect"
+                      value={currentDate.getMonth()}
+                      onChange={(e) => handleMonthYearChange(parseInt(e.target.value), currentDate.getFullYear())}
+                      className={`${selectBase} text-sm`}
+                      aria-label="Monat auswählen"
+                    >
+                      {Array.from({ length: 12 }, (_, i) => (
+                        <option key={i} value={i}>
+                          {format(new Date(2024, i, 1), 'MMMM')}
+                        </option>
+                      ))}
+                    </select>
+                    <label htmlFor="yearSelect" className="sr-only">
+                      Jahr auswählen
+                    </label>
+                    <select
+                      id="yearSelect"
+                      value={currentDate.getFullYear()}
+                      onChange={(e) => handleMonthYearChange(currentDate.getMonth(), parseInt(e.target.value))}
+                      className={`${selectBase} text-sm`}
+                      aria-label="Jahr auswählen"
+                    >
+                      {Array.from({ length: 2035 - 2020 + 1 }, (_, i) => {
+                        const year = 2020 + i
+                        return (
+                          <option key={year} value={year}>
+                            {year}
+                          </option>
+                        )
+                      })}
+                    </select>
+                  </div>
+                )}
               </div>
+            </div>
+
+            {/* Jump to Date */}
+            <div className="flex items-center gap-2">
+              <input
+                type="date"
+                value={jumpToDate}
+                onChange={(e) => setJumpToDate(e.target.value)}
+                max="2035-12-31"
+                className={`${inputBase} text-sm`}
+                placeholder="Zu Datum springen"
+              />
+              <button
+                onClick={handleJumpToDate}
+                className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
+              >
+                Springen
+              </button>
             </div>
 
             {/* Filters */}
@@ -435,6 +527,7 @@ export default function CalendarPage() {
                 value={selectedEmployeeId}
                 onChange={(e) => setSelectedEmployeeId(e.target.value)}
                 className="rounded-md border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                aria-label="Mitarbeiter filtern"
               >
                 <option value="">Alle Mitarbeiter</option>
                 {employees.map((emp) => (
@@ -447,6 +540,7 @@ export default function CalendarPage() {
                 value={selectedCustomerId}
                 onChange={(e) => setSelectedCustomerId(e.target.value)}
                 className="rounded-md border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                aria-label="Kunde filtern"
               >
                 <option value="">Alle Kunden</option>
                 {customers.map((cust) => (
@@ -459,6 +553,7 @@ export default function CalendarPage() {
                 value={selectedStatus}
                 onChange={(e) => setSelectedStatus(e.target.value)}
                 className="rounded-md border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                aria-label="Status filtern"
               >
                 <option value="">Alle Status</option>
                 <option value="OPEN">Offen</option>

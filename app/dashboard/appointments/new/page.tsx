@@ -75,10 +75,16 @@ export default function NewAppointmentPage() {
 
   const fetchCustomers = async () => {
     try {
-      const response = await fetch('/api/customers?archived=false')
+      const response = await fetch('/api/customers?isArchived=false&sortBy=name&sortOrder=asc')
       if (response.ok) {
         const data = await response.json()
-        setCustomers(data.customers || [])
+        // Sortiere Kunden alphabetisch nach Name
+        const sortedCustomers = (data.customers || []).sort((a: Customer, b: Customer) => {
+          const nameA = `${a.firstName} ${a.lastName}`.toLowerCase()
+          const nameB = `${b.firstName} ${b.lastName}`.toLowerCase()
+          return nameA.localeCompare(nameB)
+        })
+        setCustomers(sortedCustomers)
       }
     } catch (error) {
       console.error('Fehler beim Laden der Kunden:', error)
@@ -119,7 +125,9 @@ export default function NewAppointmentPage() {
       }
 
       const data = await response.json()
-      router.push(`/dashboard/appointments/${data.appointment.id}`)
+      // Zurück zur Termin-Liste mit Refresh-Parameter, damit der neue Termin sofort sichtbar ist
+      router.push('/dashboard/appointments?refresh=true')
+      router.refresh()
     } catch (error: unknown) {
       console.error('Fehler:', error)
       alert((error instanceof Error ? error.message : 'Fehler beim Erstellen des Termins'))
@@ -158,10 +166,11 @@ export default function NewAppointmentPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">
+              <label htmlFor="startTime" className="block text-sm font-medium text-gray-700">
                 Startzeit <span className="text-red-500">*</span>
               </label>
               <input
+                id="startTime"
                 type="datetime-local"
                 required
                 value={formData.startTime}
@@ -170,10 +179,11 @@ export default function NewAppointmentPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">
+              <label htmlFor="endTime" className="block text-sm font-medium text-gray-700">
                 Endzeit <span className="text-red-500">*</span>
               </label>
               <input
+                id="endTime"
                 type="datetime-local"
                 required
                 value={formData.endTime}
@@ -185,23 +195,33 @@ export default function NewAppointmentPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">Kunde</label>
+              <label htmlFor="customerId" className="block text-sm font-medium text-gray-700">
+                Kunde (Name)
+              </label>
               <select
+                id="customerId"
                 value={formData.customerId}
                 onChange={(e) => setFormData({ ...formData, customerId: e.target.value })}
                 className={`mt-1 ${selectBase}`}
               >
-                <option value="">Kein Kunde</option>
+                <option value="">Kein Kunde auswählen</option>
                 {customers.map((customer) => (
                   <option key={customer.id} value={customer.id}>
                     {customer.firstName} {customer.lastName}
+                    {customer.email ? ` (${customer.email})` : ''}
                   </option>
                 ))}
               </select>
+              {customers.length === 0 && (
+                <p className="mt-1 text-xs text-gray-500">
+                  Keine Kunden verfügbar. <Link href="/dashboard/customers/new" className="text-indigo-600 hover:underline">Kunde erstellen</Link>
+                </p>
+              )}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Mitarbeiter</label>
+              <label htmlFor="employeeId" className="block text-sm font-medium text-gray-700">Mitarbeiter</label>
               <select
+                id="employeeId"
                 value={formData.employeeId}
                 onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })}
                 className={`mt-1 ${selectBase}`}
@@ -218,8 +238,9 @@ export default function NewAppointmentPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">Status</label>
+              <label htmlFor="status" className="block text-sm font-medium text-gray-700">Status</label>
               <select
+                id="status"
                 value={formData.status}
                 onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                 className={`mt-1 ${selectBase}`}

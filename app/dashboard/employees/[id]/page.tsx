@@ -14,7 +14,13 @@ interface Employee {
   position: string | null
   color: string | null
   isActive: boolean
+  active: boolean
   workHours: Record<string, { start: string; end: string }> | null
+  employmentType: 'FULL_TIME' | 'PART_TIME' | 'MINI_JOB' | 'FREELANCER'
+  salaryType: 'FIXED' | 'HOURLY' | 'COMMISSION' | 'MIXED'
+  baseSalary: number | null
+  hourlyRate: number | null
+  commissionRate: number | null
   user: {
     id: string
     name: string | null
@@ -44,7 +50,13 @@ export default function EmployeeDetailPage() {
     position: '',
     color: '#3B82F6',
     isActive: true,
+    active: true,
     workHours: {} as Record<string, { start: string; end: string }>,
+    employmentType: 'FULL_TIME' as 'FULL_TIME' | 'PART_TIME' | 'MINI_JOB' | 'FREELANCER',
+    salaryType: 'FIXED' as 'FIXED' | 'HOURLY' | 'COMMISSION' | 'MIXED',
+    baseSalary: null as number | null,
+    hourlyRate: null as number | null,
+    commissionRate: null as number | null,
   })
 
   useEffect(() => {
@@ -62,8 +74,14 @@ export default function EmployeeDetailPage() {
       setFormData({
         position: data.employee.position || '',
         color: data.employee.color || '#3B82F6',
-        isActive: data.employee.isActive,
+        isActive: data.employee.isActive ?? data.employee.active ?? true,
+        active: data.employee.active ?? data.employee.isActive ?? true,
         workHours: data.employee.workHours || {},
+        employmentType: data.employee.employmentType || 'FULL_TIME',
+        salaryType: data.employee.salaryType || 'FIXED',
+        baseSalary: data.employee.baseSalary ? parseFloat(data.employee.baseSalary.toString()) : null,
+        hourlyRate: data.employee.hourlyRate ? parseFloat(data.employee.hourlyRate.toString()) : null,
+        commissionRate: data.employee.commissionRate ? parseFloat(data.employee.commissionRate.toString()) : null,
       })
     } catch (error) {
       console.error('Fehler:', error)
@@ -166,9 +184,11 @@ export default function EmployeeDetailPage() {
                   />
                   <input
                     type="color"
+                    id="colorPicker"
                     value={formData.color}
                     onChange={(e) => setFormData({ ...formData, color: e.target.value })}
                     className="h-12 w-24 cursor-pointer"
+                    aria-label="Farbe auswählen"
                   />
                 </div>
               </div>
@@ -210,24 +230,135 @@ export default function EmployeeDetailPage() {
                     </div>
                     {isActive && (
                       <div className="flex items-center gap-2">
+                        <label htmlFor={`${day}-start`} className="sr-only">
+                          Startzeit {DAY_NAMES[day]}
+                        </label>
                         <input
+                          id={`${day}-start`}
                           type="time"
                           value={formData.workHours[day].start}
                           onChange={(e) => updateWorkHours(day, 'start', e.target.value)}
                           className={inputBase}
+                          aria-label={`Startzeit ${DAY_NAMES[day]}`}
                         />
                         <span className="text-gray-500">bis</span>
+                        <label htmlFor={`${day}-end`} className="sr-only">
+                          Endzeit {DAY_NAMES[day]}
+                        </label>
                         <input
+                          id={`${day}-end`}
                           type="time"
                           value={formData.workHours[day].end}
                           onChange={(e) => updateWorkHours(day, 'end', e.target.value)}
                           className={inputBase}
+                          aria-label={`Endzeit ${DAY_NAMES[day]}`}
                         />
                       </div>
                     )}
                   </div>
                 )
               })}
+            </div>
+          </div>
+
+          {/* Beschäftigungsart & Gehalt */}
+          <div className="rounded-lg bg-white p-6 shadow">
+            <h2 className="mb-4 text-xl font-semibold text-gray-900">Beschäftigung & Gehalt</h2>
+            
+            <div className="space-y-4">
+              {/* Beschäftigungsart */}
+              <div>
+                <label htmlFor="employmentType" className="block text-sm font-medium text-gray-700">
+                  Beschäftigungsart
+                </label>
+                <select
+                  id="employmentType"
+                  value={formData.employmentType}
+                  onChange={(e) => setFormData({ ...formData, employmentType: e.target.value as any })}
+                  className={`mt-1 ${selectBase}`}
+                >
+                  <option value="FULL_TIME">Vollzeit</option>
+                  <option value="PART_TIME">Teilzeit</option>
+                  <option value="MINI_JOB">Minijob</option>
+                  <option value="FREELANCER">Freelancer</option>
+                </select>
+              </div>
+
+              {/* Gehaltsart */}
+              <div>
+                <label htmlFor="salaryType" className="block text-sm font-medium text-gray-700">
+                  Gehaltsart
+                </label>
+                <select
+                  id="salaryType"
+                  value={formData.salaryType}
+                  onChange={(e) => setFormData({ ...formData, salaryType: e.target.value as any })}
+                  className={`mt-1 ${selectBase}`}
+                >
+                  <option value="FIXED">Festgehalt</option>
+                  <option value="HOURLY">Stundenlohn</option>
+                  <option value="COMMISSION">Provision</option>
+                  <option value="MIXED">Gemischt (Festgehalt + Provision)</option>
+                </select>
+              </div>
+
+              {/* Gehaltsfelder - abhängig von salaryType */}
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                {(formData.salaryType === 'FIXED' || formData.salaryType === 'MIXED') && (
+                  <div>
+                    <label htmlFor="baseSalary" className="block text-sm font-medium text-gray-700">
+                      Grundgehalt (€/Monat)
+                    </label>
+                    <input
+                      id="baseSalary"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={formData.baseSalary || ''}
+                      onChange={(e) => setFormData({ ...formData, baseSalary: e.target.value ? parseFloat(e.target.value) : null })}
+                      className={`mt-1 ${inputBase}`}
+                      placeholder="0.00"
+                    />
+                  </div>
+                )}
+
+                {(formData.salaryType === 'HOURLY' || formData.salaryType === 'MIXED') && (
+                  <div>
+                    <label htmlFor="hourlyRate" className="block text-sm font-medium text-gray-700">
+                      Stundenlohn (€/Stunde)
+                    </label>
+                    <input
+                      id="hourlyRate"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={formData.hourlyRate || ''}
+                      onChange={(e) => setFormData({ ...formData, hourlyRate: e.target.value ? parseFloat(e.target.value) : null })}
+                      className={`mt-1 ${inputBase}`}
+                      placeholder="0.00"
+                    />
+                  </div>
+                )}
+
+                {(formData.salaryType === 'COMMISSION' || formData.salaryType === 'MIXED') && (
+                  <div>
+                    <label htmlFor="commissionRate" className="block text-sm font-medium text-gray-700">
+                      Provisionssatz (%)
+                    </label>
+                    <input
+                      id="commissionRate"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      max="100"
+                      value={formData.commissionRate || ''}
+                      onChange={(e) => setFormData({ ...formData, commissionRate: e.target.value ? parseFloat(e.target.value) : null })}
+                      className={`mt-1 ${inputBase}`}
+                      placeholder="0.00"
+                    />
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
