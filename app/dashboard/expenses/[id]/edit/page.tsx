@@ -229,8 +229,6 @@ export default function EditExpensePage() {
           </div>
 
           <div>
-
-          <div>
             <label htmlFor="invoiceUrl" className="block text-sm font-medium text-gray-700">
               Rechnung/Dokument URL (optional)
             </label>
