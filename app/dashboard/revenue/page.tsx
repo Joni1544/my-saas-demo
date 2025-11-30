@@ -7,6 +7,7 @@
 
 import { useState, useEffect } from 'react'
 import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns'
+import DateSelector from '@/components/DateSelector'
 
 interface RevenueStats {
   period: string
@@ -42,12 +43,9 @@ export default function RevenuePage() {
   const [period, setPeriod] = useState<Period>('month')
   const [customStartDate, setCustomStartDate] = useState('')
   const [customEndDate, setCustomEndDate] = useState('')
+  const [selectedMonth, setSelectedMonth] = useState({ month: new Date().getMonth(), year: new Date().getFullYear() })
   const [stats, setStats] = useState<RevenueStats | null>(null)
   const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    fetchStats()
-  }, [period, customStartDate, customEndDate])
 
   const fetchStats = async () => {
     try {
@@ -55,6 +53,11 @@ export default function RevenuePage() {
       let url = `/api/stats/revenue?period=${period}`
       if (customStartDate && customEndDate) {
         url += `&startDate=${customStartDate}&endDate=${customEndDate}`
+      } else if (period === 'month' && selectedMonth) {
+        // Verwende selectedMonth für Monatsansicht
+        const monthStart = new Date(selectedMonth.year, selectedMonth.month, 1)
+        const monthEnd = new Date(selectedMonth.year, selectedMonth.month + 1, 0, 23, 59, 59)
+        url += `&startDate=${monthStart.toISOString()}&endDate=${monthEnd.toISOString()}`
       }
       const response = await fetch(url)
       if (!response.ok) throw new Error('Fehler beim Laden der Statistiken')
@@ -66,6 +69,16 @@ export default function RevenuePage() {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    fetchStats()
+  }, [period, customStartDate, customEndDate, selectedMonth])
+
+  useEffect(() => {
+    if (period === 'month') {
+      fetchStats()
+    }
+  }, [selectedMonth])
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('de-DE', {
@@ -139,40 +152,56 @@ export default function RevenuePage() {
               </div>
             </div>
 
+            {/* DateSelector für Monatsansicht */}
+            {period === 'month' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Monat & Jahr</label>
+                <DateSelector
+                  value={selectedMonth}
+                  onChange={(value) => {
+                    setSelectedMonth(value)
+                    setPeriod('month')
+                  }}
+                />
+              </div>
+            )}
+
             {/* Custom Date Range */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Eigener Zeitraum</label>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <input
-                    type="date"
-                    value={customStartDate}
-                    onChange={(e) => {
-                      setCustomStartDate(e.target.value)
-                      if (e.target.value && customEndDate) {
-                        setPeriod('custom' as Period)
-                      }
-                    }}
-                    className="block w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-base text-black shadow-sm transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                    placeholder="Von"
-                  />
-                </div>
-                <div>
-                  <input
-                    type="date"
-                    value={customEndDate}
-                    onChange={(e) => {
-                      setCustomEndDate(e.target.value)
-                      if (customStartDate && e.target.value) {
-                        setPeriod('custom' as Period)
-                      }
-                    }}
-                    className="block w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-base text-black shadow-sm transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                    placeholder="Bis"
-                  />
+            {period === 'custom' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Eigener Zeitraum</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <input
+                      type="date"
+                      value={customStartDate}
+                      onChange={(e) => {
+                        setCustomStartDate(e.target.value)
+                        if (e.target.value && customEndDate) {
+                          setPeriod('custom' as Period)
+                        }
+                      }}
+                      className="block w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-base text-black shadow-sm transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                      placeholder="Von"
+                    />
+                  </div>
+                  <div>
+                    <input
+                      type="date"
+                      value={customEndDate}
+                      onChange={(e) => {
+                        setCustomEndDate(e.target.value)
+                        if (customStartDate && e.target.value) {
+                          setPeriod('custom' as Period)
+                        }
+                      }}
+                      className="block w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-base text-black shadow-sm transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                      placeholder="Bis"
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
 

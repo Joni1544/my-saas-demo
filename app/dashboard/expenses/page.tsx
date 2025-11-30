@@ -32,13 +32,13 @@ interface Expense {
 }
 
 const CATEGORIES = [
-  'Gehalt',
-  'Miete',
-  'Marketing',
-  'Material',
-  'Versicherung',
-  'Steuern',
-  'Sonstiges',
+  { value: 'GEHALT', label: 'Gehalt' },
+  { value: 'MIETE', label: 'Miete' },
+  { value: 'MARKETING', label: 'Marketing' },
+  { value: 'MATERIAL', label: 'Material' },
+  { value: 'VERSICHERUNG', label: 'Versicherung' },
+  { value: 'STEUERN', label: 'Steuern' },
+  { value: 'SONSTIGES', label: 'Sonstiges' },
 ]
 
 export default function ExpensesPage() {
@@ -48,6 +48,7 @@ export default function ExpensesPage() {
     startDate: '',
     endDate: '',
     category: '',
+    onlyRecurring: false,
   })
 
   useEffect(() => {
@@ -135,7 +136,7 @@ export default function ExpensesPage() {
 
         {/* Filter */}
         <div className="mb-6 space-y-4 rounded-lg bg-white p-4 shadow">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div>
               <label htmlFor="startDate" className="block text-sm font-medium text-gray-700">
                 Von
@@ -172,11 +173,23 @@ export default function ExpensesPage() {
               >
                 <option value="">Alle Kategorien</option>
                 {CATEGORIES.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
+                  <option key={cat.value} value={cat.value}>
+                    {cat.label}
                   </option>
                 ))}
               </select>
+            </div>
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="onlyRecurring"
+                checked={filters.onlyRecurring}
+                onChange={(e) => setFilters({ ...filters, onlyRecurring: e.target.checked })}
+                className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+              />
+              <label htmlFor="onlyRecurring" className="ml-2 text-sm text-gray-700">
+                Nur Daueraufträge anzeigen
+              </label>
             </div>
           </div>
         </div>

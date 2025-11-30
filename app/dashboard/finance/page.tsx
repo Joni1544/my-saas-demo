@@ -1,39 +1,74 @@
 /**
  * Finanz-Dashboard
- * Zeigt Umsatz, Ausgaben, Gewinn und Charts
+ * Zeigt Umsatz, Ausgaben, Gewinn und Charts mit Recharts
  */
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { inputBase } from '@/lib/inputStyles'
+import DateSelector from '@/components/DateSelector'
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts'
 
 interface FinanceStats {
   totalRevenue: number
   totalExpenses: number
+  totalRecurringExpenses: number
   profit: number
   revenueByCustomer: Array<{ id: string; name: string; revenue: number }>
   revenueByEmployee: Array<{ id: string; name: string; revenue: number }>
   expensesByCategory: Array<{ category: string; amount: number }>
   profitByEmployee: Array<{ id: string; name: string; revenue: number; expenses: number; profit: number }>
   profitByCustomer: Array<{ id: string; name: string; profit: number }>
-  monthlyData: Array<{ month: string; revenue: number; expenses: number; profit: number }>
 }
+
+interface TimeSeriesData {
+  labels: string[]
+  revenue: number[]
+  expenses: number[]
+  profit: number[]
+}
+
+type TimeMode = 'week' | 'month' | 'year'
 
 export default function FinanceDashboardPage() {
   const [stats, setStats] = useState<FinanceStats | null>(null)
+  const [timeSeriesData, setTimeSeriesData] = useState<TimeSeriesData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [timeMode, setTimeMode] = useState<TimeMode>('month')
+  const [selectedMonth, setSelectedMonth] = useState({ month: new Date().getMonth(), year: new Date().getFullYear() })
   const [filters, setFilters] = useState({
     startDate: new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0],
     endDate: new Date().toISOString().split('T')[0],
   })
 
+  // Chart-Daten formatieren
+  const chartData = useMemo(() => {
+    if (!timeSeriesData) return []
+    
+    return timeSeriesData.labels.map((label, index) => ({
+      label,
+      Umsatz: timeSeriesData.revenue[index] || 0,
+      Ausgaben: timeSeriesData.expenses[index] || 0,
+      Gewinn: timeSeriesData.profit[index] || 0,
+    }))
+  }, [timeSeriesData])
+
   useEffect(() => {
     fetchStats()
-  }, [filters])
+    fetchTimeSeries()
+  }, [filters, timeMode, selectedMonth])
 
   const fetchStats = async () => {
     try {
-      setLoading(true)
       const params = new URLSearchParams()
       if (filters.startDate) params.append('startDate', filters.startDate)
       if (filters.endDate) params.append('endDate', filters.endDate)
@@ -55,6 +90,35 @@ export default function FinanceDashboardPage() {
     }
   }
 
+  const fetchTimeSeries = async () => {
+    try {
+      let from: string
+      let to: string
+
+      if (timeMode === 'month') {
+        const monthStart = new Date(selectedMonth.year, selectedMonth.month, 1)
+        const monthEnd = new Date(selectedMonth.year, selectedMonth.month + 1, 0, 23, 59, 59)
+        from = monthStart.toISOString().split('T')[0]
+        to = monthEnd.toISOString().split('T')[0]
+      } else {
+        from = filters.startDate
+        to = filters.endDate
+      }
+
+      const params = new URLSearchParams()
+      params.append('mode', timeMode)
+      params.append('from', from)
+      params.append('to', to)
+
+      const response = await fetch(`/api/finances/timeseries?${params.toString()}`)
+      if (!response.ok) throw new Error('Fehler beim Laden der Zeitreihen')
+      const data = await response.json()
+      setTimeSeriesData(data)
+    } catch (error) {
+      console.error('Fehler:', error)
+    }
+  }
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('de-DE', {
       style: 'currency',
@@ -62,8 +126,20 @@ export default function FinanceDashboardPage() {
     }).format(amount)
   }
 
-  const getMaxValue = (data: number[]) => {
-    return Math.max(...data, 1)
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="rounded-lg bg-white p-4 shadow-lg border border-gray-200">
+          <p className="font-semibold text-gray-900 mb-2">{label}</p>
+          {payload.map((entry: any, index: number) => (
+            <p key={index} className="text-sm" style={{ color: entry.color }}>
+              {entry.name}: {formatCurrency(entry.value)}
+            </p>
+          ))}
+        </div>
+      )
+    }
+    return null
   }
 
   if (loading) {
@@ -82,12 +158,6 @@ export default function FinanceDashboardPage() {
     )
   }
 
-  const maxMonthlyValue = getMaxValue([
-    ...stats.monthlyData.map((d) => d.revenue),
-    ...stats.monthlyData.map((d) => d.expenses),
-    ...stats.monthlyData.map((d) => d.profit),
-  ])
-
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -96,117 +166,163 @@ export default function FinanceDashboardPage() {
           <p className="mt-2 text-gray-600">Übersicht über Umsatz, Ausgaben und Gewinn</p>
         </div>
 
-        {/* Date Filter */}
-        <div className="mb-6 rounded-lg bg-white p-4 shadow">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="startDate" className="block text-sm font-medium text-gray-700">
-                Von
-              </label>
-              <input
-                type="date"
-                id="startDate"
-                value={filters.startDate}
-                onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
-                className={`mt-1 ${inputBase}`}
-              />
-            </div>
-            <div>
-              <label htmlFor="endDate" className="block text-sm font-medium text-gray-700">
-                Bis
-              </label>
-              <input
-                type="date"
-                id="endDate"
-                value={filters.endDate}
-                onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
-                className={`mt-1 ${inputBase}`}
-              />
-            </div>
-          </div>
-        </div>
-
         {/* Key Metrics Cards */}
         <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div className="rounded-lg bg-white p-6 shadow">
             <div className="text-sm font-medium text-gray-600">Gesamtumsatz</div>
-            <div className="mt-2 text-3xl font-bold text-green-600">
+            <div className="mt-2 text-3xl font-bold" style={{ color: '#facc15' }}>
               {formatCurrency(stats.totalRevenue)}
             </div>
           </div>
           <div className="rounded-lg bg-white p-6 shadow">
             <div className="text-sm font-medium text-gray-600">Gesamtausgaben</div>
-            <div className="mt-2 text-3xl font-bold text-red-600">
+            <div className="mt-2 text-3xl font-bold" style={{ color: '#ef4444' }}>
               {formatCurrency(stats.totalExpenses)}
             </div>
           </div>
           <div className="rounded-lg bg-white p-6 shadow">
             <div className="text-sm font-medium text-gray-600">Gewinn</div>
-            <div className={`mt-2 text-3xl font-bold ${stats.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+            <div className={`mt-2 text-3xl font-bold ${stats.profit >= 0 ? 'text-green-600' : 'text-red-600'}`} style={{ color: stats.profit >= 0 ? '#22c55e' : '#ef4444' }}>
               {formatCurrency(stats.profit)}
+            </div>
+            <div className="mt-1 text-xs text-gray-500">
+              Umsatz - Ausgaben - Daueraufträge
             </div>
           </div>
         </div>
 
-        {/* Charts Grid */}
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          {/* Monthly Revenue/Expenses/Profit Chart */}
-          <div className="rounded-lg bg-white p-6 shadow">
-            <h2 className="mb-4 text-lg font-semibold text-gray-900">Zeitverlauf</h2>
-            <div className="h-64">
-              <div className="flex h-full items-end justify-between gap-2">
-                {stats.monthlyData.map((data, idx) => (
-                  <div key={idx} className="flex-1 flex flex-col items-center gap-1">
-                    <div className="flex flex-col gap-1 w-full">
-                      <div
-                        className="bg-green-500 rounded-t"
-                        style={{
-                          height: `${(data.revenue / maxMonthlyValue) * 100}%`,
-                          minHeight: data.revenue > 0 ? '2px' : '0',
-                        }}
-                        title={`Umsatz: ${formatCurrency(data.revenue)}`}
-                      />
-                      <div
-                        className="bg-red-500"
-                        style={{
-                          height: `${(data.expenses / maxMonthlyValue) * 100}%`,
-                          minHeight: data.expenses > 0 ? '2px' : '0',
-                        }}
-                        title={`Ausgaben: ${formatCurrency(data.expenses)}`}
-                      />
-                      <div
-                        className={`rounded-b ${data.profit >= 0 ? 'bg-blue-500' : 'bg-orange-500'}`}
-                        style={{
-                          height: `${(Math.abs(data.profit) / maxMonthlyValue) * 100}%`,
-                          minHeight: Math.abs(data.profit) > 0 ? '2px' : '0',
-                        }}
-                        title={`Gewinn: ${formatCurrency(data.profit)}`}
-                      />
-                    </div>
-                    <span className="text-xs text-gray-500 mt-2 transform -rotate-45 origin-top-left whitespace-nowrap">
-                      {data.month}
-                    </span>
-                  </div>
+        {/* Date Filter & Time Mode Toggle */}
+        <div className="mb-6 rounded-lg bg-white p-4 shadow">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+            {/* Zeitraum-Toggle */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Zeitraum
+              </label>
+              <div className="flex rounded-lg border border-gray-300 overflow-hidden">
+                {(['week', 'month', 'year'] as TimeMode[]).map((mode) => (
+                  <button
+                    key={mode}
+                    onClick={() => setTimeMode(mode)}
+                    className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
+                      timeMode === mode
+                        ? 'bg-indigo-600 text-white'
+                        : 'bg-white text-gray-700 hover:bg-gray-50'
+                    } ${mode === 'week' ? '' : 'border-l border-gray-300'}`}
+                  >
+                    {mode === 'week' ? 'Woche' : mode === 'month' ? 'Monat' : 'Jahr'}
+                  </button>
                 ))}
               </div>
             </div>
-            <div className="mt-4 flex gap-4 justify-center">
-              <div className="flex items-center gap-2">
-                <div className="h-3 w-3 bg-green-500 rounded"></div>
-                <span className="text-xs text-gray-600">Umsatz</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="h-3 w-3 bg-red-500 rounded"></div>
-                <span className="text-xs text-gray-600">Ausgaben</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="h-3 w-3 bg-blue-500 rounded"></div>
-                <span className="text-xs text-gray-600">Gewinn</span>
-              </div>
-            </div>
-          </div>
 
-          {/* Expenses by Category */}
+            {/* Monat & Jahr Selector (nur für Monats-Modus) */}
+            {timeMode === 'month' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Monat & Jahr
+                </label>
+                <DateSelector
+                  value={selectedMonth}
+                  onChange={(value) => {
+                    setSelectedMonth(value)
+                    const monthStart = new Date(value.year, value.month, 1)
+                    const monthEnd = new Date(value.year, value.month + 1, 0, 23, 59, 59)
+                    setFilters({
+                      startDate: monthStart.toISOString().split('T')[0],
+                      endDate: monthEnd.toISOString().split('T')[0],
+                    })
+                  }}
+                />
+              </div>
+            )}
+
+            {/* Custom Date Range (für Woche und Jahr) */}
+            {(timeMode === 'week' || timeMode === 'year') && (
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label htmlFor="startDate" className="block text-sm font-medium text-gray-700">
+                    Von
+                  </label>
+                  <input
+                    type="date"
+                    id="startDate"
+                    value={filters.startDate}
+                    onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
+                    className={`mt-1 ${inputBase}`}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="endDate" className="block text-sm font-medium text-gray-700">
+                    Bis
+                  </label>
+                  <input
+                    type="date"
+                    id="endDate"
+                    value={filters.endDate}
+                    onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
+                    className={`mt-1 ${inputBase}`}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Zeitverlauf-Chart (Full Width) */}
+        <div className="mb-6 rounded-lg bg-white p-6 shadow-md">
+          <h2 className="mb-4 text-lg font-semibold text-gray-900">Zeitverlauf</h2>
+          <div className="h-96 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis 
+                  dataKey="label" 
+                  stroke="#6b7280"
+                  style={{ fontSize: '12px' }}
+                />
+                <YAxis 
+                  stroke="#6b7280"
+                  style={{ fontSize: '12px' }}
+                  tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
+                />
+                <Tooltip content={<CustomTooltip />} />
+                <Legend 
+                  wrapperStyle={{ paddingTop: '20px' }}
+                  iconType="circle"
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="Umsatz" 
+                  stroke="#facc15" 
+                  strokeWidth={3}
+                  dot={{ fill: '#facc15', r: 4 }}
+                  activeDot={{ r: 6 }}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="Ausgaben" 
+                  stroke="#ef4444" 
+                  strokeWidth={3}
+                  dot={{ fill: '#ef4444', r: 4 }}
+                  activeDot={{ r: 6 }}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="Gewinn" 
+                  stroke="#22c55e" 
+                  strokeWidth={3}
+                  dot={{ fill: '#22c55e', r: 4 }}
+                  activeDot={{ r: 6 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Zwei Spalten: Ausgaben nach Kategorie + Umsatz pro Kunde */}
+        <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+          {/* Ausgaben nach Kategorie */}
           <div className="rounded-lg bg-white p-6 shadow">
             <h2 className="mb-4 text-lg font-semibold text-gray-900">Ausgaben nach Kategorie</h2>
             <div className="space-y-3">
@@ -230,22 +346,7 @@ export default function FinanceDashboardPage() {
             </div>
           </div>
 
-          {/* Profit per Employee */}
-          <div className="rounded-lg bg-white p-6 shadow">
-            <h2 className="mb-4 text-lg font-semibold text-gray-900">Gewinn pro Mitarbeiter</h2>
-            <div className="space-y-2">
-              {stats.profitByEmployee.slice(0, 10).map((emp, idx) => (
-                <div key={idx} className="flex justify-between items-center">
-                  <span className="text-sm text-gray-700">{emp.name}</span>
-                  <span className={`text-sm font-medium ${emp.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {formatCurrency(emp.profit)}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Profit per Customer */}
+          {/* Umsatz pro Kunde (Top 10) */}
           <div className="rounded-lg bg-white p-6 shadow">
             <h2 className="mb-4 text-lg font-semibold text-gray-900">Umsatz pro Kunde (Top 10)</h2>
             <div className="space-y-2">
@@ -260,8 +361,22 @@ export default function FinanceDashboardPage() {
             </div>
           </div>
         </div>
+
+        {/* Gewinn pro Mitarbeiter (Full Width) */}
+        <div className="rounded-lg bg-white p-6 shadow">
+          <h2 className="mb-4 text-lg font-semibold text-gray-900">Gewinn pro Mitarbeiter</h2>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {stats.profitByEmployee.slice(0, 10).map((emp, idx) => (
+              <div key={idx} className="flex justify-between items-center p-3 rounded-lg bg-gray-50">
+                <span className="text-sm text-gray-700">{emp.name}</span>
+                <span className={`text-sm font-medium ${emp.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {formatCurrency(emp.profit)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   )
 }
-

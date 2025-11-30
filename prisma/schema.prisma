@@ -222,20 +222,39 @@ enum SalaryType {
   MIXED       // Gemischt (Festgehalt + Provision)
 }
 
+// Wiederkehrende Intervalle für Ausgaben
+enum RecurringInterval {
+  DAILY
+  WEEKLY
+  MONTHLY
+  YEARLY
+}
+
+// Ausgaben-Kategorien ENUM
+enum ExpenseCategory {
+  GEHALT
+  MIETE
+  MARKETING
+  MATERIAL
+  VERSICHERUNG
+  STEUERN
+  SONSTIGES
+}
+
 // Dauerauftrag-Modell (Recurring Expense)
 model RecurringExpense {
-  id          String   @id @default(cuid())
-  tenantId    String   // Referenz zur Firma
+  id          String            @id @default(cuid())
+  tenantId    String            // Referenz zur Firma
   name        String
-  amount      Decimal  @db.Decimal(10, 2)
-  category    String   // z.B. "Miete", "Gehalt", "Marketing", "Material"
-  interval    String   // 'DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY'
+  amount      Decimal           @db.Decimal(10, 2)
+  category    ExpenseCategory   // ENUM für Kategorien
+  interval    RecurringInterval @default(MONTHLY)
   startDate   DateTime
-  nextRun     DateTime // Nächstes Ausführungsdatum
+  nextRun     DateTime          // Nächstes Ausführungsdatum
   description String?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  isActive    Boolean           @default(true)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
 
   // Beziehungen
   shop        Shop      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -244,26 +263,27 @@ model RecurringExpense {
   @@index([tenantId])
   @@index([nextRun])
   @@index([isActive])
+  @@index([category])
 }
 
 // Ausgaben-Modell (Finanzmodul)
 model Expense {
-  id                String   @id @default(cuid())
-  tenantId          String   // Referenz zur Firma
-  name              String   // Name der Ausgabe
-  amount            Decimal  @db.Decimal(10, 2)
+  id                String            @id @default(cuid())
+  tenantId          String            // Referenz zur Firma
+  name              String            // Name der Ausgabe
+  amount            Decimal           @db.Decimal(10, 2)
   date              DateTime
-  category          String   // z.B. "Miete", "Gehalt", "Marketing", "Material"
+  category          ExpenseCategory   // ENUM für Kategorien
   description       String?
-  employeeId       String?  // Optional: Mitarbeiter dem die Ausgabe zugeordnet ist
-  recurringExpenseId String? // Optional: Referenz zum Dauerauftrag
-  invoiceUrl        String?  // Optional: URL zum hochgeladenen Dokument
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  employeeId        String?           // Optional: Mitarbeiter dem die Ausgabe zugeordnet ist
+  recurringExpenseId String?          // Optional: Referenz zum Dauerauftrag
+  invoiceUrl        String?           // Optional: URL zum hochgeladenen Dokument
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
 
   // Beziehungen
-  shop              Shop            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  employee          Employee?       @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+  shop              Shop              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  employee          Employee?         @relation(fields: [employeeId], references: [id], onDelete: SetNull)
   recurringExpense  RecurringExpense? @relation(fields: [recurringExpenseId], references: [id], onDelete: SetNull)
 
   @@index([tenantId])

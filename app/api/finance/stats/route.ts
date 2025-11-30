@@ -25,10 +25,13 @@ export async function GET(request: NextRequest) {
     const dateEnd = endDate ? new Date(endDate) : new Date()
 
     // Umsatz (aus abgeschlossenen Terminen)
+    // Status: COMPLETED oder DONE zählen als Umsatz
     const completedAppointments = await prisma.appointment.findMany({
       where: {
         tenantId: session.user.tenantId,
-        status: 'COMPLETED',
+        status: {
+          in: ['COMPLETED', 'DONE'],
+        },
         startTime: {
           gte: dateStart,
           lte: dateEnd,
@@ -72,7 +75,21 @@ export async function GET(request: NextRequest) {
       0
     )
 
-    const profit = totalRevenue - totalExpenses
+    // Daueraufträge (Summe aller aktiven Daueraufträge)
+    const recurringExpenses = await prisma.recurringExpense.findMany({
+      where: {
+        tenantId: session.user.tenantId,
+        isActive: true,
+      },
+    })
+
+    const totalRecurringExpenses = recurringExpenses.reduce(
+      (sum, rec) => sum + parseFloat(rec.amount.toString()),
+      0
+    )
+
+    // Gewinn = Umsatz - Ausgaben - Daueraufträge
+    const profit = totalRevenue - totalExpenses - totalRecurringExpenses
 
     // Revenue by Customer
     const revenueByCustomerMap = new Map<string, { id: string; name: string; revenue: number }>()
@@ -166,6 +183,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       totalRevenue,
       totalExpenses,
+      totalRecurringExpenses,
       profit,
       revenueByCustomer,
       revenueByEmployee,

@@ -32,6 +32,7 @@ export async function middleware(request: NextRequest) {
       '/dashboard/expenses',
       '/dashboard/recurring-expenses',
       '/dashboard/finance',
+      '/dashboard/settings',
     ]
 
     const isAdminRoute = adminOnlyRoutes.some(route => pathname.startsWith(route))
@@ -57,5 +58,6 @@ export const config = {
   matcher: [
     '/dashboard/:path*',
     '/invite/:path*',
+    '/onboarding/:path*',
   ],
 }

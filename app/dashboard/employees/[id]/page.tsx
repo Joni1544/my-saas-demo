@@ -26,6 +26,7 @@ interface Employee {
     name: string | null
     email: string
     role: string
+    hasPassword?: boolean
   }
 }
 
@@ -46,6 +47,8 @@ export default function EmployeeDetailPage() {
   const employeeId = params.id as string
   const [employee, setEmployee] = useState<Employee | null>(null)
   const [loading, setLoading] = useState(true)
+  const [inviteLink, setInviteLink] = useState<string | null>(null)
+  const [generatingLink, setGeneratingLink] = useState(false)
   const [formData, setFormData] = useState({
     position: '',
     color: '#3B82F6',
@@ -71,6 +74,9 @@ export default function EmployeeDetailPage() {
       if (!response.ok) throw new Error('Mitarbeiter nicht gefunden')
       const data = await response.json()
       setEmployee(data.employee)
+      
+      // Prüfe ob User bereits Passwort hat (aus User-Objekt)
+      // Das wird vom API-Endpunkt zurückgegeben
       setFormData({
         position: data.employee.position || '',
         color: data.employee.color || '#3B82F6',
@@ -132,6 +138,43 @@ export default function EmployeeDetailPage() {
     }))
   }
 
+  const generateInviteLink = async () => {
+    if (!employee) return
+    
+    setGeneratingLink(true)
+    try {
+      const response = await fetch('/api/employees/invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          employeeId: employee.id,
+          email: employee.user.email,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        alert(data.error || 'Fehler beim Erstellen des Links')
+        return
+      }
+
+      setInviteLink(data.inviteLink)
+    } catch (error) {
+      console.error('Fehler:', error)
+      alert('Fehler beim Erstellen des Links')
+    } finally {
+      setGeneratingLink(false)
+    }
+  }
+
+  const copyInviteLink = () => {
+    if (inviteLink) {
+      navigator.clipboard.writeText(inviteLink)
+      alert('Link in Zwischenablage kopiert!')
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -155,9 +198,39 @@ export default function EmployeeDetailPage() {
           >
             ← Zurück zur Übersicht
           </Link>
-          <h1 className="mt-2 text-3xl font-bold text-gray-900">
-            {employee.user.name || employee.user.email}
-          </h1>
+          <div className="mt-2 flex items-center justify-between">
+            <h1 className="text-3xl font-bold text-gray-900">
+              {employee.user.name || employee.user.email}
+            </h1>
+            {!employee.user.hasPassword && (
+              <div className="flex items-center gap-2">
+                {inviteLink ? (
+                  <div className="flex items-center gap-2 rounded-md bg-green-50 p-3 border border-green-200">
+                    <input
+                      type="text"
+                      value={inviteLink}
+                      readOnly
+                      className="text-sm text-gray-700 bg-white border border-gray-300 rounded px-2 py-1 min-w-[300px]"
+                    />
+                    <button
+                      onClick={copyInviteLink}
+                      className="rounded-md bg-green-600 px-3 py-1 text-sm font-semibold text-white hover:bg-green-500"
+                    >
+                      Kopieren
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={generateInviteLink}
+                    disabled={generatingLink}
+                    className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50"
+                  >
+                    {generatingLink ? 'Wird erstellt...' : 'Einladungslink erstellen'}
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="space-y-6">

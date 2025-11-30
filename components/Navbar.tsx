@@ -16,20 +16,29 @@ export default function Navbar() {
 
   const isAdmin = session.user.role === 'ADMIN'
   
-  const navigation = [
-    { name: 'Dashboard', href: '/dashboard', adminOnly: false },
-    { name: 'Kalender', href: '/dashboard/calendar', adminOnly: false },
-    { name: 'Kunden', href: '/dashboard/customers', adminOnly: false },
-    { name: 'Termine', href: '/dashboard/appointments', adminOnly: false },
-    { name: 'Aufgaben', href: '/dashboard/tasks', adminOnly: false },
-    // Admin-only Links
-    { name: 'Admin', href: '/dashboard/admin', adminOnly: true },
-    { name: 'Mitarbeiter', href: '/dashboard/employees', adminOnly: true },
-    { name: 'Umsatz', href: '/dashboard/revenue', adminOnly: true },
-    { name: 'Ausgaben', href: '/dashboard/expenses', adminOnly: true },
-    { name: 'Daueraufträge', href: '/dashboard/recurring-expenses', adminOnly: true },
-    { name: 'Finanzen', href: '/dashboard/finance', adminOnly: true },
-  ].filter(item => !item.adminOnly || isAdmin)
+  // Admin Navigation (neue Reihenfolge)
+  const adminNavigation = [
+    { name: 'Dashboard', href: '/dashboard' },
+    { name: 'Kalender', href: '/dashboard/calendar' },
+    { name: 'Termine', href: '/dashboard/appointments' },
+    { name: 'Mitarbeiter', href: '/dashboard/employees' },
+    { name: 'Ausgaben', href: '/dashboard/expenses' },
+    { name: 'Umsatz', href: '/dashboard/revenue' },
+    { name: 'Finanzen', href: '/dashboard/finance' },
+    { name: 'Aufgaben', href: '/dashboard/tasks' },
+    { name: 'Admin', href: '/dashboard/admin' },
+  ]
+  
+  // Mitarbeiter Navigation (abgespeckte Version)
+  const employeeNavigation = [
+    { name: 'Dashboard', href: '/dashboard' },
+    { name: 'Kalender', href: '/dashboard/calendar' },
+    { name: 'Termine', href: '/dashboard/appointments' },
+    { name: 'Kunden', href: '/dashboard/customers' },
+    { name: 'Aufgaben', href: '/dashboard/tasks' },
+  ]
+  
+  const navigation = isAdmin ? adminNavigation : employeeNavigation
 
   return (
     <nav className="bg-white shadow">

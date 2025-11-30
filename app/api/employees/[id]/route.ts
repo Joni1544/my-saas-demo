@@ -33,6 +33,7 @@ export async function GET(
             name: true,
             email: true,
             role: true,
+            password: true, // Für Prüfung ob Konto aktiviert
           },
         },
         appointments: {
@@ -52,7 +53,17 @@ export async function GET(
       )
     }
 
-    return NextResponse.json({ employee })
+    // Entferne Passwort aus Response, aber setze hasPassword Flag
+    const { password, ...userWithoutPassword } = employee.user
+    const employeeResponse = {
+      ...employee,
+      user: {
+        ...userWithoutPassword,
+        hasPassword: !!password && password.length > 0,
+      },
+    }
+
+    return NextResponse.json({ employee: employeeResponse })
   } catch (error) {
     console.error('Fehler beim Abrufen des Mitarbeiters:', error)
     return NextResponse.json(

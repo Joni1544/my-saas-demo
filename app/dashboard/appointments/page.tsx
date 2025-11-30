@@ -8,6 +8,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { format } from 'date-fns'
 import { inputBase, selectBase } from '@/lib/inputStyles'
+import DateSelector from '@/components/DateSelector'
 
 interface Appointment {
   id: string
@@ -56,10 +57,11 @@ export default function AppointmentsPage() {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('')
   const [dateFilter, setDateFilter] = useState<string>('')
+  const [monthFilter, setMonthFilter] = useState<{ month: number; year: number } | null>(null)
 
   useEffect(() => {
     fetchAppointments()
-  }, [statusFilter, dateFilter])
+  }, [statusFilter, dateFilter, monthFilter])
 
   // Beim Laden der Seite prüfen, ob wir von einer neuen Termin-Erstellung kommen
   useEffect(() => {
@@ -83,6 +85,11 @@ export default function AppointmentsPage() {
         const endDate = new Date(date.setHours(23, 59, 59, 999))
         params.append('startDate', startDate.toISOString())
         params.append('endDate', endDate.toISOString())
+      } else if (monthFilter) {
+        const monthStart = new Date(monthFilter.year, monthFilter.month, 1)
+        const monthEnd = new Date(monthFilter.year, monthFilter.month + 1, 0, 23, 59, 59)
+        params.append('startDate', monthStart.toISOString())
+        params.append('endDate', monthEnd.toISOString())
       } else {
         // Standard: Aktueller Monat + nächste 2 Monate (damit neue Termine sichtbar sind)
         const now = new Date()
@@ -156,7 +163,7 @@ export default function AppointmentsPage() {
 
         {/* Filter */}
         <div className="mb-6 space-y-4 rounded-lg bg-white p-4 shadow">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {/* Suche */}
             <div>
               <label htmlFor="search" className="block text-sm font-medium text-gray-700">
@@ -192,16 +199,32 @@ export default function AppointmentsPage() {
               </select>
             </div>
 
-            {/* Datum Filter */}
+            {/* Monat & Jahr Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Monat & Jahr
+              </label>
+              <DateSelector
+                value={monthFilter || { month: new Date().getMonth(), year: new Date().getFullYear() }}
+                onChange={(value) => {
+                  setMonthFilter(value)
+                  setDateFilter('') // Clear date filter when using month filter
+                }}
+              />
+            </div>
+            {/* Oder spezifisches Datum */}
             <div>
               <label htmlFor="date" className="block text-sm font-medium text-gray-700">
-                Datum
+                Oder spezifisches Datum
               </label>
               <input
                 type="date"
                 id="date"
                 value={dateFilter}
-                onChange={(e) => setDateFilter(e.target.value)}
+                onChange={(e) => {
+                  setDateFilter(e.target.value)
+                  setMonthFilter(null) // Clear month filter when using date filter
+                }}
                 className={`mt-1 ${inputBase}`}
               />
             </div>

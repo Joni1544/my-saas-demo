@@ -27,6 +27,7 @@ import {
 } from 'date-fns'
 import Link from 'next/link'
 import { selectBase, inputBase } from '@/lib/inputStyles'
+import DateSelector from '@/components/DateSelector'
 
 interface Appointment {
   id: string
@@ -463,46 +464,12 @@ export default function CalendarPage() {
                 
                 {/* Monat/Jahr Dropdown (nur für Monatsansicht) */}
                 {viewMode === 'month' && (
-                  <div className="flex gap-2">
-                    <label htmlFor="monthSelect" className="sr-only">
-                      Monat auswählen
-                    </label>
-                    <select
-                      id="monthSelect"
-                      value={currentDate.getMonth()}
-                      onChange={(e) => handleMonthYearChange(parseInt(e.target.value), currentDate.getFullYear())}
-                      className={`${selectBase} text-sm`}
-                      aria-label="Monat auswählen"
-                    >
-                      {Array.from({ length: 12 }, (_, i) => {
-                        const monthDate = new Date(2024, i, 1)
-                        return (
-                          <option key={i} value={i}>
-                            {format(monthDate, 'MMMM')}
-                          </option>
-                        )
-                      })}
-                    </select>
-                    <label htmlFor="yearSelect" className="sr-only">
-                      Jahr auswählen
-                    </label>
-                    <select
-                      id="yearSelect"
-                      value={currentDate.getFullYear()}
-                      onChange={(e) => handleMonthYearChange(currentDate.getMonth(), parseInt(e.target.value))}
-                      className={`${selectBase} text-sm`}
-                      aria-label="Jahr auswählen"
-                    >
-                      {Array.from({ length: 2035 - 2020 + 1 }, (_, i) => {
-                        const year = 2020 + i
-                        return (
-                          <option key={year} value={year}>
-                            {year}
-                          </option>
-                        )
-                      })}
-                    </select>
-                  </div>
+                  <DateSelector
+                    value={{ month: currentDate.getMonth(), year: currentDate.getFullYear() }}
+                    onChange={(value) => handleMonthYearChange(value.month, value.year)}
+                    minYear={2020}
+                    maxYear={2035}
+                  />
                 )}
               </div>
             </div>

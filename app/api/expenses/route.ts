@@ -32,12 +32,14 @@ export async function GET(request: NextRequest) {
     const endDate = searchParams.get('endDate')
     const category = searchParams.get('category')
     const employeeId = searchParams.get('employeeId')
+    const onlyRecurring = searchParams.get('onlyRecurring') === 'true'
 
     const where: {
       tenantId: string
       date?: { gte: Date; lte: Date }
       category?: string
       employeeId?: string
+      recurringExpenseId?: { not: null }
     } = {
       tenantId: session.user.tenantId,
     }
@@ -58,6 +60,11 @@ export async function GET(request: NextRequest) {
     // Mitarbeiterfilter
     if (employeeId) {
       where.employeeId = employeeId
+    }
+
+    // Nur Daueraufträge
+    if (onlyRecurring) {
+      where.recurringExpenseId = { not: null }
     }
 
     const expenses = await prisma.expense.findMany({
