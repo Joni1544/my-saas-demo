@@ -381,12 +381,14 @@ model Message {
 }
 
 model ChatChannel {
-  id        String   @id @default(cuid())
-  name      String
-  tenantId  String // Referenz zur Firma
-  isSystem  Boolean  @default(false) // System-Channel (z.B. Teamchat) kann nicht gelöscht werden
-  createdAt DateTime @default(now())
-  createdBy String? // User-ID des Erstellers
+  id          String   @id @default(cuid())
+  name        String
+  description String?  // Beschreibung des Channels
+  tenantId    String   // Referenz zur Firma
+  isSystem    Boolean  @default(false) // System-Channel (z.B. Teamchat) kann nicht gelöscht werden
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdBy   String?  // User-ID des Erstellers
 
   // Beziehungen
   shop     Shop            @relation(fields: [tenantId], references: [id], onDelete: Cascade)

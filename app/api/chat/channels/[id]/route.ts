@@ -70,7 +70,7 @@ export async function PUT(
 
     const { id } = await params
     const body = await request.json()
-    const { name } = body
+    const { name, description } = body
 
     // Prüfe ob Channel existiert und zum Tenant gehört
     const channel = await prisma.chatChannel.findFirst({
@@ -85,8 +85,8 @@ export async function PUT(
     }
 
     // System-Channels können nicht umbenannt werden
-    if (channel.isSystem) {
-      return NextResponse.json({ error: 'System-Channels können nicht bearbeitet werden' }, { status: 403 })
+    if (channel.isSystem && name !== undefined) {
+      return NextResponse.json({ error: 'System-Channels können nicht umbenannt werden' }, { status: 403 })
     }
 
     // Prüfe ob User Mitglied ist oder Admin
@@ -103,11 +103,13 @@ export async function PUT(
       return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 403 })
     }
 
+    const updateData: { name?: string; description?: string | null } = {}
+    if (name !== undefined) updateData.name = name.trim()
+    if (description !== undefined) updateData.description = description?.trim() || null
+
     const updatedChannel = await prisma.chatChannel.update({
       where: { id },
-      data: {
-        name: name?.trim() || channel.name,
-      },
+      data: updateData,
     })
 
     return NextResponse.json({ channel: updatedChannel })

@@ -7,10 +7,10 @@
 import Link from 'next/link'
 
 interface QuickActionsProps {
-  role: string
+  role?: string
 }
 
-export default function QuickActions({ role }: QuickActionsProps) {
+export default function QuickActions({ role: _role }: QuickActionsProps) {
   const actions = [
     {
       title: 'Neuer Termin',
