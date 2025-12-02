@@ -132,8 +132,43 @@ export default function CalendarPage() {
 
   useEffect(() => {
     fetchAppointments()
+    fetchAvailability()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [viewMode, daySelection, weekSelection, monthSelection, selectedEmployeeId, selectedCustomerId, selectedStatus])
+
+  const fetchAvailability = async () => {
+    try {
+      let startDate: Date
+      let endDate: Date
+
+      switch (viewMode) {
+        case 'day':
+          startDate = startOfDay(currentDate)
+          endDate = endOfDay(currentDate)
+          break
+        case 'week':
+          startDate = startOfWeek(currentDate, { weekStartsOn: 1 })
+          endDate = endOfWeek(currentDate, { weekStartsOn: 1 })
+          break
+        case 'month':
+          startDate = startOfMonth(currentDate)
+          endDate = endOfMonth(currentDate)
+          break
+        default:
+          return
+      }
+
+      const response = await fetch(
+        `/api/employees/availability-calendar?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`
+      )
+      if (response.ok) {
+        const data = await response.json()
+        setAvailabilityMap(data.availability || {})
+      }
+    } catch (error) {
+      console.error('Fehler beim Laden der Verfügbarkeit:', error)
+    }
+  }
 
   const fetchEmployees = async () => {
     try {

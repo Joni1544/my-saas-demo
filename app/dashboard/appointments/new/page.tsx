@@ -143,7 +143,7 @@ export default function NewAppointmentPage() {
     }
   }
 
-  const checkEmployeesAvailability = async (employeesList: any[]) => {
+  const checkEmployeesAvailability = async (employeesList: Employee[]) => {
     const errors: Record<string, string> = {}
     
     for (const employee of employeesList) {
@@ -166,7 +166,7 @@ export default function NewAppointmentPage() {
             errors[employee.id] = data.availability.reason || 'Nicht verfügbar'
           }
         }
-      } catch (error) {
+      } catch {
         // Ignoriere Fehler
       }
     }
@@ -315,7 +315,7 @@ export default function NewAppointmentPage() {
                   }`}
                 >
                   <option value="">Kein Mitarbeiter</option>
-                  {employees.map((employee: any) => {
+                  {employees.map((employee) => {
                     const error = availabilityErrors[employee.id]
                     const isUnavailable = !!error
                     return (

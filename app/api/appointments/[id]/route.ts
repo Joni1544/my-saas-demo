@@ -189,7 +189,7 @@ export async function PUT(
     }
 
     // Mitarbeiter kann Preise NUR bei eigenen Terminen ändern
-    let finalPrice = price
+    const finalPrice = price
     if (session.user.role === 'MITARBEITER' && price !== undefined) {
       if (!existingAppointment || existingAppointment.employeeId !== where.employeeId) {
         return NextResponse.json(

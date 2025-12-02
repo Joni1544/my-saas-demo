@@ -25,10 +25,9 @@ export async function GET(
     }
 
     // Wenn Mitarbeiter: Prüfe ob Kunde zu eigenen Terminen gehört
-    let whereClause: {
-      id: string
+    const whereClause: {
+      id: string | { in: string[] }
       tenantId: string
-      id?: { in: string[] }
     } = {
       id: id,
       tenantId: session.user.tenantId,

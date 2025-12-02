@@ -447,6 +447,7 @@ model VacationRequest {
   startDate DateTime
   endDate   DateTime
   days      Int // Anzahl der Urlaubstage
+  leaveReason String @default("Urlaub") // Art des Urlaubs: "Urlaub", "Fortbildung", "Unbezahlt", etc.
 
   status String  @default("PENDING") // PENDING | APPROVED | DENIED
   reason String? // Optional: Grund für Ablehnung

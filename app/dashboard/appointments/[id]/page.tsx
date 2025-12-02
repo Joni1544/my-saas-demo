@@ -466,8 +466,13 @@ export default function AppointmentDetailPage() {
                     <label className="block text-sm font-medium text-gray-700">Mitarbeiter</label>
                     <select
                       value={formData.employeeId}
-                      onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })}
-                      className={`mt-1 ${inputBase}`}
+                      onChange={(e) => {
+                        setFormData({ ...formData, employeeId: e.target.value })
+                        setAdminOverride(false)
+                      }}
+                      className={`mt-1 ${inputBase} ${
+                        availabilityError ? 'border-red-300 bg-red-50' : ''
+                      }`}
                     >
                       <option value="">Kein Mitarbeiter</option>
                       {employees.map((employee) => (
@@ -476,6 +481,22 @@ export default function AppointmentDetailPage() {
                         </option>
                       ))}
                     </select>
+                    {availabilityError && (
+                      <div className="mt-2 space-y-2">
+                        <p className="text-sm text-red-600">⚠️ {availabilityError}</p>
+                        <label className="flex items-center">
+                          <input
+                            type="checkbox"
+                            checked={adminOverride}
+                            onChange={(e) => setAdminOverride(e.target.checked)}
+                            className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                          />
+                          <span className="ml-2 text-sm text-gray-700">
+                            Trotzdem zuweisen? (Admin Override)
+                          </span>
+                        </label>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

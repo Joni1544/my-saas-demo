@@ -6,7 +6,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { getManifestForTenant } from '@/lib/branding'
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const session = await auth()
     const manifest = await getManifestForTenant(session?.user?.tenantId || null)

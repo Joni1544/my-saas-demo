@@ -7,6 +7,7 @@
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { inputBase, textareaBase } from '@/lib/inputStyles'
 import { format } from 'date-fns'
 import { de } from 'date-fns/locale'
@@ -41,6 +42,7 @@ interface VacationRequest {
   days: number
   status: string
   reason: string | null
+  leaveReason?: string
   createdAt: string
   employee?: {
     user: {
@@ -48,6 +50,16 @@ interface VacationRequest {
       email: string
     }
   }
+}
+
+interface SickEmployee {
+  id: string
+  user: {
+    name: string | null
+    email: string
+  }
+  isSick: boolean
+  sickDays: number | null
 }
 
 type Tab = 'profile' | 'times' | 'vacation' | 'sick'
@@ -88,7 +100,7 @@ export default function ProfilePage() {
   })
   const [saving, setSaving] = useState(false)
   const [allVacationRequests, setAllVacationRequests] = useState<VacationRequest[]>([])
-  const [sickEmployees, setSickEmployees] = useState<any[]>([])
+  const [sickEmployees, setSickEmployees] = useState<SickEmployee[]>([])
 
   const isAdmin = session?.user?.role === 'ADMIN'
 
@@ -372,9 +384,11 @@ export default function ProfilePage() {
                   Profilbild
                 </label>
                 {employee.avatarUrl ? (
-                  <img
+                  <Image
                     src={employee.avatarUrl}
                     alt="Profilbild"
+                    width={96}
+                    height={96}
                     className="h-24 w-24 rounded-full object-cover"
                   />
                 ) : (
@@ -663,7 +677,7 @@ export default function ProfilePage() {
                           {format(new Date(request.endDate), 'dd.MM.yyyy', { locale: de })}
                         </p>
                         <p className="text-sm text-gray-500">
-                          {request.days} Tage • {(request as any).leaveReason || 'Urlaub'}
+                          {request.days} Tage • {request.leaveReason || 'Urlaub'}
                         </p>
                       </div>
                       <span
@@ -697,14 +711,14 @@ export default function ProfilePage() {
                   <p className="text-sm text-gray-500">Keine Urlaubsanträge</p>
                 ) : (
                   <div className="space-y-3">
-                    {allVacationRequests.map((request: any) => (
+                    {allVacationRequests.map((request) => (
                       <div
                         key={request.id}
                         className="flex items-center justify-between rounded-lg border border-gray-200 p-4"
                       >
                         <div className="flex-1">
                           <p className="font-medium text-gray-900">
-                            {request.employee.user.name || request.employee.user.email}
+                            {request.employee?.user.name || request.employee?.user.email || 'Unbekannt'}
                           </p>
                           <p className="text-sm text-gray-600">
                             {format(new Date(request.startDate), 'dd.MM.yyyy', { locale: de })} -{' '}
@@ -807,7 +821,7 @@ export default function ProfilePage() {
                   <p className="text-sm text-gray-500">Keine Krankmeldungen</p>
                 ) : (
                   <div className="space-y-3">
-                    {sickEmployees.map((sickEmployee: any) => (
+                    {sickEmployees.map((sickEmployee) => (
                       <div
                         key={sickEmployee.id}
                         className="flex items-center justify-between rounded-lg border border-red-200 bg-red-50 p-4"
