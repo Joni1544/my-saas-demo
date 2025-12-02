@@ -15,6 +15,7 @@ import {
   startOfWeek,
   endOfWeek,
 } from 'date-fns'
+import { useRouter } from 'next/navigation'
 import DateSelector from '@/components/DateSelector'
 // Locale wird nicht verwendet, da Next.js standardmäßig englisch ist
 // Für deutsche Lokalisierung würde man: import { de } from 'date-fns/locale'
@@ -31,6 +32,7 @@ interface Appointment {
 }
 
 export default function Calendar() {
+  const router = useRouter()
   const now = new Date()
   const [monthSelection, setMonthSelection] = useState({
     month: now.getMonth(),
@@ -118,13 +120,17 @@ export default function Calendar() {
             return (
               <button
                 key={day.toISOString()}
-                onClick={() => setSelectedDate(day)}
+                onClick={() => {
+                  // Wechsle zur Kalender-Seite mit Tagesansicht
+                  const dateStr = format(day, 'yyyy-MM-dd')
+                  router.push(`/dashboard/calendar?date=${dateStr}`)
+                }}
                 className={`
                   relative p-3 text-sm rounded-xl transition-all duration-200 transform hover:scale-105
                   ${!isCurrentMonth ? 'text-gray-300' : 'text-gray-900'}
                   ${isSelected ? 'bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-lg ring-2 ring-indigo-300' : ''}
                   ${isToday && !isSelected ? 'bg-gradient-to-br from-blue-50 to-indigo-50 ring-2 ring-blue-200 font-bold' : ''}
-                  hover:bg-indigo-50 hover:shadow-md
+                  hover:bg-indigo-50 hover:shadow-md cursor-pointer
                 `}
               >
                 <div className="flex flex-col items-center">

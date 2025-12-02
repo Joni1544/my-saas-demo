@@ -25,6 +25,7 @@ export default function InventoryPage() {
   const [loading, setLoading] = useState(true)
   const [categoryFilter, setCategoryFilter] = useState<string>('')
   const [categories, setCategories] = useState<string[]>([])
+  const [editingQuantity, setEditingQuantity] = useState<{ id: string; value: string } | null>(null)
 
   useEffect(() => {
     fetchItems()
@@ -83,6 +84,27 @@ export default function InventoryPage() {
       })
       if (!response.ok) throw new Error('Fehler beim Aktualisieren')
       fetchItems()
+      setEditingQuantity(null)
+    } catch (error) {
+      console.error('Fehler:', error)
+      alert('Fehler beim Aktualisieren')
+    }
+  }
+
+  const handleQuantityChange = async (id: string, newQuantity: number) => {
+    try {
+      const quantity = Math.max(0, Math.floor(newQuantity))
+      
+      const response = await fetch(`/api/inventory/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          quantity,
+        }),
+      })
+      if (!response.ok) throw new Error('Fehler beim Aktualisieren')
+      fetchItems()
+      setEditingQuantity(null)
     } catch (error) {
       console.error('Fehler:', error)
       alert('Fehler beim Aktualisieren')
@@ -208,23 +230,78 @@ export default function InventoryPage() {
                       </td>
                       <td className="whitespace-nowrap px-6 py-4">
                         <div className="flex items-center gap-2">
-                          <span className={`text-sm font-semibold ${lowStock ? 'text-yellow-600' : 'text-gray-900'}`}>
-                            {item.quantity}
-                          </span>
-                          <button
-                            onClick={() => handleQuickUpdate(item.id, -1)}
-                            className="rounded bg-red-100 px-2 py-1 text-xs text-red-700 hover:bg-red-200"
-                            title="Verbraucht 1"
-                          >
-                            -1
-                          </button>
-                          <button
-                            onClick={() => handleQuickUpdate(item.id, 1)}
-                            className="rounded bg-green-100 px-2 py-1 text-xs text-green-700 hover:bg-green-200"
-                            title="Hinzufügen 1"
-                          >
-                            +1
-                          </button>
+                          {editingQuantity?.id === item.id ? (
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="number"
+                                min="0"
+                                value={editingQuantity.value}
+                                onChange={(e) => setEditingQuantity({ id: item.id, value: e.target.value })}
+                                onBlur={() => {
+                                  const value = parseInt(editingQuantity.value) || 0
+                                  handleQuantityChange(item.id, value)
+                                }}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    const value = parseInt(editingQuantity.value) || 0
+                                    handleQuantityChange(item.id, value)
+                                  } else if (e.key === 'Escape') {
+                                    setEditingQuantity(null)
+                                  }
+                                }}
+                                autoFocus
+                                className="w-20 rounded border border-gray-300 px-2 py-1 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                              />
+                              <button
+                                onClick={() => {
+                                  const value = parseInt(editingQuantity.value) || 0
+                                  handleQuantityChange(item.id, value)
+                                }}
+                                className="rounded bg-indigo-600 px-2 py-1 text-xs text-white hover:bg-indigo-700"
+                              >
+                                ✓
+                              </button>
+                              <button
+                                onClick={() => setEditingQuantity(null)}
+                                className="rounded bg-gray-200 px-2 py-1 text-xs text-gray-700 hover:bg-gray-300"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          ) : (
+                            <>
+                              <span className={`text-sm font-semibold ${lowStock ? 'text-yellow-600' : 'text-gray-900'}`}>
+                                {item.quantity}
+                              </span>
+                              <button
+                                onClick={() => {
+                                  const newValue = Math.max(0, item.quantity - 1)
+                                  handleQuantityChange(item.id, newValue)
+                                }}
+                                className="rounded bg-red-100 px-2 py-1 text-xs text-red-700 hover:bg-red-200 font-semibold"
+                                title="Verbraucht 1"
+                              >
+                                -1
+                              </button>
+                              <button
+                                onClick={() => {
+                                  const newValue = item.quantity + 1
+                                  handleQuantityChange(item.id, newValue)
+                                }}
+                                className="rounded bg-green-100 px-2 py-1 text-xs text-green-700 hover:bg-green-200 font-semibold"
+                                title="Hinzufügen 1"
+                              >
+                                +1
+                              </button>
+                              <button
+                                onClick={() => setEditingQuantity({ id: item.id, value: item.quantity.toString() })}
+                                className="rounded bg-indigo-100 px-2 py-1 text-xs text-indigo-700 hover:bg-indigo-200 font-semibold"
+                                title="Menge bearbeiten"
+                              >
+                                ✎
+                              </button>
+                            </>
+                          )}
                         </div>
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
@@ -239,16 +316,16 @@ export default function InventoryPage() {
                           : '–'}
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm font-medium">
-                        <div className="flex gap-2">
+                        <div className="flex items-center justify-end gap-4">
                           <Link
                             href={`/dashboard/inventory/${item.id}/edit`}
-                            className="text-indigo-600 hover:text-indigo-900"
+                            className="text-indigo-600 hover:text-indigo-900 font-medium"
                           >
                             Bearbeiten
                           </Link>
                           <button
                             onClick={() => handleDelete(item.id)}
-                            className="text-red-600 hover:text-red-900"
+                            className="text-red-600 hover:text-red-900 font-medium"
                           >
                             Löschen
                           </button>

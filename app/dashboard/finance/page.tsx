@@ -89,9 +89,34 @@ export default function FinanceDashboardPage() {
 
   const fetchStats = async () => {
     try {
+      // Berechne korrekten Zeitraum basierend auf timeMode
+      let startDate: string
+      let endDate: string
+
+      if (timeMode === 'day') {
+        startDate = selectedDate
+        endDate = selectedDate
+      } else if (timeMode === 'week') {
+        startDate = filters.startDate
+        endDate = filters.endDate
+      } else if (timeMode === 'month') {
+        const monthStart = new Date(selectedMonth.year, selectedMonth.month, 1)
+        const monthEnd = new Date(selectedMonth.year, selectedMonth.month + 1, 0, 23, 59, 59)
+        startDate = monthStart.toISOString().split('T')[0]
+        endDate = monthEnd.toISOString().split('T')[0]
+      } else if (timeMode === 'year') {
+        const yearStart = new Date(selectedYear, 0, 1)
+        const yearEnd = new Date(selectedYear, 11, 31, 23, 59, 59)
+        startDate = yearStart.toISOString().split('T')[0]
+        endDate = yearEnd.toISOString().split('T')[0]
+      } else {
+        startDate = filters.startDate
+        endDate = filters.endDate
+      }
+
       const params = new URLSearchParams()
-      if (filters.startDate) params.append('startDate', filters.startDate)
-      if (filters.endDate) params.append('endDate', filters.endDate)
+      params.append('startDate', startDate)
+      params.append('endDate', endDate)
 
       const response = await fetch(`/api/finance/stats?${params.toString()}`)
       if (!response.ok) {
@@ -118,6 +143,10 @@ export default function FinanceDashboardPage() {
       if (timeMode === 'day') {
         from = selectedDate
         to = selectedDate
+      } else if (timeMode === 'week') {
+        // Für Woche verwenden wir die Filter-Daten
+        from = filters.startDate
+        to = filters.endDate
       } else if (timeMode === 'month') {
         const monthStart = new Date(selectedMonth.year, selectedMonth.month, 1)
         const monthEnd = new Date(selectedMonth.year, selectedMonth.month + 1, 0, 23, 59, 59)
@@ -296,7 +325,10 @@ export default function FinanceDashboardPage() {
                     type="date"
                     id="startDate"
                     value={filters.startDate}
-                    onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
+                    onChange={(e) => {
+                      const newStartDate = e.target.value
+                      setFilters({ ...filters, startDate: newStartDate })
+                    }}
                     className={`mt-1 ${inputBase}`}
                   />
                 </div>
@@ -308,7 +340,10 @@ export default function FinanceDashboardPage() {
                     type="date"
                     id="endDate"
                     value={filters.endDate}
-                    onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
+                    onChange={(e) => {
+                      const newEndDate = e.target.value
+                      setFilters({ ...filters, endDate: newEndDate })
+                    }}
                     className={`mt-1 ${inputBase}`}
                   />
                 </div>

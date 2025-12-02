@@ -73,13 +73,25 @@ export default function DashboardStats() {
             (apt: { startTime: string }) => new Date(apt.startTime) >= now
           ).length || 0
 
-          // Berechne Umsatz aus abgeschlossenen Terminen (COMPLETED oder DONE)
+          // Berechne Umsatz aus abgeschlossenen Terminen (COMPLETED oder DONE) für DIESEN MONAT
+          const now = new Date()
+          const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+          const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59)
+          
           const completed = appointmentsData.appointments?.filter(
-            (apt: { status: string; price: number | null }) => 
-              (apt.status === 'COMPLETED' || apt.status === 'DONE') && apt.price
+            (apt: { status: string; price: number | null; startTime: string }) => {
+              const aptDate = new Date(apt.startTime)
+              return (apt.status === 'COMPLETED' || apt.status === 'DONE') && 
+                     apt.price && 
+                     aptDate >= monthStart && 
+                     aptDate <= monthEnd
+            }
           ) || []
           const totalRevenue = completed.reduce(
-            (sum: number, apt: { price: number }) => sum + (apt.price || 0),
+            (sum: number, apt: { price: number }) => {
+              const price = typeof apt.price === 'number' ? apt.price : parseFloat(apt.price?.toString() || '0')
+              return sum + price
+            },
             0
           )
 

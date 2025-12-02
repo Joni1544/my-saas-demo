@@ -5,7 +5,6 @@
 import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
-import { getUserName, getGreeting } from '@/lib/utils'
 import DashboardStats from '@/components/DashboardStats'
 import Calendar from '@/components/Calendar'
 import QuickActions from '@/components/QuickActions'
@@ -24,25 +23,10 @@ export default async function DashboardPage() {
     where: { tenantId: session.user.tenantId },
   })
 
-  const displayName = getUserName(session.user.name, session.user.email)
-  const tenantName = shop?.name || null
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
       <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-        {/* Kompakter Header */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
-            {getGreeting()}, {displayName}!
-          </h1>
-          <p className="mt-1 text-sm text-gray-500">
-            {tenantName ? (
-              <>Hier ist dein Überblick für {tenantName}</>
-            ) : (
-              <span className="text-red-500">Kein Studio zugewiesen</span>
-            )}
-          </p>
-        </div>
 
         {/* Quick Actions */}
         <div className="mb-6">

@@ -21,8 +21,18 @@ export async function GET(request: NextRequest) {
     const startDate = searchParams.get('startDate')
     const endDate = searchParams.get('endDate')
 
-    const dateStart = startDate ? new Date(startDate) : new Date(new Date().getFullYear(), 0, 1)
-    const dateEnd = endDate ? new Date(endDate) : new Date()
+    // Sicherstellen, dass Datum korrekt gesetzt wird (inkl. Zeit)
+    const dateStart = startDate ? new Date(startDate + 'T00:00:00.000Z') : new Date(new Date().getFullYear(), 0, 1)
+    const dateEnd = endDate ? new Date(endDate + 'T23:59:59.999Z') : new Date()
+    
+    // Sicherstellen, dass Datum korrekt gesetzt wird (inkl. Zeit)
+    const dateStartFixed = new Date(dateStart)
+    dateStartFixed.setHours(0, 0, 0, 0)
+    const dateEndFixed = new Date(dateEnd)
+    dateEndFixed.setHours(23, 59, 59, 999)
+    
+    // Debug-Logging (kann später entfernt werden)
+    console.log('Finance Stats Filter:', { startDate, endDate, dateStartFixed, dateEndFixed })
 
     // Umsatz (aus abgeschlossenen Terminen)
     // Status: COMPLETED zählt als Umsatz
@@ -31,8 +41,8 @@ export async function GET(request: NextRequest) {
         tenantId: session.user.tenantId,
         status: 'COMPLETED',
         startTime: {
-          gte: dateStart,
-          lte: dateEnd,
+          gte: dateStartFixed,
+          lte: dateEndFixed,
         },
       },
       include: {
@@ -55,8 +65,8 @@ export async function GET(request: NextRequest) {
       where: {
         tenantId: session.user.tenantId,
         date: {
-          gte: dateStart,
-          lte: dateEnd,
+          gte: dateStartFixed,
+          lte: dateEndFixed,
         },
       },
       include: {
@@ -166,12 +176,23 @@ export async function GET(request: NextRequest) {
       const monthStart = new Date(current.getFullYear(), current.getMonth(), 1)
       const monthEnd = new Date(current.getFullYear(), current.getMonth() + 1, 0, 23, 59, 59)
 
+      const monthStartFixed = new Date(monthStart)
+      monthStartFixed.setHours(0, 0, 0, 0)
+      const monthEndFixed = new Date(monthEnd)
+      monthEndFixed.setHours(23, 59, 59, 999)
+      
       const monthRevenue = completedAppointments
-        .filter((apt) => apt.startTime >= monthStart && apt.startTime <= monthEnd)
+        .filter((apt) => {
+          const aptDate = new Date(apt.startTime)
+          return aptDate >= monthStartFixed && aptDate <= monthEndFixed
+        })
         .reduce((sum, apt) => sum + (apt.price?.toNumber() || 0), 0)
 
       const monthExpenses = expenses
-        .filter((exp) => exp.date >= monthStart && exp.date <= monthEnd)
+        .filter((exp) => {
+          const expDate = new Date(exp.date)
+          return expDate >= monthStartFixed && expDate <= monthEndFixed
+        })
         .reduce((sum, exp) => sum + parseFloat(exp.amount.toString()), 0)
 
       monthlyData.push({

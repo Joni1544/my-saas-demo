@@ -43,9 +43,12 @@ export async function GET(request: NextRequest) {
 
     // Datumsfilter
     if (startDate && endDate) {
+      // Sicherstellen, dass Datum korrekt gesetzt wird (inkl. Zeit)
+      const start = new Date(startDate + 'T00:00:00.000Z')
+      const end = new Date(endDate + 'T23:59:59.999Z')
       where.date = {
-        gte: new Date(startDate),
-        lte: new Date(endDate),
+        gte: start,
+        lte: end,
       }
     }
 

@@ -36,8 +36,9 @@ export async function GET(request: NextRequest) {
     let dateEnd: Date = now
 
     if (startDate && endDate) {
-      dateStart = new Date(startDate)
-      dateEnd = new Date(endDate)
+      // Sicherstellen, dass Datum korrekt gesetzt wird (inkl. Zeit)
+      dateStart = new Date(startDate + 'T00:00:00.000Z')
+      dateEnd = new Date(endDate + 'T23:59:59.999Z')
     } else {
       switch (period) {
         case 'day':
@@ -59,6 +60,12 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Sicherstellen, dass Datum korrekt gesetzt wird
+    const dateStartFixed = new Date(dateStart)
+    dateStartFixed.setHours(0, 0, 0, 0)
+    const dateEndFixed = new Date(dateEnd)
+    dateEndFixed.setHours(23, 59, 59, 999)
+    
     // Umsatz abrufen (nur abgeschlossene Termine mit Preis)
     // Status: COMPLETED zählt als Umsatz
     const appointments = await prisma.appointment.findMany({
@@ -67,8 +74,8 @@ export async function GET(request: NextRequest) {
         status: 'COMPLETED',
         price: { gt: 0 },
         startTime: {
-          gte: dateStart,
-          lte: dateEnd,
+          gte: dateStartFixed,
+          lte: dateEndFixed,
         },
       },
       include: {
@@ -137,8 +144,8 @@ export async function GET(request: NextRequest) {
         tenantId: session.user.tenantId,
         status: 'CANCELLED',
         startTime: {
-          gte: dateStart,
-          lte: dateEnd,
+          gte: dateStartFixed,
+          lte: dateEndFixed,
         },
       },
     })

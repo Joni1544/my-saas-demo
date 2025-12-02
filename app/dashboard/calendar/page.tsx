@@ -5,6 +5,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import {
   format,
   startOfMonth,
@@ -69,18 +70,25 @@ const STATUS_COLORS: Record<string, string> = {
 }
 
 export default function CalendarPage() {
+  const searchParams = useSearchParams()
+  const dateParam = searchParams.get('date')
   const now = new Date()
-  const [viewMode, setViewMode] = useState<ViewMode>('month')
+  
+  // Wenn ein Datum in der URL ist, wechsle zur Tagesansicht
+  const initialViewMode: ViewMode = dateParam ? 'day' : 'month'
+  const [viewMode, setViewMode] = useState<ViewMode>(initialViewMode)
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [employees, setEmployees] = useState<Employee[]>([])
   const [customers, setCustomers] = useState<Array<{ id: string; firstName: string; lastName: string }>>([])
   const [loading, setLoading] = useState(true)
   
   // Einheitliche Datumsauswahl-States
+  // Wenn ein Datum in der URL ist, verwende es
+  const initialDate = dateParam ? new Date(dateParam) : now
   const [daySelection, setDaySelection] = useState({
-    day: now.getDate(),
-    month: now.getMonth(),
-    year: now.getFullYear(),
+    day: initialDate.getDate(),
+    month: initialDate.getMonth(),
+    year: initialDate.getFullYear(),
   })
   const [weekSelection, setWeekSelection] = useState({
     week: getWeek(now, { weekStartsOn: 1 }),
@@ -361,9 +369,18 @@ export default function CalendarPage() {
           return (
             <div
               key={day.toISOString()}
-              className={`min-h-[100px] border border-gray-200 p-1 ${
+              className={`min-h-[100px] border border-gray-200 p-1 cursor-pointer hover:bg-indigo-50 transition-colors ${
                 !isCurrentMonth ? 'bg-gray-50' : ''
               } ${isToday ? 'bg-blue-50 ring-2 ring-blue-500' : ''}`}
+              onClick={(e) => {
+                // Wenn auf einen Termin geklickt wurde, nicht zur Tagesansicht wechseln
+                if ((e.target as HTMLElement).closest('.appointment-item')) {
+                  return
+                }
+                // Wechsle zur Tagesansicht für diesen Tag
+                const dateStr = format(day, 'yyyy-MM-dd')
+                window.location.href = `/dashboard/calendar?date=${dateStr}`
+              }}
             >
               <div
                 className={`text-sm mb-1 ${
@@ -376,8 +393,11 @@ export default function CalendarPage() {
                 {dayAppointments.slice(0, 3).map((apt) => (
                   <div
                     key={apt.id}
-                    onClick={() => setSelectedAppointment(apt)}
-                    className="rounded px-1 py-0.5 text-xs text-white cursor-pointer hover:opacity-80 truncate"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setSelectedAppointment(apt)
+                    }}
+                    className="appointment-item rounded px-1 py-0.5 text-xs text-white cursor-pointer hover:opacity-80 truncate"
                     style={{ backgroundColor: getAppointmentColor(apt) }}
                     title={apt.title}
                   >

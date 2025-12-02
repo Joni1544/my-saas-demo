@@ -60,14 +60,24 @@ export async function GET(request: Request) {
     let dateEnd: Date = now
 
     if (fromParam && toParam) {
-      dateStart = new Date(fromParam)
-      dateEnd = new Date(toParam)
+      // Sicherstellen, dass Datum korrekt gesetzt wird (inkl. Zeit)
+      dateStart = new Date(fromParam + 'T00:00:00.000Z')
+      dateEnd = new Date(toParam + 'T23:59:59.999Z')
     } else {
       // Standard: basierend auf mode
       const range = getDateRange(mode, now)
       dateStart = range.start
       dateEnd = range.end
     }
+    
+    // Sicherstellen, dass Datum korrekt gesetzt wird
+    const dateStartFixed = new Date(dateStart)
+    dateStartFixed.setHours(0, 0, 0, 0)
+    const dateEndFixed = new Date(dateEnd)
+    dateEndFixed.setHours(23, 59, 59, 999)
+    
+    // Debug-Logging (kann später entfernt werden)
+    console.log('Timeseries Filter:', { mode, fromParam, toParam, dateStartFixed, dateEndFixed })
 
     // Umsatz (abgeschlossene Termine)
     const completedAppointments = await prisma.appointment.findMany({
@@ -75,8 +85,8 @@ export async function GET(request: Request) {
         tenantId: session.user.tenantId,
         status: 'COMPLETED',
         startTime: {
-          gte: dateStart,
-          lte: dateEnd,
+          gte: dateStartFixed,
+          lte: dateEndFixed,
         },
       },
       select: {
@@ -90,8 +100,8 @@ export async function GET(request: Request) {
       where: {
         tenantId: session.user.tenantId,
         date: {
-          gte: dateStart,
-          lte: dateEnd,
+          gte: dateStartFixed,
+          lte: dateEndFixed,
         },
       },
       select: {

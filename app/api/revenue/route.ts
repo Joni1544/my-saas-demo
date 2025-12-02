@@ -30,7 +30,7 @@ export async function GET(request: Request) {
     let dateEnd: Date
 
     if (dateParam) {
-      const date = new Date(dateParam)
+      const date = new Date(dateParam + 'T00:00:00.000Z')
       switch (mode) {
         case 'day':
           dateStart = startOfDay(date)
@@ -76,6 +76,15 @@ export async function GET(request: Request) {
           dateEnd = endOfMonth(now)
       }
     }
+    
+    // Sicherstellen, dass Datum korrekt gesetzt wird
+    const dateStartFixed = new Date(dateStart)
+    dateStartFixed.setHours(0, 0, 0, 0)
+    const dateEndFixed = new Date(dateEnd)
+    dateEndFixed.setHours(23, 59, 59, 999)
+    
+    // Debug-Logging (kann später entfernt werden)
+    console.log('Revenue Filter:', { mode, dateParam, dateStartFixed, dateEndFixed })
 
     // Abgeschlossene Termine abrufen
     const completedAppointments = await prisma.appointment.findMany({
@@ -83,8 +92,8 @@ export async function GET(request: Request) {
         tenantId: session.user.tenantId,
         status: 'COMPLETED',
         startTime: {
-          gte: dateStart,
-          lte: dateEnd,
+          gte: dateStartFixed,
+          lte: dateEndFixed,
         },
         price: {
           gt: 0,
