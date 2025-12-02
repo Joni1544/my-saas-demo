@@ -43,7 +43,11 @@ export async function GET(request: NextRequest) {
     }
 
     // Hole Nachrichten
-    const where: any = {
+    const where: {
+      tenantId: string
+      OR?: Array<{ senderId: string; receiverId: string }>
+      channelId?: string
+    } = {
       tenantId: session.user.tenantId,
     }
 
