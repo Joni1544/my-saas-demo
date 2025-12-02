@@ -4,7 +4,6 @@
  */
 import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
-import { prisma } from '@/lib/prisma'
 import DashboardStats from '@/components/DashboardStats'
 import Calendar from '@/components/Calendar'
 import QuickActions from '@/components/QuickActions'
@@ -17,12 +16,6 @@ export default async function DashboardPage() {
   if (!session || !session.user.tenantId) {
     redirect('/login')
   }
-
-  // Shop-Name aus DB holen
-  const shop = await prisma.shop.findFirst({
-    where: { tenantId: session.user.tenantId },
-  })
-
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">

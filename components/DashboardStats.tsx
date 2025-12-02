@@ -81,15 +81,16 @@ export default function DashboardStats() {
             (apt: { status: string; price: number | null; startTime: string }) => {
               const aptDate = new Date(apt.startTime)
               return (apt.status === 'COMPLETED' || apt.status === 'DONE') && 
-                     apt.price && 
+                     apt.price !== null && 
+                     apt.price !== undefined &&
                      aptDate >= monthStart && 
                      aptDate <= monthEnd
             }
           ) || []
           const totalRevenue = completed.reduce(
-            (sum: number, apt: { price: number }) => {
-              const price = typeof apt.price === 'number' ? apt.price : parseFloat(apt.price?.toString() || '0')
-              return sum + price
+            (sum: number, apt: { status: string; price: number | null; startTime: string }) => {
+              const price = apt.price || 0
+              return sum + (typeof price === 'number' ? price : parseFloat(String(price)))
             },
             0
           )
