@@ -19,6 +19,10 @@ export default async function AdminDashboardPage() {
     redirect('/dashboard')
   }
 
+  if (!session.user.tenantId) {
+    redirect('/dashboard')
+  }
+
   // Shop-Name aus DB holen
   const shop = await prisma.shop.findFirst({
     where: { tenantId: session.user.tenantId },
