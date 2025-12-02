@@ -32,7 +32,7 @@ export default function FinanceOverview() {
         const [appointmentsRes, expensesRes, recurringRes] = await Promise.all([
           fetch(`/api/appointments?startDate=${monthStart.toISOString()}&endDate=${monthEnd.toISOString()}`),
           fetch(`/api/expenses?startDate=${monthStart.toISOString()}&endDate=${monthEnd.toISOString()}`),
-          fetch('/api/recurring-expenses').catch(() => ({ ok: false })), // Kann fehlschlagen wenn API nicht existiert
+          fetch('/api/recurring-expenses').catch(() => null), // Kann fehlschlagen wenn API nicht existiert
         ])
 
         const appointmentsData = await appointmentsRes.json()
@@ -68,7 +68,7 @@ export default function FinanceOverview() {
           ) || 0
 
         // Recurring Expenses (monatlich)
-        if (recurringRes.ok) {
+        if (recurringRes && recurringRes.ok) {
           const recurringData = await recurringRes.json()
           const recurringMonthly =
             recurringData.recurringExpenses
