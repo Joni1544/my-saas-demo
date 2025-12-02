@@ -60,9 +60,6 @@ export async function GET() {
     })
 
     return NextResponse.json({ channels })
-    })
-
-    return NextResponse.json({ channels })
   } catch (error) {
     console.error('Fehler beim Laden der Channels:', error)
     return NextResponse.json({ error: 'Fehler beim Laden der Channels' }, { status: 500 })
