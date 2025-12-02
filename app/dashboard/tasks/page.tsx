@@ -134,21 +134,6 @@ export default function TasksPage() {
     }
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Aufgabe wirklich löschen?')) return
-
-    try {
-      const response = await fetch(`/api/tasks/${id}`, {
-        method: 'DELETE',
-      })
-      if (!response.ok) throw new Error('Fehler beim Löschen')
-      fetchTasks()
-    } catch (error) {
-      console.error('Fehler:', error)
-      alert('Fehler beim Löschen')
-    }
-  }
-
   const isOverdue = (task: Task) => {
     const deadline = task.deadline || task.dueDate
     if (!deadline) return false

@@ -68,29 +68,6 @@ export default function InventoryPage() {
     }
   }
 
-  const handleQuickUpdate = async (id: string, delta: number) => {
-    try {
-      const item = items.find(i => i.id === id)
-      if (!item) return
-
-      const newQuantity = Math.max(0, item.quantity + delta)
-      
-      const response = await fetch(`/api/inventory/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          quantity: newQuantity,
-        }),
-      })
-      if (!response.ok) throw new Error('Fehler beim Aktualisieren')
-      fetchItems()
-      setEditingQuantity(null)
-    } catch (error) {
-      console.error('Fehler:', error)
-      alert('Fehler beim Aktualisieren')
-    }
-  }
-
   const handleQuantityChange = async (id: string, newQuantity: number) => {
     try {
       const quantity = Math.max(0, Math.floor(newQuantity))
@@ -238,7 +215,11 @@ export default function InventoryPage() {
                         <div className="flex items-center gap-2">
                           {editingQuantity?.id === item.id ? (
                             <div className="flex items-center gap-2">
+                              <label htmlFor={`quantity-${item.id}`} className="sr-only">
+                                Menge bearbeiten
+                              </label>
                               <input
+                                id={`quantity-${item.id}`}
                                 type="number"
                                 min="0"
                                 value={editingQuantity.value}
@@ -256,6 +237,7 @@ export default function InventoryPage() {
                                   }
                                 }}
                                 autoFocus
+                                placeholder="Menge"
                                 className="w-20 rounded-md border border-gray-300 px-2 py-1 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                               />
                               <button

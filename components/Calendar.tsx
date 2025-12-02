@@ -39,7 +39,6 @@ export default function Calendar() {
     year: now.getFullYear(),
   })
   const [appointments, setAppointments] = useState<Appointment[]>([])
-  const [loading, setLoading] = useState(true)
   
   const currentDate = useMemo(
     () => new Date(monthSelection.year, monthSelection.month, 1),
@@ -60,8 +59,6 @@ export default function Calendar() {
         setAppointments(data.appointments || [])
       } catch (error) {
         console.error('Fehler beim Laden der Termine:', error)
-      } finally {
-        setLoading(false)
       }
     }
 

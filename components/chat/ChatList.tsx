@@ -4,8 +4,6 @@
  */
 'use client'
 
-import { format } from 'date-fns'
-
 interface User {
   id: string
   name: string | null

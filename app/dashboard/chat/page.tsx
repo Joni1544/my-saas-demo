@@ -4,7 +4,7 @@
  */
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import ChatList from '@/components/chat/ChatList'
 import ChatWindow from '@/components/chat/ChatWindow'
@@ -33,20 +33,30 @@ interface User {
   email: string
 }
 
+interface ChannelMessage {
+  id: string
+  content: string
+  createdAt: string
+  sender: {
+    name: string | null
+    email: string
+  }
+}
+
 interface Channel {
   id: string
   name: string
-  messages: Array<{
-    id: string
-    content: string
-    createdAt: string
-    sender: {
-      name: string | null
-      email: string
-    }
-  }>
+  messages: ChannelMessage[]
   _count: {
     messages: number
+  }
+}
+
+interface Employee {
+  user: {
+    id: string
+    name: string | null
+    email: string
   }
 }
 
@@ -62,28 +72,14 @@ export default function ChatPage() {
   const [showCreateChannel, setShowCreateChannel] = useState(false)
   const [newChannelName, setNewChannelName] = useState('')
 
-  useEffect(() => {
-    fetchUsers()
-    fetchChannels()
-  }, [])
-
-  useEffect(() => {
-    if (selectedUserId || selectedChannelId) {
-      fetchMessages()
-      // Polling alle 2 Sekunden
-      const interval = setInterval(fetchMessages, 2000)
-      return () => clearInterval(interval)
-    }
-  }, [selectedUserId, selectedChannelId])
-
   const fetchUsers = async () => {
     try {
       const response = await fetch('/api/employees')
       if (response.ok) {
         const data = await response.json()
-        const employees = data.employees || []
+        const employees: Employee[] = data.employees || []
         setUsers(
-          employees.map((emp: any) => ({
+          employees.map((emp) => ({
             id: emp.user.id,
             name: emp.user.name,
             email: emp.user.email,
@@ -109,7 +105,7 @@ export default function ChatPage() {
     }
   }
 
-  const fetchMessages = async () => {
+  const fetchMessages = useCallback(async () => {
     try {
       const params = new URLSearchParams()
       if (selectedUserId) {
@@ -127,7 +123,21 @@ export default function ChatPage() {
     } catch (error) {
       console.error('Fehler beim Laden der Nachrichten:', error)
     }
-  }
+  }, [selectedUserId, selectedChannelId])
+
+  useEffect(() => {
+    fetchUsers()
+    fetchChannels()
+  }, [])
+
+  useEffect(() => {
+    if (selectedUserId || selectedChannelId) {
+      fetchMessages()
+      // Polling alle 2 Sekunden
+      const interval = setInterval(fetchMessages, 2000)
+      return () => clearInterval(interval)
+    }
+  }, [selectedUserId, selectedChannelId, fetchMessages])
 
   const handleSend = async (content: string) => {
     if (!content.trim()) return
