@@ -5,7 +5,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { X, Users, Trash2, Plus } from 'lucide-react'
+import { X, Trash2, Plus } from 'lucide-react'
 
 interface User {
   id: string
@@ -176,6 +176,7 @@ export default function ChannelSettingsModal({
           <button
             onClick={onClose}
             className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+            aria-label="Schließen"
           >
             <X className="h-5 w-5" />
           </button>
@@ -192,6 +193,7 @@ export default function ChannelSettingsModal({
               onChange={(e) => setName(e.target.value)}
               disabled={channel.isSystem}
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:bg-gray-50"
+              aria-label="Channel-Name"
             />
             {channel.isSystem && (
               <p className="mt-1 text-xs text-gray-500">System-Channels können nicht umbenannt werden</p>
@@ -207,6 +209,7 @@ export default function ChannelSettingsModal({
               rows={3}
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
               placeholder="Beschreibung des Channels..."
+              aria-label="Beschreibung"
             />
           </div>
 
@@ -232,6 +235,7 @@ export default function ChannelSettingsModal({
                   value={selectedUserId}
                   onChange={(e) => setSelectedUserId(e.target.value)}
                   className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  aria-label="Mitarbeiter auswählen"
                 >
                   <option value="">Mitarbeiter auswählen...</option>
                   {availableUsers.map((user) => (
@@ -291,6 +295,7 @@ export default function ChannelSettingsModal({
                         onClick={() => handleRemoveMember(member.user.id)}
                         disabled={loading}
                         className="rounded-md p-1.5 text-red-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+                        aria-label={`${userName} entfernen`}
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>

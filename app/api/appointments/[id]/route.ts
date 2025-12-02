@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { checkEmployeeAvailability } from '@/lib/employee-availability'
 
 // GET: Einzelnen Termin abrufen
 export async function GET(
@@ -103,8 +104,25 @@ export async function PUT(
       status, 
       customerId,
       price,
-      color
+      color,
+      employeeId: newEmployeeId,
+      adminOverride
     } = body
+
+    // Hole erstmal den Termin um ihn zu prüfen
+    const existingAppointment = await prisma.appointment.findFirst({
+      where: {
+        id: id,
+        tenantId: session.user.tenantId,
+      },
+    })
+
+    if (!existingAppointment) {
+      return NextResponse.json(
+        { error: 'Termin nicht gefunden' },
+        { status: 404 }
+      )
+    }
 
     const where: {
       id: string
@@ -143,6 +161,44 @@ export async function PUT(
       finalColor = statusColors[status] || null
     }
 
+    // Prüfe Verfügbarkeit wenn Mitarbeiter geändert wird oder Zeit geändert wird
+    let finalEmployeeId = where.employeeId || existingAppointment.employeeId
+    if (newEmployeeId && session.user.role === 'ADMIN') {
+      finalEmployeeId = newEmployeeId
+    }
+
+    if (finalEmployeeId && (startTime || endTime || newEmployeeId) && !adminOverride) {
+      const checkStartTime = startTime ? new Date(startTime) : new Date(existingAppointment.startTime)
+      const checkEndTime = endTime ? new Date(endTime) : new Date(existingAppointment.endTime)
+
+      const availability = await checkEmployeeAvailability(
+        finalEmployeeId,
+        checkStartTime,
+        checkEndTime
+      )
+
+      if (!availability.isAvailable) {
+        return NextResponse.json(
+          {
+            error: `Mitarbeiter ist nicht verfügbar: ${availability.reason}`,
+            availability,
+          },
+          { status: 400 }
+        )
+      }
+    }
+
+    // Mitarbeiter kann Preise NUR bei eigenen Terminen ändern
+    let finalPrice = price
+    if (session.user.role === 'MITARBEITER' && price !== undefined) {
+      if (!existingAppointment || existingAppointment.employeeId !== where.employeeId) {
+        return NextResponse.json(
+          { error: 'Nicht autorisiert. Sie können nur Preise bei eigenen Terminen ändern.' },
+          { status: 403 }
+        )
+      }
+    }
+
     const appointment = await prisma.appointment.updateMany({
       where,
       data: {
@@ -153,7 +209,8 @@ export async function PUT(
         ...(endTime && { endTime: new Date(endTime) }),
         ...(status && { status }),
         ...(customerId !== undefined && { customerId }),
-        ...(price !== undefined && { price: price ? parseFloat(price.toString()) : 0 }),
+        ...(finalEmployeeId && { employeeId: finalEmployeeId }),
+        ...(finalPrice !== undefined && { price: finalPrice ? parseFloat(finalPrice.toString()) : 0 }),
         ...(finalColor !== undefined && { color: finalColor }),
       },
     })

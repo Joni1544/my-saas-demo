@@ -24,11 +24,22 @@ export async function GET(
       )
     }
 
+    const where: {
+      id: string
+      tenantId: string
+      assignedTo?: string
+    } = {
+      id: id,
+      tenantId: session.user.tenantId,
+    }
+
+    // Mitarbeiter sieht NUR eigene Aufgaben
+    if (session.user.role === 'MITARBEITER') {
+      where.assignedTo = session.user.id
+    }
+
     const task = await prisma.task.findFirst({
-      where: {
-        id: id,
-        tenantId: session.user.tenantId,
-      },
+      where,
       include: {
         assignedToUser: {
           select: {
@@ -107,11 +118,28 @@ export async function PUT(
     // Unterstütze sowohl dueDate als auch deadline (Kompatibilität)
     const finalDeadline = deadline || dueDate
 
+    const where: {
+      id: string
+      tenantId: string
+      assignedTo?: string
+    } = {
+      id: id,
+      tenantId: session.user.tenantId,
+    }
+
+    // Mitarbeiter kann NUR eigene Aufgaben bearbeiten
+    if (session.user.role === 'MITARBEITER') {
+      where.assignedTo = session.user.id
+    }
+
+    // Mitarbeiter kann Aufgaben NUR sich selbst zuweisen
+    let finalAssignedTo = assignedTo
+    if (session.user.role === 'MITARBEITER' && assignedTo) {
+      finalAssignedTo = session.user.id
+    }
+
     const task = await prisma.task.updateMany({
-      where: {
-        id: id,
-        tenantId: session.user.tenantId,
-      },
+      where,
       data: {
         ...(title && { title }),
         ...(description !== undefined && { description }),
@@ -121,7 +149,7 @@ export async function PUT(
           dueDate: finalDeadline ? new Date(finalDeadline) : null,
           deadline: finalDeadline ? new Date(finalDeadline) : null,
         }),
-        ...(assignedTo !== undefined && { assignedTo: assignedTo || null }),
+        ...(finalAssignedTo !== undefined && { assignedTo: finalAssignedTo }),
       },
     })
 
@@ -162,11 +190,22 @@ export async function DELETE(
       )
     }
 
+    const where: {
+      id: string
+      tenantId: string
+      assignedTo?: string
+    } = {
+      id: id,
+      tenantId: session.user.tenantId,
+    }
+
+    // Mitarbeiter kann NUR eigene Aufgaben löschen
+    if (session.user.role === 'MITARBEITER') {
+      where.assignedTo = session.user.id
+    }
+
     const task = await prisma.task.deleteMany({
-      where: {
-        id: id,
-        tenantId: session.user.tenantId,
-      },
+      where,
     })
 
     if (task.count === 0) {

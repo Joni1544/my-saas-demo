@@ -74,6 +74,10 @@ export default function AppointmentDetailPage() {
   const [employees, setEmployees] = useState<Employee[]>([])
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(false)
+  const [userRole, setUserRole] = useState<'ADMIN' | 'MITARBEITER'>('ADMIN')
+  const [isOwnAppointment, setIsOwnAppointment] = useState(false)
+  const [availabilityError, setAvailabilityError] = useState<string | null>(null)
+  const [adminOverride, setAdminOverride] = useState(false)
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -87,13 +91,28 @@ export default function AppointmentDetailPage() {
   })
 
   useEffect(() => {
-    if (appointmentId) {
+    async function fetchUserInfo() {
+      try {
+        const sessionRes = await fetch('/api/auth/session')
+        const session = await sessionRes.json()
+        const role = session?.user?.role || 'ADMIN'
+        setUserRole(role)
+      } catch (error) {
+        console.error('Fehler beim Laden der Benutzerinfo:', error)
+      }
+    }
+    
+    fetchUserInfo()
+  }, [])
+
+  useEffect(() => {
+    if (appointmentId && userRole) {
       fetchAppointment()
       fetchCustomers()
       fetchEmployees()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [appointmentId])
+  }, [appointmentId, userRole])
 
   const formatDateTimeLocal = (dateString: string) => {
     const date = new Date(dateString)
@@ -111,6 +130,23 @@ export default function AppointmentDetailPage() {
       if (!response.ok) throw new Error('Termin nicht gefunden')
       const data = await response.json()
       setAppointment(data.appointment)
+      
+      // Prüfe ob Mitarbeiter eigenen Termin sieht
+      if (userRole === 'MITARBEITER') {
+        const sessionRes = await fetch('/api/auth/session')
+        const session = await sessionRes.json()
+        const employeesRes = await fetch('/api/employees')
+        if (employeesRes.ok) {
+          const employeesData = await employeesRes.json()
+          const currentEmployee = employeesData.employees?.find(
+            (emp: { user: { id: string } }) => emp.user.id === session?.user?.id
+          )
+          setIsOwnAppointment(currentEmployee?.id === data.appointment.employeeId)
+        }
+      } else {
+        setIsOwnAppointment(true) // Admin sieht alles
+      }
+      
       setFormData({
         title: data.appointment.title,
         description: data.appointment.description || '',
@@ -164,16 +200,63 @@ export default function AppointmentDetailPage() {
           price: formData.price ? parseFloat(formData.price) : null,
           customerId: formData.customerId || null,
           employeeId: formData.employeeId || null,
+          adminOverride: userRole === 'ADMIN' ? adminOverride : false,
         }),
       })
-      if (!response.ok) throw new Error('Fehler beim Speichern')
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        if (errorData.availability) {
+          setAvailabilityError(errorData.availability.reason || errorData.error)
+          return
+        }
+        throw new Error(errorData.error || 'Fehler beim Speichern')
+      }
+      
+      setAvailabilityError(null)
+      setAdminOverride(false)
       setEditing(false)
       fetchAppointment()
     } catch (error) {
       console.error('Fehler:', error)
-      alert('Fehler beim Speichern')
+      alert(error instanceof Error ? error.message : 'Fehler beim Speichern')
     }
   }
+
+  useEffect(() => {
+    // Prüfe Verfügbarkeit wenn Zeit oder Mitarbeiter geändert wird
+    if (editing && formData.startTime && formData.endTime && formData.employeeId && userRole === 'ADMIN') {
+      const checkAvailability = async () => {
+        try {
+          const response = await fetch('/api/employees/check-availability', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              employeeId: formData.employeeId,
+              startTime: formData.startTime,
+              endTime: formData.endTime,
+            }),
+          })
+          
+          if (response.ok) {
+            const data = await response.json()
+            if (!data.availability.isAvailable) {
+              setAvailabilityError(data.availability.reason || 'Nicht verfügbar')
+            } else {
+              setAvailabilityError(null)
+            }
+          }
+        } catch (error) {
+          // Ignoriere Fehler
+        }
+      }
+      
+      checkAvailability()
+    } else {
+      setAvailabilityError(null)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.startTime, formData.endTime, formData.employeeId, editing])
 
   const handleDelete = async () => {
     if (!confirm('Termin wirklich löschen?')) return
@@ -320,17 +403,21 @@ export default function AppointmentDetailPage() {
                       ))}
                     </select>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Preis (€)</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={formData.price}
-                      onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                      className={`mt-1 ${inputBase}`}
-                    />
-                  </div>
+                  {/* Mitarbeiter kann Preise NUR bei eigenen Terminen bearbeiten */}
+                  {(userRole === 'ADMIN' || isOwnAppointment) && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Preis (€)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={formData.price}
+                        onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                        className={`mt-1 ${inputBase}`}
+                        disabled={userRole === 'MITARBEITER' && !isOwnAppointment}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (
@@ -340,7 +427,8 @@ export default function AppointmentDetailPage() {
                   {format(new Date(appointment.startTime), 'EEEE, d. MMMM yyyy, HH:mm')} -{' '}
                   {format(new Date(appointment.endTime), 'HH:mm')}
                 </p>
-                {appointment.price && (
+                {/* Mitarbeiter sieht Preise NUR bei eigenen Terminen */}
+                {appointment.price && (userRole === 'ADMIN' || isOwnAppointment) && (
                   <p>
                     <span className="font-medium">Preis:</span>{' '}
                     <span className="font-semibold text-gray-900">
@@ -372,21 +460,24 @@ export default function AppointmentDetailPage() {
                     ))}
                   </select>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Mitarbeiter</label>
-                  <select
-                    value={formData.employeeId}
-                    onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })}
-                    className={`mt-1 ${inputBase}`}
-                  >
-                    <option value="">Kein Mitarbeiter</option>
-                    {employees.map((employee) => (
-                      <option key={employee.id} value={employee.id}>
-                        {employee.user.name || employee.user.email}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                {/* Mitarbeiter kann Mitarbeiter-Zuweisung nicht ändern */}
+                {userRole === 'ADMIN' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Mitarbeiter</label>
+                    <select
+                      value={formData.employeeId}
+                      onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })}
+                      className={`mt-1 ${inputBase}`}
+                    >
+                      <option value="">Kein Mitarbeiter</option>
+                      {employees.map((employee) => (
+                        <option key={employee.id} value={employee.id}>
+                          {employee.user.name || employee.user.email}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="space-y-2 text-sm text-gray-600">

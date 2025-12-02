@@ -40,11 +40,23 @@ export async function GET() {
             role: true,
           },
         },
+        vacationRequests: {
+          where: {
+            status: 'APPROVED',
+          },
+        },
       },
       orderBy: { createdAt: 'desc' },
     })
 
-    return NextResponse.json({ employees })
+    // Füge Verfügbarkeits-Info hinzu
+    const employeesWithAvailability = employees.map((employee) => ({
+      ...employee,
+      isAvailable: !employee.isSick && employee.isActive,
+      hasApprovedVacation: employee.vacationRequests.length > 0,
+    }))
+
+    return NextResponse.json({ employees: employeesWithAvailability })
   } catch (error) {
     console.error('Fehler beim Abrufen der Mitarbeiter:', error)
     return NextResponse.json(

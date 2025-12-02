@@ -10,7 +10,7 @@ interface QuickActionsProps {
   role?: string
 }
 
-export default function QuickActions({ role: _role }: QuickActionsProps) {
+export default function QuickActions({}: QuickActionsProps) {
   const actions = [
     {
       title: 'Neuer Termin',

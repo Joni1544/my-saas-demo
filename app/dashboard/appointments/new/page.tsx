@@ -36,6 +36,8 @@ export default function NewAppointmentPage() {
   const [loading, setLoading] = useState(false)
   const [customers, setCustomers] = useState<Customer[]>([])
   const [employees, setEmployees] = useState<Employee[]>([])
+  const [userRole, setUserRole] = useState<'ADMIN' | 'MITARBEITER'>('ADMIN')
+  const [currentEmployeeId, setCurrentEmployeeId] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -47,8 +49,40 @@ export default function NewAppointmentPage() {
     customerId: '',
     employeeId: '',
   })
+  const [availabilityErrors, setAvailabilityErrors] = useState<Record<string, string>>({})
+  const [adminOverride, setAdminOverride] = useState(false)
 
   useEffect(() => {
+    async function fetchUserInfo() {
+      try {
+        const sessionRes = await fetch('/api/auth/session')
+        const session = await sessionRes.json()
+        const role = (session?.user?.role || 'ADMIN') as 'ADMIN' | 'MITARBEITER'
+        setUserRole(role)
+        
+        // Wenn Mitarbeiter, hole Employee-ID und setze automatisch
+        if (role === 'MITARBEITER') {
+          const employeesRes = await fetch('/api/employees')
+          if (employeesRes.ok) {
+            const employeesData = await employeesRes.json()
+            const currentEmployee = employeesData.employees?.find(
+              (emp: { user: { id: string } }) => emp.user.id === session?.user?.id
+            )
+            if (currentEmployee) {
+              setCurrentEmployeeId(currentEmployee.id)
+              setFormData((prev) => ({
+                ...prev,
+                employeeId: currentEmployee.id,
+              }))
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Fehler beim Laden der Benutzerinfo:', error)
+      }
+    }
+    
+    fetchUserInfo()
     fetchCustomers()
     fetchEmployees()
     
@@ -98,11 +132,54 @@ export default function NewAppointmentPage() {
       if (response.ok) {
         const data = await response.json()
         setEmployees(data.employees || [])
+        
+        // Prüfe Verfügbarkeit für jeden Mitarbeiter wenn Start/End-Zeit gesetzt ist
+        if (formData.startTime && formData.endTime) {
+          checkEmployeesAvailability(data.employees || [])
+        }
       }
     } catch (error) {
       console.error('Fehler beim Laden der Mitarbeiter:', error)
     }
   }
+
+  const checkEmployeesAvailability = async (employeesList: any[]) => {
+    const errors: Record<string, string> = {}
+    
+    for (const employee of employeesList) {
+      if (!employee.id || !formData.startTime || !formData.endTime) continue
+      
+      try {
+        const response = await fetch('/api/employees/check-availability', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            employeeId: employee.id,
+            startTime: formData.startTime,
+            endTime: formData.endTime,
+          }),
+        })
+        
+        if (!response.ok) {
+          const data = await response.json()
+          if (data.availability && !data.availability.isAvailable) {
+            errors[employee.id] = data.availability.reason || 'Nicht verfügbar'
+          }
+        }
+      } catch (error) {
+        // Ignoriere Fehler
+      }
+    }
+    
+    setAvailabilityErrors(errors)
+  }
+
+  useEffect(() => {
+    if (formData.startTime && formData.endTime && employees.length > 0) {
+      checkEmployeesAvailability(employees)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.startTime, formData.endTime])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -117,6 +194,7 @@ export default function NewAppointmentPage() {
           price: formData.price ? parseFloat(formData.price) : 0,
           customerId: formData.customerId || null,
           employeeId: formData.employeeId || null,
+          adminOverride: userRole === 'ADMIN' ? adminOverride : false,
         }),
       })
 
@@ -219,22 +297,73 @@ export default function NewAppointmentPage() {
                 </p>
               )}
             </div>
-            <div>
-              <label htmlFor="employeeId" className="block text-sm font-medium text-gray-700">Mitarbeiter</label>
-              <select
-                id="employeeId"
-                value={formData.employeeId}
-                onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })}
-                className={`mt-1 ${selectBase}`}
-              >
-                <option value="">Kein Mitarbeiter</option>
-                {employees.map((employee) => (
-                  <option key={employee.id} value={employee.id}>
-                    {employee.user.name || employee.user.email}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {/* Mitarbeiter kann Termine NUR für sich selbst erstellen */}
+            {userRole === 'ADMIN' ? (
+              <div>
+                <label htmlFor="employeeId" className="block text-sm font-medium text-gray-700">Mitarbeiter</label>
+                <select
+                  id="employeeId"
+                  value={formData.employeeId}
+                  onChange={(e) => {
+                    setFormData({ ...formData, employeeId: e.target.value })
+                    setAdminOverride(false)
+                  }}
+                  className={`mt-1 ${selectBase} ${
+                    availabilityErrors[formData.employeeId] && !adminOverride
+                      ? 'border-red-300 bg-red-50'
+                      : ''
+                  }`}
+                >
+                  <option value="">Kein Mitarbeiter</option>
+                  {employees.map((employee: any) => {
+                    const error = availabilityErrors[employee.id]
+                    const isUnavailable = !!error
+                    return (
+                      <option
+                        key={employee.id}
+                        value={employee.id}
+                        disabled={isUnavailable && !adminOverride}
+                        style={isUnavailable ? { color: '#999', fontStyle: 'italic' } : {}}
+                        title={error || ''}
+                      >
+                        {employee.user.name || employee.user.email}
+                        {isUnavailable ? ` (${error})` : ''}
+                      </option>
+                    )
+                  })}
+                </select>
+                {availabilityErrors[formData.employeeId] && (
+                  <div className="mt-2 space-y-2">
+                    <p className="text-sm text-red-600">
+                      ⚠️ {availabilityErrors[formData.employeeId]}
+                    </p>
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={adminOverride}
+                        onChange={(e) => setAdminOverride(e.target.checked)}
+                        className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                      />
+                      <span className="ml-2 text-sm text-gray-700">
+                        Trotzdem zuweisen? (Admin Override)
+                      </span>
+                    </label>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div>
+                <label htmlFor="employeeId" className="block text-sm font-medium text-gray-700">Mitarbeiter</label>
+                <input
+                  id="employeeId"
+                  type="text"
+                  value={employees.find(emp => emp.id === currentEmployeeId)?.user.name || 'Sie selbst'}
+                  className={`mt-1 ${selectBase}`}
+                  disabled
+                />
+                <p className="mt-1 text-xs text-gray-500">Termine werden automatisch Ihnen zugewiesen</p>
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">

@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { checkEmployeeAvailability } from '@/lib/employee-availability'
 
 // GET: Alle Termine abrufen
 export async function GET(request: NextRequest) {
@@ -118,7 +119,8 @@ export async function POST(request: NextRequest) {
       employeeId,
       status,
       price,
-      color
+      color,
+      adminOverride
     } = body
 
     if (!title || !startTime || !endTime) {
@@ -136,6 +138,25 @@ export async function POST(request: NextRequest) {
       })
       if (employee) {
         finalEmployeeId = employee.id
+      }
+    }
+
+    // Prüfe Verfügbarkeit des Mitarbeiters (außer wenn Admin Override)
+    if (finalEmployeeId && !adminOverride) {
+      const availability = await checkEmployeeAvailability(
+        finalEmployeeId,
+        new Date(startTime),
+        new Date(endTime)
+      )
+
+      if (!availability.isAvailable) {
+        return NextResponse.json(
+          {
+            error: `Mitarbeiter ist nicht verfügbar: ${availability.reason}`,
+            availability,
+          },
+          { status: 400 }
+        )
       }
     }
 

@@ -26,52 +26,69 @@ export default function DashboardKPIs() {
     upcomingAppointments: 0,
   })
   const [loading, setLoading] = useState(true)
+  const [userRole, setUserRole] = useState<'ADMIN' | 'MITARBEITER'>('ADMIN')
 
   useEffect(() => {
     async function fetchKPIs() {
       try {
+        // Hole Session-Info um Rolle zu bestimmen
+        const sessionRes = await fetch('/api/auth/session')
+        const session = await sessionRes.json()
+        const role = session?.user?.role || 'ADMIN'
+        setUserRole(role)
+
         const now = new Date()
         const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
         const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59)
 
-        // Parallele Requests
-        const [customersRes, appointmentsRes, tasksRes, expensesRes] = await Promise.all([
+        // Parallele Requests - Mitarbeiter braucht keine Expenses
+        const requests: Promise<Response>[] = [
           fetch('/api/customers'),
           fetch('/api/appointments'),
           fetch('/api/tasks'),
-          fetch(`/api/expenses?startDate=${monthStart.toISOString()}&endDate=${monthEnd.toISOString()}`),
-        ])
+        ]
+
+        if (role === 'ADMIN') {
+          requests.push(fetch(`/api/expenses?startDate=${monthStart.toISOString()}&endDate=${monthEnd.toISOString()}`))
+        }
+
+        const responses = await Promise.all(requests)
+        const [customersRes, appointmentsRes, tasksRes, expensesRes] = responses
 
         const customersData = await customersRes.json()
         const appointmentsData = await appointmentsRes.json()
         const tasksData = await tasksRes.json()
-        const expensesData = await expensesRes.json()
+        const expensesData = expensesRes ? await expensesRes.json() : { expenses: [] }
 
-        // Berechne Umsatz diesen Monat (nur COMPLETED/DONE)
-        const monthlyRevenue = appointmentsData.appointments
-          ?.filter(
-            (apt: { status: string; price: number | null; startTime: string }) => {
-              const aptDate = new Date(apt.startTime)
-              return (
-                (apt.status === 'COMPLETED' || apt.status === 'DONE') &&
-                apt.price !== null &&
-                apt.price !== undefined &&
-                aptDate >= monthStart &&
-                aptDate <= monthEnd
-              )
-            }
-          )
-          .reduce((sum: number, apt: { price: number | null }) => {
-            const price = apt.price || 0
-            return sum + (typeof price === 'number' ? price : parseFloat(String(price)))
-          }, 0) || 0
+        // Berechne Umsatz diesen Monat (nur COMPLETED/DONE) - NUR für Admin
+        let monthlyRevenue = 0
+        if (role === 'ADMIN') {
+          monthlyRevenue = appointmentsData.appointments
+            ?.filter(
+              (apt: { status: string; price: number | null; startTime: string }) => {
+                const aptDate = new Date(apt.startTime)
+                return (
+                  (apt.status === 'COMPLETED' || apt.status === 'DONE') &&
+                  apt.price !== null &&
+                  apt.price !== undefined &&
+                  aptDate >= monthStart &&
+                  aptDate <= monthEnd
+                )
+              }
+            )
+            .reduce((sum: number, apt: { price: number | null }) => {
+              const price = apt.price || 0
+              return sum + (typeof price === 'number' ? price : parseFloat(String(price)))
+            }, 0) || 0
+        }
 
-        // Berechne Ausgaben diesen Monat
-        const monthlyExpenses =
-          expensesData.expenses?.reduce(
-            (sum: number, exp: { amount: number }) => sum + parseFloat(exp.amount.toString()),
-            0
-          ) || 0
+        // Berechne Ausgaben diesen Monat - NUR für Admin
+        const monthlyExpenses = role === 'ADMIN'
+          ? expensesData.expenses?.reduce(
+              (sum: number, exp: { amount: number }) => sum + parseFloat(exp.amount.toString()),
+              0
+            ) || 0
+          : 0
 
         // Offene Aufgaben (nicht DONE)
         const openTasks = tasksData.tasks?.filter(
@@ -108,7 +125,8 @@ export default function DashboardKPIs() {
     }).format(amount)
   }
 
-  const cards = [
+  // Admin sieht alle Karten, Mitarbeiter nur bestimmte
+  const allCards = [
     {
       title: 'Kunden',
       value: kpis.customers,
@@ -116,6 +134,7 @@ export default function DashboardKPIs() {
       color: 'bg-blue-50 text-blue-600',
       iconBg: 'bg-blue-100',
       href: '/dashboard/customers',
+      adminOnly: false,
     },
     {
       title: 'Termine',
@@ -124,6 +143,7 @@ export default function DashboardKPIs() {
       color: 'bg-green-50 text-green-600',
       iconBg: 'bg-green-100',
       href: '/dashboard/appointments',
+      adminOnly: false,
     },
     {
       title: 'Umsatz diesen Monat',
@@ -132,6 +152,7 @@ export default function DashboardKPIs() {
       color: 'bg-yellow-50 text-yellow-600',
       iconBg: 'bg-yellow-100',
       href: '/dashboard/revenue',
+      adminOnly: true,
     },
     {
       title: 'Ausgaben diesen Monat',
@@ -140,6 +161,7 @@ export default function DashboardKPIs() {
       color: 'bg-red-50 text-red-600',
       iconBg: 'bg-red-100',
       href: '/dashboard/expenses',
+      adminOnly: true,
     },
     {
       title: 'Offene Aufgaben',
@@ -148,6 +170,7 @@ export default function DashboardKPIs() {
       color: 'bg-purple-50 text-purple-600',
       iconBg: 'bg-purple-100',
       href: '/dashboard/tasks',
+      adminOnly: false,
     },
     {
       title: 'Anstehende Termine',
@@ -156,13 +179,19 @@ export default function DashboardKPIs() {
       color: 'bg-orange-50 text-orange-600',
       iconBg: 'bg-orange-100',
       href: '/dashboard/appointments?status=upcoming',
+      adminOnly: false,
     },
   ]
 
+  const cards = userRole === 'ADMIN' 
+    ? allCards 
+    : allCards.filter(card => !card.adminOnly)
+
   if (loading) {
+    const skeletonCount = userRole === 'ADMIN' ? 6 : 4
     return (
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {[1, 2, 3, 4, 5, 6].map((i) => (
+        {Array.from({ length: skeletonCount }).map((_, i) => (
           <div key={i} className="animate-pulse rounded-lg bg-gray-100 h-24" />
         ))}
       </div>

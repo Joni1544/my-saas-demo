@@ -19,15 +19,16 @@ export default function Navbar() {
   // Admin Navigation (neue Reihenfolge)
   const adminNavigation = [
     { name: 'Dashboard', href: '/dashboard' },
-    { name: 'Kalender', href: '/dashboard/calendar' },
-    { name: 'Termine', href: '/dashboard/appointments' },
-    { name: 'Mitarbeiter', href: '/dashboard/employees' },
-    { name: 'Kunden', href: '/dashboard/customers' },
     { name: 'Finanzen', href: '/dashboard/finance' },
+    { name: 'Mitarbeiter', href: '/dashboard/employees' },
     { name: 'Inventar', href: '/dashboard/inventory' },
+    { name: 'Termine', href: '/dashboard/appointments' },
+    { name: 'Kalender', href: '/dashboard/calendar' },
+    { name: 'Kunden', href: '/dashboard/customers' },
     { name: 'Aufgaben', href: '/dashboard/tasks' },
     { name: 'Chat', href: '/dashboard/chat' },
     { name: 'Admin', href: '/dashboard/admin' },
+    { name: 'Profil', href: '/dashboard/profile' },
   ]
   
   // Mitarbeiter Navigation (abgespeckte Version)
@@ -38,6 +39,7 @@ export default function Navbar() {
     { name: 'Kunden', href: '/dashboard/customers' },
     { name: 'Aufgaben', href: '/dashboard/tasks' },
     { name: 'Chat', href: '/dashboard/chat' },
+    { name: 'Mein Profil', href: '/dashboard/profile' },
   ]
   
   const navigation = isAdmin ? adminNavigation : employeeNavigation

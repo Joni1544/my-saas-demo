@@ -23,6 +23,14 @@ export async function GET(
       )
     }
 
+    // Nur Admin kann Inventar sehen
+    if (session.user.role !== 'ADMIN') {
+      return NextResponse.json(
+        { error: 'Nicht autorisiert. Nur Administratoren können Inventar einsehen.' },
+        { status: 403 }
+      )
+    }
+
     const item = await prisma.inventoryItem.findFirst({
       where: {
         id: id,

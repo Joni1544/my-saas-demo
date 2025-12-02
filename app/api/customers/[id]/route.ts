@@ -24,11 +24,47 @@ export async function GET(
       )
     }
 
+    // Wenn Mitarbeiter: Prüfe ob Kunde zu eigenen Terminen gehört
+    let whereClause: {
+      id: string
+      tenantId: string
+      id?: { in: string[] }
+    } = {
+      id: id,
+      tenantId: session.user.tenantId,
+    }
+
+    if (session.user.role === 'MITARBEITER') {
+      const employee = await prisma.employee.findUnique({
+        where: { userId: session.user.id },
+      })
+
+      if (employee) {
+        const appointments = await prisma.appointment.findMany({
+          where: { employeeId: employee.id },
+          select: { customerId: true },
+        })
+
+        const customerIds = appointments
+          .map((a: { customerId: string | null }) => a.customerId)
+          .filter((id: string | null): id is string => id !== null)
+
+        if (!customerIds.includes(id)) {
+          return NextResponse.json(
+            { error: 'Kunde nicht gefunden oder nicht autorisiert' },
+            { status: 404 }
+          )
+        }
+      } else {
+        return NextResponse.json(
+          { error: 'Kunde nicht gefunden' },
+          { status: 404 }
+        )
+      }
+    }
+
     const customer = await prisma.customer.findFirst({
-      where: {
-        id: id,
-        tenantId: session.user.tenantId,
-      },
+      where: whereClause,
     })
 
     if (!customer) {

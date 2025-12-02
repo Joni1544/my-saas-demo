@@ -30,6 +30,7 @@ interface Appointment {
   endTime: string
   status: string
   price: number | null
+  employeeId: string | null
 }
 
 const AVAILABLE_TAGS = ['Normal', 'VIP', 'Problemkunde', 'No-Show', 'Neu', 'Stammkunde', 'Wichtig']
@@ -42,6 +43,8 @@ export default function CustomerDetailPage() {
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(false)
+  const [userRole, setUserRole] = useState<'ADMIN' | 'MITARBEITER'>('ADMIN')
+  const [currentEmployeeId, setCurrentEmployeeId] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -53,12 +56,41 @@ export default function CustomerDetailPage() {
   })
 
   useEffect(() => {
-    if (customerId) {
+    async function fetchUserInfo() {
+      try {
+        const sessionRes = await fetch('/api/auth/session')
+        const session = await sessionRes.json()
+        const role = session?.user?.role || 'ADMIN'
+        setUserRole(role)
+        
+        // Wenn Mitarbeiter, hole Employee-ID
+        if (role === 'MITARBEITER') {
+          const employeesRes = await fetch('/api/employees')
+          if (employeesRes.ok) {
+            const employeesData = await employeesRes.json()
+            const currentEmployee = employeesData.employees?.find(
+              (emp: { user: { id: string } }) => emp.user.id === session?.user?.id
+            )
+            if (currentEmployee) {
+              setCurrentEmployeeId(currentEmployee.id)
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Fehler beim Laden der Benutzerinfo:', error)
+      }
+    }
+    
+    fetchUserInfo()
+  }, [])
+
+  useEffect(() => {
+    if (customerId && userRole) {
       fetchCustomer()
       fetchAppointments()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [customerId])
+  }, [customerId, userRole, currentEmployeeId])
 
   const fetchCustomer = async () => {
     try {
@@ -88,7 +120,14 @@ export default function CustomerDetailPage() {
       const response = await fetch(`/api/appointments?customerId=${customerId}`)
       if (response.ok) {
         const data = await response.json()
-        setAppointments(data.appointments || [])
+        // Mitarbeiter sieht nur eigene Termine
+        let filteredAppointments = data.appointments || []
+        if (userRole === 'MITARBEITER' && currentEmployeeId) {
+          filteredAppointments = filteredAppointments.filter(
+            (apt: { employeeId: string | null }) => apt.employeeId === currentEmployeeId
+          )
+        }
+        setAppointments(filteredAppointments)
       }
     } catch (error) {
       console.error('Fehler beim Laden der Termine:', error)
@@ -326,7 +365,8 @@ export default function CustomerDetailPage() {
                         <span className="inline-block rounded bg-gray-100 px-2 py-1 text-xs text-gray-700">
                           {apt.status}
                         </span>
-                        {apt.price && (
+                        {/* Mitarbeiter sieht Preise NUR bei eigenen Terminen */}
+                        {apt.price && (userRole === 'ADMIN' || apt.employeeId === currentEmployeeId) && (
                           <p className="mt-1 text-sm font-medium text-gray-900">
                             {Number(apt.price).toFixed(2)} €
                           </p>

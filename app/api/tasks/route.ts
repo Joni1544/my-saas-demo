@@ -26,7 +26,7 @@ export async function GET() {
       tenantId: session.user.tenantId,
     }
 
-    // Mitarbeiter sieht nur eigene Aufgaben
+    // Mitarbeiter sieht NUR eigene Aufgaben
     if (session.user.role === 'MITARBEITER') {
       where.assignedTo = session.user.id
     }
@@ -89,6 +89,12 @@ export async function POST(request: NextRequest) {
     // Unterstütze sowohl dueDate als auch deadline (Kompatibilität)
     const finalDeadline = deadline || dueDate
 
+    // Mitarbeiter kann Aufgaben NUR für sich selbst erstellen
+    let finalAssignedTo = assignedTo || null
+    if (session.user.role === 'MITARBEITER') {
+      finalAssignedTo = session.user.id
+    }
+
     const task = await prisma.task.create({
       data: {
         title,
@@ -96,7 +102,7 @@ export async function POST(request: NextRequest) {
         priority: priority || 'MEDIUM',
         dueDate: finalDeadline ? new Date(finalDeadline) : null,
         deadline: finalDeadline ? new Date(finalDeadline) : null,
-        assignedTo: assignedTo || null,
+        assignedTo: finalAssignedTo,
         tenantId: session.user.tenantId,
       },
     })

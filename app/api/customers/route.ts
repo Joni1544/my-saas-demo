@@ -58,13 +58,14 @@ export async function GET(request: NextRequest) {
       where.tags = { has: tag }
     }
 
-    // Wenn Mitarbeiter: Nur Kunden mit eigenen Terminen
+    // Wenn Mitarbeiter: Nur Kunden mit eigenen Terminen ODER zugewiesene Kunden
     if (session.user.role === 'MITARBEITER') {
       const employee = await prisma.employee.findUnique({
         where: { userId: session.user.id },
       })
 
       if (employee) {
+        // Hole alle Kunden mit eigenen Terminen
         const appointments = await prisma.appointment.findMany({
           where: { employeeId: employee.id },
           select: { customerId: true },
@@ -73,6 +74,9 @@ export async function GET(request: NextRequest) {
         const customerIds = appointments
           .map((a: { customerId: string | null }) => a.customerId)
           .filter((id: string | null): id is string => id !== null)
+
+        // TODO: Hier könnte man auch zugewiesene Kunden hinzufügen (wenn ein Assignment-Model existiert)
+        // Für jetzt: Nur Kunden mit eigenen Terminen
 
         if (customerIds.length > 0) {
           where.id = { in: customerIds }

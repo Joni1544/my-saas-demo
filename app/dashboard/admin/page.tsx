@@ -7,6 +7,7 @@ import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import InvitationsList from '@/components/InvitationsList'
 import EmployeesList from '@/components/EmployeesList'
+import ReassignmentsBox from '@/components/ReassignmentsBox'
 
 export default async function AdminDashboardPage() {
   const session = await auth()
@@ -39,6 +40,11 @@ export default async function AdminDashboardPage() {
           <p className="text-gray-600">
             Verwalten Sie Mitarbeiter, Einladungen und Firmeneinstellungen
           </p>
+        </div>
+
+        {/* Reassignments Box */}
+        <div className="mb-6">
+          <ReassignmentsBox />
         </div>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">

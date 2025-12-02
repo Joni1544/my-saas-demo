@@ -81,6 +81,7 @@ export default function CalendarPage() {
   const [employees, setEmployees] = useState<Employee[]>([])
   const [customers, setCustomers] = useState<Array<{ id: string; firstName: string; lastName: string }>>([])
   const [loading, setLoading] = useState(true)
+  const [availabilityMap, setAvailabilityMap] = useState<Record<string, Array<{ date: string; type: 'sick' | 'vacation' }>>>({})
   
   // Einheitliche Datumsauswahl-States
   // Wenn ein Datum in der URL ist, verwende es
@@ -366,6 +367,17 @@ export default function CalendarPage() {
           const isCurrentMonth = isSameMonth(day, currentDate)
           const isToday = isSameDay(day, new Date())
 
+          // Prüfe Verfügbarkeit für diesen Tag
+          const dayStr = format(day, 'yyyy-MM-dd')
+          const dayAvailability: Array<{ employeeId: string; type: 'sick' | 'vacation' }> = []
+          
+          for (const [employeeId, availability] of Object.entries(availabilityMap)) {
+            const dayAvail = availability.find((a) => a.date === dayStr)
+            if (dayAvail) {
+              dayAvailability.push({ employeeId, type: dayAvail.type })
+            }
+          }
+
           return (
             <div
               key={day.toISOString()}
@@ -382,12 +394,33 @@ export default function CalendarPage() {
                 window.location.href = `/dashboard/calendar?date=${dateStr}`
               }}
             >
-              <div
-                className={`text-sm mb-1 ${
-                  isToday ? 'font-bold text-blue-700' : isCurrentMonth ? 'text-gray-900' : 'text-gray-400'
-                }`}
-              >
-                {format(day, 'd')}
+              <div className="flex items-center justify-between mb-1">
+                <div
+                  className={`text-sm ${
+                    isToday ? 'font-bold text-blue-700' : isCurrentMonth ? 'text-gray-900' : 'text-gray-400'
+                  }`}
+                >
+                  {format(day, 'd')}
+                </div>
+                {/* Verfügbarkeits-Markierungen */}
+                {dayAvailability.length > 0 && (
+                  <div className="flex gap-1">
+                    {dayAvailability.map((avail) => {
+                      const employee = employees.find((e) => e.id === avail.employeeId)
+                      return (
+                        <div
+                          key={avail.employeeId}
+                          className={`w-2 h-2 rounded-full ${
+                            avail.type === 'sick' ? 'bg-red-500' : 'bg-yellow-400'
+                          }`}
+                          title={`${employee?.user.name || employee?.user.email}: ${
+                            avail.type === 'sick' ? 'Krank' : 'Urlaub'
+                          }`}
+                        />
+                      )
+                    })}
+                  </div>
+                )}
               </div>
               <div className="space-y-1">
                 {dayAppointments.slice(0, 3).map((apt) => (

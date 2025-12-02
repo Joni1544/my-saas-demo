@@ -33,6 +33,7 @@ export async function middleware(request: NextRequest) {
       '/dashboard/recurring-expenses',
       '/dashboard/finance',
       '/dashboard/settings',
+      '/dashboard/inventory',
     ]
 
     const isAdminRoute = adminOnlyRoutes.some(route => pathname.startsWith(route))

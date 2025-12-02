@@ -18,6 +18,14 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // Nur Admin kann Inventar sehen
+    if (session.user.role !== 'ADMIN') {
+      return NextResponse.json(
+        { error: 'Nicht autorisiert. Nur Administratoren können Inventar einsehen.' },
+        { status: 403 }
+      )
+    }
+
     const { searchParams } = new URL(request.url)
     const category = searchParams.get('category')
 

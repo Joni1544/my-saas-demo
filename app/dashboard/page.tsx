@@ -46,7 +46,9 @@ export default async function DashboardPage() {
           <div className="rounded-lg bg-white p-6 shadow-sm border border-gray-200">
             <div className="mb-4">
               <h3 className="text-base font-semibold text-gray-900">Nächste Termine</h3>
-              <p className="text-xs text-gray-500 mt-1">Ihre kommenden Termine</p>
+              <p className="text-xs text-gray-500 mt-1">
+                {session.user.role === 'ADMIN' ? 'Alle kommenden Termine' : 'Ihre kommenden Termine'}
+              </p>
             </div>
             <UpcomingAppointments />
           </div>
@@ -55,7 +57,9 @@ export default async function DashboardPage() {
           <div className="rounded-lg bg-white p-6 shadow-sm border border-gray-200">
             <div className="mb-4">
               <h3 className="text-base font-semibold text-gray-900">Kalender</h3>
-              <p className="text-xs text-gray-500 mt-1">Monatsübersicht</p>
+              <p className="text-xs text-gray-500 mt-1">
+                {session.user.role === 'ADMIN' ? 'Monatsübersicht aller Termine' : 'Monatsübersicht Ihrer Termine'}
+              </p>
             </div>
             <Calendar />
           </div>

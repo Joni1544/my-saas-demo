@@ -4,8 +4,7 @@
  */
 'use client'
 
-import { Settings, Users, MoreVertical } from 'lucide-react'
-import { useState } from 'react'
+import { Settings, Users } from 'lucide-react'
 
 interface ChatHeaderProps {
   title: string
@@ -24,8 +23,6 @@ export default function ChatHeader({
   onSettingsClick,
   onMembersClick,
 }: ChatHeaderProps) {
-  const [showMenu, setShowMenu] = useState(false)
-
   return (
     <div className="flex h-16 items-center justify-between border-b border-gray-200 bg-white px-6">
       <div className="flex-1 min-w-0">

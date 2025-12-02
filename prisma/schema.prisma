@@ -103,8 +103,29 @@ model Employee {
   hourlyRate     Float? // Stundenlohn
   commissionRate Float? // Provisionssatz (in Prozent)
   payoutDay      Int? // Auszahlungstag im Monat (1-31, nullable)
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
+
+  // --- Profil ---
+  avatarUrl String? // Profilbild-URL
+  phone     String? // Telefonnummer
+  bio       String? // Kurzbeschreibung
+
+  // --- Arbeitszeiten ---
+  workStart  String? // "09:00"
+  workEnd    String? // "18:00"
+  breakStart String? // "12:00"
+  breakEnd   String? // "13:00"
+  daysOff    String[] @default([]) // z.B. ["Sunday", "Monday"]
+
+  // --- Urlaub & Krankheit ---
+  vacationDaysTotal Int?      @default(25) // Gesamtjahresurlaub
+  vacationDaysUsed  Int?      @default(0) // Verbraucht
+  sickDays          Int?      @default(0) // Anzahl Krankheitstage
+  isSick            Boolean   @default(false) // Aktuell krank
+  nextAvailableDate DateTime? // Cache für Performance
+  leaveReason       String? // z.B. "Urlaub", "Fortbildung", "Unbezahlt"
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Beziehungen
   user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -112,11 +133,13 @@ model Employee {
   appointments      Appointment[]
   expenses          Expense[] // Ausgaben die dem Mitarbeiter zugeordnet sind
   recurringExpenses RecurringExpense[] // Daueraufträge für Gehälter
+  vacationRequests  VacationRequest[] // Urlaubsanträge
 
   @@index([tenantId])
   @@index([userId])
   @@index([isActive])
   @@index([active])
+  @@index([isSick])
 }
 
 // Termin-Modell
@@ -199,6 +222,7 @@ enum AppointmentStatus {
   CANCELLED // Storniert
   RESCHEDULED // Verschoben
   COMPLETED // Abgeschlossen (für Historie)
+  NEEDS_REASSIGNMENT // Muss neu zugewiesen werden (z.B. bei Krankheit)
 }
 
 // Aufgaben-Status-Enum
@@ -383,12 +407,12 @@ model Message {
 model ChatChannel {
   id          String   @id @default(cuid())
   name        String
-  description String?  // Beschreibung des Channels
-  tenantId    String   // Referenz zur Firma
+  description String? // Beschreibung des Channels
+  tenantId    String // Referenz zur Firma
   isSystem    Boolean  @default(false) // System-Channel (z.B. Teamchat) kann nicht gelöscht werden
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  createdBy   String?  // User-ID des Erstellers
+  createdBy   String? // User-ID des Erstellers
 
   // Beziehungen
   shop     Shop            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -412,4 +436,26 @@ model ChannelMember {
   @@unique([channelId, userId])
   @@index([channelId])
   @@index([userId])
+}
+
+// Urlaubsantrag-Modell
+model VacationRequest {
+  id         String   @id @default(cuid())
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  startDate DateTime
+  endDate   DateTime
+  days      Int // Anzahl der Urlaubstage
+
+  status String  @default("PENDING") // PENDING | APPROVED | DENIED
+  reason String? // Optional: Grund für Ablehnung
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([employeeId])
+  @@index([status])
+  @@index([startDate])
+  @@index([endDate])
 }
