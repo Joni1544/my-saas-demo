@@ -74,7 +74,6 @@ export default function DashboardStats() {
           ).length || 0
 
           // Berechne Umsatz aus abgeschlossenen Terminen (COMPLETED oder DONE) für DIESEN MONAT
-          const now = new Date()
           const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
           const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59)
           
