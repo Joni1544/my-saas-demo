@@ -98,6 +98,25 @@ export async function POST(request: NextRequest) {
           },
         })
 
+        // Finde Teamchat-Channel für diesen Tenant
+        const teamchat = await tx.chatChannel.findFirst({
+          where: {
+            tenantId: invitation.tenantId,
+            isSystem: true,
+            name: 'Teamchat',
+          },
+        })
+
+        // Füge neuen Mitarbeiter automatisch zum Teamchat hinzu
+        if (teamchat) {
+          await tx.channelMember.create({
+            data: {
+              channelId: teamchat.id,
+              userId: user.id,
+            },
+          })
+        }
+
         // Markiere Invitation als verwendet
         await tx.invitation.update({
           where: { id: invitation.id },
@@ -136,7 +155,7 @@ export async function POST(request: NextRequest) {
     // Generiere eindeutige Tenant-ID
     const tenantId = `tenant_${Date.now()}_${Math.random().toString(36).substring(7)}`
 
-    // Transaktion: Erstelle Shop und User gleichzeitig
+    // Transaktion: Erstelle Shop, User und Teamchat gleichzeitig
     const result = await prisma.$transaction(async (tx: TransactionClient) => {
       // Erstelle Shop
       const shop = await tx.shop.create({
@@ -154,6 +173,24 @@ export async function POST(request: NextRequest) {
           name: name || null,
           role: 'ADMIN',
           tenantId: shop.id,
+        },
+      })
+
+      // Erstelle Teamchat-Channel erstellen
+      const teamchat = await tx.chatChannel.create({
+        data: {
+          name: 'Teamchat',
+          tenantId: shop.id,
+          isSystem: true,
+          createdBy: user.id,
+        },
+      })
+
+      // Admin automatisch zum Teamchat hinzufügen
+      await tx.channelMember.create({
+        data: {
+          channelId: teamchat.id,
+          userId: user.id,
         },
       })
 

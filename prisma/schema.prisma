@@ -22,14 +22,15 @@ model User {
   updatedAt DateTime @updatedAt
 
   // Beziehungen
-  shop               Shop?         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  shop               Shop?           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   employee           Employee?
   taskComments       TaskComment[] // Kommentare die der User erstellt hat
-  tasksAssigned      Task[]        @relation("TaskAssignee") // Aufgaben die dem User zugewiesen sind
-  invitationsCreated Invitation[]  @relation("InvitationCreator") // Einladungen die der User erstellt hat
-  invitationsUsed    Invitation[]  @relation("InvitationUsedBy") // Einladungen die der User verwendet hat
-  sentMessages       Message[]     @relation("SentMessages") // Nachrichten die der User gesendet hat
-  receivedMessages   Message[]     @relation("ReceivedMessages") // Nachrichten die der User empfangen hat
+  tasksAssigned      Task[]          @relation("TaskAssignee") // Aufgaben die dem User zugewiesen sind
+  invitationsCreated Invitation[]    @relation("InvitationCreator") // Einladungen die der User erstellt hat
+  invitationsUsed    Invitation[]    @relation("InvitationUsedBy") // Einladungen die der User verwendet hat
+  sentMessages       Message[]       @relation("SentMessages") // Nachrichten die der User gesendet hat
+  receivedMessages   Message[]       @relation("ReceivedMessages") // Nachrichten die der User empfangen hat
+  channelMemberships ChannelMember[] @relation("ChannelMembers") // Channel-Mitgliedschaften
 
   @@index([tenantId])
   @@index([email])
@@ -383,12 +384,30 @@ model ChatChannel {
   id        String   @id @default(cuid())
   name      String
   tenantId  String // Referenz zur Firma
+  isSystem  Boolean  @default(false) // System-Channel (z.B. Teamchat) kann nicht gelöscht werden
   createdAt DateTime @default(now())
-  createdBy String? // User-ID des Erstellers (Admin)
+  createdBy String? // User-ID des Erstellers
 
   // Beziehungen
-  shop     Shop      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  shop     Shop            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   messages Message[]
+  members  ChannelMember[]
 
   @@index([tenantId])
+  @@index([isSystem])
+}
+
+model ChannelMember {
+  id        String   @id @default(cuid())
+  channelId String
+  userId    String
+  joinedAt  DateTime @default(now())
+
+  // Beziehungen
+  channel ChatChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  user    User        @relation("ChannelMembers", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([channelId, userId])
+  @@index([channelId])
+  @@index([userId])
 }

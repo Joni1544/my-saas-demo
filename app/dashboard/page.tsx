@@ -1,14 +1,14 @@
 /**
  * Dashboard-Seite
- * Hauptübersicht mit Statistiken, Quick Actions und Kalender
+ * Modernisierte Hauptübersicht mit KPIs, Quick Actions, Finanzen und Kalender
  */
 import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
-import DashboardStats from '@/components/DashboardStats'
+import DashboardKPIs from '@/components/DashboardKPIs'
 import Calendar from '@/components/Calendar'
 import QuickActions from '@/components/QuickActions'
 import UpcomingAppointments from '@/components/UpcomingAppointments'
-import ExpenseStats from '@/components/ExpenseStats'
+import FinanceOverview from '@/components/FinanceOverview'
 
 export default async function DashboardPage() {
   const session = await auth()
@@ -18,45 +18,44 @@ export default async function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
-      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-
+    <div className="min-h-screen bg-gray-50">
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         {/* Quick Actions */}
-        <div className="mb-6">
+        <div className="mb-8">
           <QuickActions role={session.user.role} />
         </div>
 
-        {/* Statistiken */}
-        <div className="mb-6">
-          <DashboardStats />
+        {/* KPI-Übersicht */}
+        <div className="mb-8">
+          <div className="mb-4">
+            <h2 className="text-lg font-semibold text-gray-900">Übersicht</h2>
+          </div>
+          <DashboardKPIs />
         </div>
 
-        {/* Finanzen & Ausgaben (nur für Admin) */}
+        {/* Finanzen-Kurzübersicht (nur für Admin) */}
         {session.user.role === 'ADMIN' && (
-          <div className="mb-6">
-            <ExpenseStats />
+          <div className="mb-8">
+            <FinanceOverview />
           </div>
         )}
 
+        {/* Nächste Termine & Kalender */}
         <div className="grid gap-6 lg:grid-cols-2">
           {/* Nächste Termine */}
-          <div>
+          <div className="rounded-lg bg-white p-6 shadow-sm border border-gray-200">
             <div className="mb-4">
-              <h2 className="text-xl font-semibold text-gray-900 mb-1">
-                Nächste Termine
-              </h2>
-              <p className="text-sm text-gray-500">Ihre kommenden Termine</p>
+              <h3 className="text-base font-semibold text-gray-900">Nächste Termine</h3>
+              <p className="text-xs text-gray-500 mt-1">Ihre kommenden Termine</p>
             </div>
             <UpcomingAppointments />
           </div>
 
           {/* Kalender */}
-          <div>
+          <div className="rounded-lg bg-white p-6 shadow-sm border border-gray-200">
             <div className="mb-4">
-              <h2 className="text-xl font-semibold text-gray-900 mb-1">
-                Kalender
-              </h2>
-              <p className="text-sm text-gray-500">Monatsübersicht</p>
+              <h3 className="text-base font-semibold text-gray-900">Kalender</h3>
+              <p className="text-xs text-gray-500 mt-1">Monatsübersicht</p>
             </div>
             <Calendar />
           </div>

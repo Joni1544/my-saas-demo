@@ -60,6 +60,20 @@ export async function GET(request: NextRequest) {
     }
 
     if (channelId) {
+      // Prüfe ob User Mitglied des Channels ist
+      const isMember = await prisma.channelMember.findUnique({
+        where: {
+          channelId_userId: {
+            channelId,
+            userId: session.user.id!,
+          },
+        },
+      })
+
+      if (!isMember) {
+        return NextResponse.json({ error: 'Nicht autorisiert - Sie sind kein Mitglied dieses Channels' }, { status: 403 })
+      }
+
       where.channelId = channelId
     }
 

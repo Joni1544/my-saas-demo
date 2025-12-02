@@ -49,6 +49,20 @@ export async function POST(request: NextRequest) {
       if (!channel || channel.tenantId !== session.user.tenantId) {
         return NextResponse.json({ error: 'Channel nicht gefunden oder nicht im gleichen Unternehmen' }, { status: 403 })
       }
+
+      // Prüfe ob User Mitglied des Channels ist
+      const isMember = await prisma.channelMember.findUnique({
+        where: {
+          channelId_userId: {
+            channelId,
+            userId: session.user.id!,
+          },
+        },
+      })
+
+      if (!isMember) {
+        return NextResponse.json({ error: 'Sie sind kein Mitglied dieses Channels' }, { status: 403 })
+      }
     }
 
     // Erstelle Nachricht

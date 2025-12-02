@@ -74,17 +74,10 @@ export default function ChatPage() {
 
   const fetchUsers = async () => {
     try {
-      const response = await fetch('/api/employees')
+      const response = await fetch('/api/chat/users')
       if (response.ok) {
         const data = await response.json()
-        const employees: Employee[] = data.employees || []
-        setUsers(
-          employees.map((emp) => ({
-            id: emp.user.id,
-            name: emp.user.name,
-            email: emp.user.email,
-          }))
-        )
+        setUsers(data.users || [])
       }
     } catch (error) {
       console.error('Fehler beim Laden der Mitarbeiter:', error)

@@ -93,6 +93,25 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    // Finde Teamchat-Channel für diesen Tenant
+    const teamchat = await prisma.chatChannel.findFirst({
+      where: {
+        tenantId: employee.tenantId,
+        isSystem: true,
+        name: 'Teamchat',
+      },
+    })
+
+    // Füge neuen Mitarbeiter automatisch zum Teamchat hinzu
+    if (teamchat) {
+      await prisma.channelMember.create({
+        data: {
+          channelId: teamchat.id,
+          userId: employee.userId,
+        },
+      })
+    }
+
     return NextResponse.json({
       success: true,
       message: 'Konto erfolgreich aktiviert',
