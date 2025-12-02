@@ -100,7 +100,7 @@ export default function InvitationsList() {
           {invitations.map((inv) => (
             <div
               key={inv.id}
-              className={`rounded-lg border p-4 ${
+              className={`rounded-lg border p-3 ${
                 inv.used
                   ? 'border-gray-200 bg-gray-50'
                   : new Date(inv.expiresAt) < new Date()
@@ -109,56 +109,53 @@ export default function InvitationsList() {
               }`}
             >
               <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <p className="font-medium text-gray-900">
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-wrap items-center gap-2 mb-1">
+                    <p className="font-medium text-gray-900 truncate">
                       {inv.email || 'Keine Email'}
                     </p>
                     <span
-                      className={`rounded px-2 py-0.5 text-xs font-medium ${
+                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${
                         inv.role === 'ADMIN'
-                          ? 'bg-purple-100 text-purple-800'
-                          : 'bg-blue-100 text-blue-800'
+                          ? 'bg-purple-50 text-purple-700 border border-purple-200'
+                          : 'bg-blue-50 text-blue-700 border border-blue-200'
                       }`}
                     >
                       {inv.role === 'ADMIN' ? 'Admin' : 'Mitarbeiter'}
                     </span>
                     {inv.used && (
-                      <span className="rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-800">
+                      <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600 border border-gray-200">
                         Verwendet
                       </span>
                     )}
                     {!inv.used && new Date(inv.expiresAt) < new Date() && (
-                      <span className="rounded bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-800">
+                      <span className="rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-800 border border-yellow-200">
                         Abgelaufen
                       </span>
                     )}
                   </div>
-                  <p className="mt-1 text-sm text-gray-600">
-                    Erstellt von: {inv.createdBy.name || inv.createdBy.email}
+                  <p className="text-xs text-gray-500">
+                    Erstellt: {inv.createdBy.name || inv.createdBy.email} • Gültig bis: {format(new Date(inv.expiresAt), 'dd.MM.yyyy')}
                   </p>
                   {inv.used && inv.usedBy && (
-                    <p className="mt-1 text-sm text-gray-600">
+                    <p className="text-xs text-gray-500 mt-0.5">
                       Verwendet von: {inv.usedBy.name || inv.usedBy.email}
                     </p>
                   )}
-                  <p className="mt-1 text-xs text-gray-500">
-                    Gültig bis: {format(new Date(inv.expiresAt), 'dd.MM.yyyy HH:mm')}
-                  </p>
                 </div>
                 <div className="ml-4 flex gap-2">
                   {!inv.used && (
                     <button
                       onClick={() => copyLink(inv.inviteLink)}
-                      className="rounded-md bg-indigo-600 px-3 py-1 text-xs font-medium text-white hover:bg-indigo-500"
+                      className="rounded-md border border-gray-300 bg-white px-2 py-1 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors"
                     >
-                      Link kopieren
+                      📋 Kopieren
                     </button>
                   )}
                   {!inv.used && (
                     <button
                       onClick={() => handleDelete(inv.id)}
-                      className="rounded-md bg-red-600 px-3 py-1 text-xs font-medium text-white hover:bg-red-500"
+                      className="rounded-md border border-red-300 bg-white px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 transition-colors"
                     >
                       Löschen
                     </button>

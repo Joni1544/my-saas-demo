@@ -225,8 +225,14 @@ export default function InventoryPage() {
                           )}
                         </div>
                       </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
-                        {item.category || '–'}
+                      <td className="whitespace-nowrap px-6 py-4">
+                        {item.category ? (
+                          <span className="inline-flex items-center rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs font-medium text-indigo-800">
+                            {item.category}
+                          </span>
+                        ) : (
+                          <span className="text-sm text-gray-400">–</span>
+                        )}
                       </td>
                       <td className="whitespace-nowrap px-6 py-4">
                         <div className="flex items-center gap-2">
@@ -250,52 +256,57 @@ export default function InventoryPage() {
                                   }
                                 }}
                                 autoFocus
-                                className="w-20 rounded border border-gray-300 px-2 py-1 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                className="w-20 rounded-md border border-gray-300 px-2 py-1 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                               />
                               <button
                                 onClick={() => {
                                   const value = parseInt(editingQuantity.value) || 0
                                   handleQuantityChange(item.id, value)
                                 }}
-                                className="rounded bg-indigo-600 px-2 py-1 text-xs text-white hover:bg-indigo-700"
+                                className="rounded-md bg-indigo-600 px-2 py-1 text-xs text-white hover:bg-indigo-700"
                               >
                                 ✓
                               </button>
                               <button
                                 onClick={() => setEditingQuantity(null)}
-                                className="rounded bg-gray-200 px-2 py-1 text-xs text-gray-700 hover:bg-gray-300"
+                                className="rounded-md bg-gray-200 px-2 py-1 text-xs text-gray-700 hover:bg-gray-300"
                               >
                                 ✕
                               </button>
                             </div>
                           ) : (
                             <>
-                              <span className={`text-sm font-semibold ${lowStock ? 'text-yellow-600' : 'text-gray-900'}`}>
+                              <span className={`text-sm font-semibold ${lowStock ? 'text-red-600 bg-red-50 px-2 py-1 rounded' : 'text-gray-900'}`}>
                                 {item.quantity}
                               </span>
                               <button
-                                onClick={() => {
+                                onClick={(e) => {
+                                  e.stopPropagation()
                                   const newValue = Math.max(0, item.quantity - 1)
                                   handleQuantityChange(item.id, newValue)
                                 }}
-                                className="rounded bg-red-100 px-2 py-1 text-xs text-red-700 hover:bg-red-200 font-semibold"
+                                className="rounded-md border border-gray-300 bg-white px-2 py-1 text-xs text-gray-700 hover:bg-gray-50 font-medium transition-colors"
                                 title="Verbraucht 1"
                               >
                                 -1
                               </button>
                               <button
-                                onClick={() => {
+                                onClick={(e) => {
+                                  e.stopPropagation()
                                   const newValue = item.quantity + 1
                                   handleQuantityChange(item.id, newValue)
                                 }}
-                                className="rounded bg-green-100 px-2 py-1 text-xs text-green-700 hover:bg-green-200 font-semibold"
+                                className="rounded-md border border-gray-300 bg-white px-2 py-1 text-xs text-gray-700 hover:bg-gray-50 font-medium transition-colors"
                                 title="Hinzufügen 1"
                               >
                                 +1
                               </button>
                               <button
-                                onClick={() => setEditingQuantity({ id: item.id, value: item.quantity.toString() })}
-                                className="rounded bg-indigo-100 px-2 py-1 text-xs text-indigo-700 hover:bg-indigo-200 font-semibold"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setEditingQuantity({ id: item.id, value: item.quantity.toString() })
+                                }}
+                                className="rounded-md border border-gray-300 bg-white px-2 py-1 text-xs text-gray-700 hover:bg-gray-50 font-medium transition-colors"
                                 title="Menge bearbeiten"
                               >
                                 ✎
@@ -307,7 +318,7 @@ export default function InventoryPage() {
                       <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
                         {item.minThreshold}
                       </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
+                      <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-400">
                         {item.pricePerUnit
                           ? new Intl.NumberFormat('de-DE', {
                               style: 'currency',

@@ -28,6 +28,8 @@ model User {
   tasksAssigned      Task[]        @relation("TaskAssignee") // Aufgaben die dem User zugewiesen sind
   invitationsCreated Invitation[]  @relation("InvitationCreator") // Einladungen die der User erstellt hat
   invitationsUsed    Invitation[]  @relation("InvitationUsedBy") // Einladungen die der User verwendet hat
+  sentMessages       Message[]     @relation("SentMessages") // Nachrichten die der User gesendet hat
+  receivedMessages   Message[]     @relation("ReceivedMessages") // Nachrichten die der User empfangen hat
 
   @@index([tenantId])
   @@index([email])
@@ -53,6 +55,7 @@ model Shop {
   expenses          Expense[] // Ausgaben für diesen Tenant
   recurringExpenses RecurringExpense[] // Daueraufträge für diesen Tenant
   inventoryItems    InventoryItem[] // Inventar-Artikel für diesen Tenant
+  chatChannels      ChatChannel[] // Chat-Kanäle für diesen Tenant
 
   @@index([tenantId])
 }
@@ -146,19 +149,19 @@ model Appointment {
 
 // Aufgaben-Modell (für Dashboard)
 model Task {
-  id          String        @id @default(cuid())
-  title       String
-  description String?
-  status      TaskStatus    @default(TODO)
-  priority    TaskPriority  @default(MEDIUM)
-  tenantId    String // Referenz zur Firma
-  assignedTo  String? // User-ID
-  dueDate     DateTime? // Alias für deadline (Kompatibilität)
-  deadline    DateTime? // Deadline für die Aufgabe
-  comments    TaskComment[] // Kommentare zur Aufgabe
-  assignedToUser User? @relation("TaskAssignee", fields: [assignedTo], references: [id], onDelete: SetNull)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  id             String        @id @default(cuid())
+  title          String
+  description    String?
+  status         TaskStatus    @default(TODO)
+  priority       TaskPriority  @default(MEDIUM)
+  tenantId       String // Referenz zur Firma
+  assignedTo     String? // User-ID
+  dueDate        DateTime? // Alias für deadline (Kompatibilität)
+  deadline       DateTime? // Deadline für die Aufgabe
+  comments       TaskComment[] // Kommentare zur Aufgabe
+  assignedToUser User?         @relation("TaskAssignee", fields: [assignedTo], references: [id], onDelete: SetNull)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 
   @@index([tenantId])
   @@index([assignedTo])
@@ -353,5 +356,39 @@ model InventoryItem {
   @@index([category])
 }
 
-// Session & Account Models werden nicht mehr benötigt
-// NextAuth v5 mit JWT verwendet keine Datenbank-Sessions
+// Chat-Modelle
+model Message {
+  id         String   @id @default(cuid())
+  senderId   String
+  receiverId String? // Für Einzelchat
+  channelId  String? // Für Gruppenchat
+  content    String
+  createdAt  DateTime @default(now())
+  read       Boolean  @default(false)
+  tenantId   String // Multi-Tenant Filter
+
+  // Beziehungen
+  sender   User         @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User?        @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+  channel  ChatChannel? @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([channelId])
+  @@index([tenantId])
+  @@index([createdAt])
+}
+
+model ChatChannel {
+  id        String   @id @default(cuid())
+  name      String
+  tenantId  String // Referenz zur Firma
+  createdAt DateTime @default(now())
+  createdBy String? // User-ID des Erstellers (Admin)
+
+  // Beziehungen
+  shop     Shop      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  messages Message[]
+
+  @@index([tenantId])
+}

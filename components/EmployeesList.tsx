@@ -81,42 +81,38 @@ export default function EmployeesList() {
                   !employee.isActive ? 'border-gray-200 bg-gray-50 opacity-60' : 'border-gray-200 bg-white'
                 }`}
               >
-                <div className="flex items-center gap-3">
-                  {employee.color && (
-                    <div
-                      className="h-4 w-4 rounded-full"
-                      style={{ backgroundColor: employee.color }}
-                      aria-label="Mitarbeiterfarbe"
-                    />
-                  )}
-                  <div>
-                    <p className="font-medium text-gray-900">
+                <div className="flex items-center gap-4">
+                  <div className="h-12 w-12 rounded-full bg-indigo-500 flex items-center justify-center text-white text-lg font-semibold shadow-md">
+                    {(employee.user.name || employee.user.email).charAt(0).toUpperCase()}
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-semibold text-gray-900">
                       {employee.user.name || employee.user.email}
                     </p>
-                    <p className="text-sm text-gray-600">{employee.user.email}</p>
+                    <p className="text-sm text-gray-500">{employee.user.email}</p>
                     {employee.position && (
-                      <p className="text-xs text-gray-500">{employee.position}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">{employee.position}</p>
                     )}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <span
-                    className={`rounded px-2 py-1 text-xs font-medium ${
+                    className={`rounded-full px-2.5 py-1 text-xs font-medium ${
                       employee.user.role === 'ADMIN'
-                        ? 'bg-purple-100 text-purple-800'
-                        : 'bg-blue-100 text-blue-800'
+                        ? 'bg-purple-50 text-purple-700 border border-purple-200'
+                        : 'bg-blue-50 text-blue-700 border border-blue-200'
                     }`}
                   >
                     {employee.user.role === 'ADMIN' ? 'Admin' : 'Mitarbeiter'}
                   </span>
                   {!employee.isActive && (
-                    <span className="rounded bg-gray-100 px-2 py-1 text-xs font-medium text-gray-800">
+                    <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600 border border-gray-200">
                       Inaktiv
                     </span>
                   )}
                   <Link
                     href={`/dashboard/employees/${employee.id}`}
-                    className="rounded-md bg-indigo-600 px-3 py-1 text-xs font-medium text-white hover:bg-indigo-500"
+                    className="rounded-md border border-gray-300 bg-white px-3 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
                   >
                     Bearbeiten
                   </Link>

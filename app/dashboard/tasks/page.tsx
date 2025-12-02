@@ -9,6 +9,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { format, isPast, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns'
 import { selectBase } from '@/lib/inputStyles'
+import TaskSlideIn from '@/components/TaskSlideIn'
 
 interface Task {
   id: string
@@ -65,6 +66,8 @@ export default function TasksPage() {
   const [statusFilter, setStatusFilter] = useState<string>('')
   const [priorityFilter, setPriorityFilter] = useState<string>('')
   const [deadlineFilter, setDeadlineFilter] = useState<DeadlineFilter>('all')
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
+  const [isSlideInOpen, setIsSlideInOpen] = useState(false)
 
   useEffect(() => {
     fetchTasks()
@@ -243,7 +246,7 @@ export default function TasksPage() {
             <p className="text-gray-500">Keine Aufgaben gefunden</p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             {tasks.map((task) => {
               const deadline = task.deadline || task.dueDate
               const overdue = isOverdue(task)
@@ -251,70 +254,77 @@ export default function TasksPage() {
               return (
                 <div
                   key={task.id}
-                  className="rounded-lg bg-white p-6 shadow hover:shadow-md transition-shadow"
+                  onClick={() => {
+                    setSelectedTaskId(task.id)
+                    setIsSlideInOpen(true)
+                  }}
+                  className="rounded-xl bg-white p-5 shadow-md hover:shadow-lg transition-all cursor-pointer border border-gray-100 hover:border-indigo-200"
                 >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-lg font-semibold text-gray-900">{task.title}</h3>
-                        <span className={`rounded px-2 py-1 text-xs font-medium ${STATUS_COLORS[task.status] || 'bg-gray-100 text-gray-800'}`}>
-                          {STATUS_LABELS[task.status] || task.status}
-                        </span>
-                        <span className={`rounded px-2 py-1 text-xs font-medium ${PRIORITY_COLORS[task.priority] || 'bg-gray-100 text-gray-800'}`}>
-                          {PRIORITY_LABELS[task.priority] || task.priority}
-                        </span>
-                      </div>
-
-                      <div className="space-y-1 text-sm text-gray-600">
-                        <p>
-                          <span className="font-medium">Zuständig:</span>{' '}
-                          {task.assignedToUser ? (
-                            <span className="text-gray-900">{task.assignedToUser.name || task.assignedToUser.email}</span>
-                          ) : (
-                            <span className="text-gray-400 italic">Nicht zugewiesen</span>
-                          )}
-                        </p>
-                        {deadline && (
-                          <p className={overdue ? 'text-red-600 font-semibold flex items-center gap-1' : ''}>
-                            {overdue && (
-                              <span className="text-red-600">⚠️</span>
-                            )}
-                            <span className="font-medium">Deadline:</span>{' '}
-                            {format(new Date(deadline as string), 'dd.MM.yyyy')}
-                            {overdue && <span className="ml-2 text-xs">(Überfällig)</span>}
-                          </p>
-                        )}
-                        {task.description && (
-                          <p className="text-gray-500 line-clamp-2">{task.description}</p>
-                        )}
-                        {task._count && task._count.comments > 0 && (
-                          <p className="text-xs text-gray-400">
-                            {task._count.comments} Kommentar{task._count.comments !== 1 ? 'e' : ''}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2">
-                      <Link
-                        href={`/dashboard/tasks/${task.id}`}
-                        className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500"
-                      >
-                        Bearbeiten
-                      </Link>
-                      <button
-                        onClick={() => handleDelete(task.id)}
-                        className="rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-500"
-                      >
-                        Löschen
-                      </button>
+                  <div className="flex items-start justify-between mb-3">
+                    <h3 className="text-lg font-bold text-gray-900 flex-1 pr-2">{task.title}</h3>
+                    <div className="flex flex-col gap-1">
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${PRIORITY_COLORS[task.priority] || 'bg-gray-100 text-gray-800'}`}>
+                        {PRIORITY_LABELS[task.priority] || task.priority}
+                      </span>
                     </div>
                   </div>
+
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${STATUS_COLORS[task.status] || 'bg-gray-100 text-gray-800'}`}>
+                      {STATUS_LABELS[task.status] || task.status}
+                    </span>
+                    {task.assignedToUser && (
+                      <div className="flex items-center gap-1.5">
+                        <div className="h-6 w-6 rounded-full bg-indigo-500 flex items-center justify-center text-white text-xs font-semibold">
+                          {(task.assignedToUser.name || task.assignedToUser.email).charAt(0).toUpperCase()}
+                        </div>
+                        <span className="text-xs text-gray-600">
+                          {task.assignedToUser.name || task.assignedToUser.email.split('@')[0]}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {deadline && (
+                    <div className={`mb-3 flex items-center gap-2 ${overdue ? 'text-red-600' : 'text-gray-600'}`}>
+                      <span className="text-sm">📅</span>
+                      <span className={`text-sm font-medium ${overdue ? 'text-red-600' : ''}`}>
+                        {format(new Date(deadline as string), 'dd.MM.yyyy')}
+                      </span>
+                      {overdue && (
+                        <span className="text-xs font-semibold text-red-600">⚠️ Überfällig</span>
+                      )}
+                    </div>
+                  )}
+
+                  {task.description && (
+                    <p className="text-sm text-gray-500 line-clamp-2 mb-3">{task.description}</p>
+                  )}
+
+                  {task._count && task._count.comments > 0 && (
+                    <div className="flex items-center gap-1 text-xs text-gray-400">
+                      <span>💬</span>
+                      <span>{task._count.comments} Kommentar{task._count.comments !== 1 ? 'e' : ''}</span>
+                    </div>
+                  )}
                 </div>
               )
             })}
           </div>
         )}
+
+        {/* Slide-In Panel */}
+        <TaskSlideIn
+          taskId={selectedTaskId}
+          isOpen={isSlideInOpen}
+          onClose={() => {
+            setIsSlideInOpen(false)
+            setSelectedTaskId(null)
+          }}
+          onUpdate={() => {
+            fetchTasks()
+          }}
+        />
       </div>
     </div>
   )

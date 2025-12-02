@@ -26,6 +26,7 @@ export default function Navbar() {
     { name: 'Finanzen', href: '/dashboard/finance' },
     { name: 'Inventar', href: '/dashboard/inventory' },
     { name: 'Aufgaben', href: '/dashboard/tasks' },
+    { name: 'Chat', href: '/dashboard/chat' },
     { name: 'Admin', href: '/dashboard/admin' },
   ]
   
@@ -36,6 +37,7 @@ export default function Navbar() {
     { name: 'Termine', href: '/dashboard/appointments' },
     { name: 'Kunden', href: '/dashboard/customers' },
     { name: 'Aufgaben', href: '/dashboard/tasks' },
+    { name: 'Chat', href: '/dashboard/chat' },
   ]
   
   const navigation = isAdmin ? adminNavigation : employeeNavigation
