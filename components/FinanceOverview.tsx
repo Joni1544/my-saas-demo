@@ -31,14 +31,7 @@ export default function FinanceOverview() {
     if (savedMode) {
       setViewMode(savedMode)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
-
-  // Prüfe ob Komponente angezeigt werden soll
-  const effectiveRole = getEffectiveRole(session?.user?.role || 'MITARBEITER', viewMode)
-  if (effectiveRole !== 'ADMIN') {
-    return null
-  }
 
   useEffect(() => {
     async function fetchFinance() {
@@ -120,6 +113,12 @@ export default function FinanceOverview() {
 
     fetchFinance()
   }, [])
+
+  // Prüfe ob Komponente angezeigt werden soll
+  const effectiveRole = getEffectiveRole(session?.user?.role || 'MITARBEITER', viewMode)
+  if (effectiveRole !== 'ADMIN') {
+    return null
+  }
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('de-DE', {

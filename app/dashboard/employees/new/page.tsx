@@ -92,7 +92,7 @@ export default function NewEmployeePage() {
               alert('Link wurde in die Zwischenablage kopiert!')
             }
           }
-        } catch (inviteError) {
+        } catch {
           // Ignoriere Fehler beim Erstellen des Links - User hat möglicherweise bereits ein Passwort
           console.log('Einladungslink konnte nicht erstellt werden (User hat möglicherweise bereits ein Passwort)')
         }

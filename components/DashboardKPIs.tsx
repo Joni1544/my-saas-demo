@@ -36,7 +36,6 @@ export default function DashboardKPIs() {
     if (savedMode) {
       setViewMode(savedMode)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {

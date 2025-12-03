@@ -32,7 +32,6 @@ export default function UpcomingAppointments() {
 
   useEffect(() => {
     fetchUpcomingAppointments()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const fetchUpcomingAppointments = async () => {

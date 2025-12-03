@@ -2,7 +2,7 @@
  * Dynamic Manifest Route
  * Gibt Manifest basierend auf Tenant zurück
  */
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { getManifestForTenant } from '@/lib/branding'
 

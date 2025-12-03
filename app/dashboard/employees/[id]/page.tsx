@@ -180,13 +180,6 @@ export default function EmployeeDetailPage() {
     }
   }
 
-  const copyInviteLink = () => {
-    if (inviteLink) {
-      navigator.clipboard.writeText(inviteLink)
-      alert('Link in Zwischenablage kopiert!')
-    }
-  }
-
   const handleSetPassword = async () => {
     if (!passwordData.password || passwordData.password.length < 8) {
       alert('Passwort muss mindestens 8 Zeichen lang sein')

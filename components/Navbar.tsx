@@ -13,16 +13,14 @@ import { getEffectiveRole } from '@/lib/view-mode'
 export default function Navbar() {
   const { data: session } = useSession()
   const pathname = usePathname()
-  const [viewMode, setViewMode] = useState<'admin' | 'employee'>('admin')
-
-  useEffect(() => {
-    // Lade View-Mode aus localStorage
-    const savedMode = localStorage.getItem('viewMode') as 'admin' | 'employee' | null
-    if (savedMode) {
-      setViewMode(savedMode)
+  const [viewMode] = useState<'admin' | 'employee'>(() => {
+    // Initialisiere direkt aus localStorage
+    if (typeof window !== 'undefined') {
+      const savedMode = localStorage.getItem('viewMode') as 'admin' | 'employee' | null
+      return savedMode || 'admin'
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+    return 'admin'
+  })
 
   if (!session) return null
 

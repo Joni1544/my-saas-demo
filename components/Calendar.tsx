@@ -16,7 +16,6 @@ import {
   endOfWeek,
 } from 'date-fns'
 import { useRouter } from 'next/navigation'
-import { useSession } from 'next-auth/react'
 import DateSelector from '@/components/DateSelector'
 // Locale wird nicht verwendet, da Next.js standardmäßig englisch ist
 // Für deutsche Lokalisierung würde man: import { de } from 'date-fns/locale'
@@ -34,7 +33,6 @@ interface Appointment {
 
 export default function Calendar() {
   const router = useRouter()
-  const { data: session } = useSession()
   const now = new Date()
   const [monthSelection, setMonthSelection] = useState({
     month: now.getMonth(),

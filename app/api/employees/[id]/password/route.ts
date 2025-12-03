@@ -90,7 +90,7 @@ export async function PUT(
 
 // DELETE: Passwort löschen (Zugang deaktivieren)
 export async function DELETE(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
