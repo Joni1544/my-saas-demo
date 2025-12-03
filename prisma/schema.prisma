@@ -57,6 +57,7 @@ model Shop {
   recurringExpenses RecurringExpense[] // Daueraufträge für diesen Tenant
   inventoryItems    InventoryItem[] // Inventar-Artikel für diesen Tenant
   chatChannels      ChatChannel[] // Chat-Kanäle für diesen Tenant
+  dailyReports      DailyReport[] // Tägliche Chef-Berichte
 
   @@index([tenantId])
 }
@@ -444,10 +445,10 @@ model VacationRequest {
   employeeId String
   employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
-  startDate DateTime
-  endDate   DateTime
-  days      Int // Anzahl der Urlaubstage
-  leaveReason String @default("Urlaub") // Art des Urlaubs: "Urlaub", "Fortbildung", "Unbezahlt", etc.
+  startDate   DateTime
+  endDate     DateTime
+  days        Int // Anzahl der Urlaubstage
+  leaveReason String   @default("Urlaub") // Art des Urlaubs: "Urlaub", "Fortbildung", "Unbezahlt", etc.
 
   status String  @default("PENDING") // PENDING | APPROVED | DENIED
   reason String? // Optional: Grund für Ablehnung
@@ -459,4 +460,20 @@ model VacationRequest {
   @@index([status])
   @@index([startDate])
   @@index([endDate])
+}
+
+// Täglicher Chef-Bericht
+model DailyReport {
+  id         String   @id @default(cuid())
+  tenantId   String // Referenz zur Firma
+  reportDate DateTime @default(now()) // Datum des Berichts (heute)
+  reportData Json // Vollständiger Bericht als JSON
+  createdAt  DateTime @default(now())
+
+  // Beziehungen
+  shop Shop @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, reportDate])
+  @@index([tenantId])
+  @@index([reportDate])
 }

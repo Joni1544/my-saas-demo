@@ -30,6 +30,7 @@ export default function Navbar() {
   // Admin Navigation (neue Reihenfolge)
   const adminNavigation = [
     { name: 'Dashboard', href: '/dashboard' },
+    { name: 'Berichte', href: '/dashboard/reports' },
     { name: 'Finanzen', href: '/dashboard/finance' },
     { name: 'Mitarbeiter', href: '/dashboard/employees' },
     { name: 'Inventar', href: '/dashboard/inventory' },
