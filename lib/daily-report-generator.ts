@@ -77,7 +77,6 @@ export async function generateDailyReport(tenantId: string, reportDate: Date = n
     tasksTomorrow,
     employees,
     inventoryItems,
-    expensesToday,
   ] = await Promise.all([
     // Termine heute
     prisma.appointment.findMany({
@@ -130,13 +129,6 @@ export async function generateDailyReport(tenantId: string, reportDate: Date = n
     prisma.inventoryItem.findMany({
       where: { tenantId },
     }),
-    // Ausgaben heute
-    prisma.expense.findMany({
-      where: {
-        tenantId,
-        date: { gte: todayStart, lte: todayEnd },
-      },
-    }),
   ])
   
   // 1. METRICS - Kennzahlen des heutigen Tages
@@ -152,7 +144,10 @@ export async function generateDailyReport(tenantId: string, reportDate: Date = n
   
   const dailyRevenue = appointmentsToday
     .filter(a => (a.status === 'ACCEPTED' || a.status === 'COMPLETED') && a.price)
-    .reduce((sum, a) => sum + (a.price || 0), 0)
+    .reduce((sum, a) => {
+      const price = a.price ? Number(a.price) : 0
+      return sum + price
+    }, 0)
   
   const openTasks = tasksToday.filter(t => t.status !== 'DONE' && t.status !== 'CANCELLED').length
   
@@ -197,7 +192,7 @@ export async function generateDailyReport(tenantId: string, reportDate: Date = n
   })
   
   const employeesWithManyCancellations = Array.from(employeeCancellationMap.entries())
-    .filter(([_, count]) => count >= 2)
+    .filter(([, count]) => count >= 2)
     .map(([employeeId, cancellations]) => {
       const emp = employees.find(e => e.id === employeeId)
       return {
@@ -344,15 +339,19 @@ export async function generateDailyReport(tenantId: string, reportDate: Date = n
   const criticalAppointments = appointmentsTomorrow
     .filter(apt => {
       const customer = apt.customer
-      return customer?.tags?.includes('VIP') || customer?.tags?.includes('Wichtig') || (apt.price && apt.price > 500)
+      const price = apt.price ? Number(apt.price) : 0
+      return customer?.tags?.includes('VIP') || customer?.tags?.includes('Wichtig') || price > 500
     })
-    .map(apt => ({
-      appointmentId: apt.id,
-      title: apt.title,
-      reason: apt.customer?.tags?.includes('VIP') ? 'VIP-Kunde' : 
-              apt.customer?.tags?.includes('Wichtig') ? 'Wichtiger Kunde' :
-              apt.price && apt.price > 500 ? 'Hoher Wert' : 'Kritisch',
-    }))
+    .map(apt => {
+      const price = apt.price ? Number(apt.price) : 0
+      return {
+        appointmentId: apt.id,
+        title: apt.title,
+        reason: apt.customer?.tags?.includes('VIP') ? 'VIP-Kunde' : 
+                apt.customer?.tags?.includes('Wichtig') ? 'Wichtiger Kunde' :
+                price > 500 ? 'Hoher Wert' : 'Kritisch',
+      }
+    })
   
   // Termine mit nicht verfügbarem Mitarbeiter
   const appointmentsWithUnavailableEmployee = appointmentsTomorrow
