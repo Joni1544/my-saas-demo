@@ -6,6 +6,8 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useSession } from 'next-auth/react'
+import { getEffectiveRole } from '@/lib/view-mode'
 
 interface FinanceOverview {
   monthlyRevenue: number
@@ -14,12 +16,23 @@ interface FinanceOverview {
 }
 
 export default function FinanceOverview() {
+  const { data: session } = useSession()
+  const [viewMode, setViewMode] = useState<'admin' | 'employee'>('admin')
   const [finance, setFinance] = useState<FinanceOverview>({
     monthlyRevenue: 0,
     monthlyFixedCosts: 0,
     profit: 0,
   })
   const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    // Lade View-Mode aus localStorage
+    const savedMode = localStorage.getItem('viewMode') as 'admin' | 'employee' | null
+    if (savedMode) {
+      setViewMode(savedMode)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   useEffect(() => {
     async function fetchFinance() {

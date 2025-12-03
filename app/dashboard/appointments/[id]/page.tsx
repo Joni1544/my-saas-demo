@@ -55,6 +55,7 @@ const STATUS_OPTIONS = [
   { value: 'CANCELLED', label: 'Storniert' },
   { value: 'RESCHEDULED', label: 'Verschoben' },
   { value: 'COMPLETED', label: 'Abgeschlossen' },
+  { value: 'NEEDS_REASSIGNMENT', label: 'Neu zuzuweisen' },
 ]
 
 const STATUS_COLORS: Record<string, string> = {
@@ -63,6 +64,7 @@ const STATUS_COLORS: Record<string, string> = {
   CANCELLED: '#EF4444',
   RESCHEDULED: '#F59E0B',
   COMPLETED: '#6B7280',
+  NEEDS_REASSIGNMENT: '#F59E0B',
 }
 
 export default function AppointmentDetailPage() {

@@ -7,14 +7,27 @@
 import { signOut, useSession } from 'next-auth/react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { getEffectiveRole } from '@/lib/view-mode'
 
 export default function Navbar() {
   const { data: session } = useSession()
   const pathname = usePathname()
+  const [viewMode, setViewMode] = useState<'admin' | 'employee'>('admin')
+
+  useEffect(() => {
+    // Lade View-Mode aus localStorage
+    const savedMode = localStorage.getItem('viewMode') as 'admin' | 'employee' | null
+    if (savedMode) {
+      setViewMode(savedMode)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   if (!session) return null
 
-  const isAdmin = session.user.role === 'ADMIN'
+  const effectiveRole = getEffectiveRole(session.user.role, viewMode)
+  const isAdmin = effectiveRole === 'ADMIN'
   
   // Admin Navigation (neue Reihenfolge)
   const adminNavigation = [

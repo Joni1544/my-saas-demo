@@ -30,6 +30,7 @@ export async function GET() {
     const employees = await prisma.employee.findMany({
       where: {
         tenantId: session.user.tenantId,
+        // Zeige alle Mitarbeiter, auch inaktive
       },
       include: {
         user: {
@@ -48,6 +49,8 @@ export async function GET() {
       },
       orderBy: { createdAt: 'desc' },
     })
+
+    console.log(`[API] Gefundene Mitarbeiter für Tenant ${session.user.tenantId}:`, employees.length)
 
     // Füge Verfügbarkeits-Info hinzu
     const employeesWithAvailability = employees.map((employee) => ({

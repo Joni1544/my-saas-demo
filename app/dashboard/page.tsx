@@ -9,6 +9,7 @@ import Calendar from '@/components/Calendar'
 import QuickActions from '@/components/QuickActions'
 import UpcomingAppointments from '@/components/UpcomingAppointments'
 import FinanceOverview from '@/components/FinanceOverview'
+import ViewModeToggle from '@/components/ViewModeToggle'
 
 export default async function DashboardPage() {
   const session = await auth()
@@ -20,6 +21,13 @@ export default async function DashboardPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        {/* View Mode Toggle (nur für Admins) */}
+        {session.user.role === 'ADMIN' && (
+          <div className="mb-6">
+            <ViewModeToggle />
+          </div>
+        )}
+
         {/* Quick Actions */}
         <div className="mb-8">
           <QuickActions role={session.user.role} />

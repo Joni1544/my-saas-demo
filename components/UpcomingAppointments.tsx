@@ -32,6 +32,7 @@ export default function UpcomingAppointments() {
 
   useEffect(() => {
     fetchUpcomingAppointments()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const fetchUpcomingAppointments = async () => {
@@ -40,6 +41,7 @@ export default function UpcomingAppointments() {
       const endDate = new Date()
       endDate.setDate(endDate.getDate() + 7) // Nächste 7 Tage
 
+      // API filtert automatisch basierend auf echter Rolle, nicht View-Mode
       const response = await fetch(
         `/api/appointments?startDate=${now.toISOString()}&endDate=${endDate.toISOString()}`
       )
@@ -87,9 +89,23 @@ export default function UpcomingAppointments() {
         return 'bg-red-50 text-red-700 border border-red-200'
       case 'COMPLETED':
         return 'bg-gray-50 text-gray-700 border border-gray-200'
+      case 'NEEDS_REASSIGNMENT':
+        return 'bg-yellow-50 text-yellow-700 border border-yellow-200'
       default:
         return 'bg-blue-50 text-blue-700 border border-blue-200'
     }
+  }
+
+  const getStatusLabel = (status: string) => {
+    const labels: Record<string, string> = {
+      OPEN: 'Offen',
+      ACCEPTED: 'Angenommen',
+      CANCELLED: 'Storniert',
+      RESCHEDULED: 'Verschoben',
+      COMPLETED: 'Abgeschlossen',
+      NEEDS_REASSIGNMENT: 'Neu zuzuweisen',
+    }
+    return labels[status] || status
   }
 
   return (
@@ -117,7 +133,7 @@ export default function UpcomingAppointments() {
             <span
               className={`ml-3 rounded px-2 py-1 text-xs font-medium ${getStatusStyle(appointment.status)}`}
             >
-              {appointment.status}
+              {getStatusLabel(appointment.status)}
             </span>
           </div>
         </Link>

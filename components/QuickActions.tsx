@@ -5,13 +5,30 @@
 'use client'
 
 import Link from 'next/link'
+import { useSession } from 'next-auth/react'
+import { useState } from 'react'
+import { getEffectiveRole } from '@/lib/view-mode'
 
 interface QuickActionsProps {
   role?: string
 }
 
-export default function QuickActions({}: QuickActionsProps) {
-  const actions = [
+export default function QuickActions({ role: propRole }: QuickActionsProps) {
+  const { data: session } = useSession()
+  const getInitialViewMode = (): 'admin' | 'employee' => {
+    if (typeof window !== 'undefined') {
+      const savedMode = localStorage.getItem('viewMode') as 'admin' | 'employee' | null
+      return savedMode || 'admin'
+    }
+    return 'admin'
+  }
+  const [viewMode] = useState<'admin' | 'employee'>(getInitialViewMode)
+
+  // Verwende effektive Rolle (View-Mode oder echte Rolle)
+  const effectiveRole = propRole || getEffectiveRole(session?.user?.role || 'MITARBEITER', viewMode)
+  const isAdmin = effectiveRole === 'ADMIN'
+
+  const allActions = [
     {
       title: 'Neuer Termin',
       href: '/dashboard/appointments/new',
@@ -41,10 +58,14 @@ export default function QuickActions({}: QuickActionsProps) {
       href: '/dashboard/chat',
       icon: '💬',
       color: 'bg-pink-600 hover:bg-pink-700',
+      adminOnly: false,
     },
   ]
 
-  const allActions = actions
+  // Filtere Actions basierend auf Rolle
+  const actions = isAdmin 
+    ? allActions 
+    : allActions.filter(action => !action.adminOnly)
 
   const colorMap: Record<string, string> = {
     'bg-indigo-600 hover:bg-indigo-700': 'from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700',
@@ -58,7 +79,7 @@ export default function QuickActions({}: QuickActionsProps) {
     <div className="rounded-xl bg-white p-6 shadow-sm border border-gray-200">
       <h2 className="mb-4 text-lg font-semibold text-gray-900">Schnellzugriff</h2>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-        {allActions.map((action) => {
+        {actions.map((action) => {
           const gradient = colorMap[action.color] || 'from-indigo-500 to-indigo-600'
           return (
             <Link

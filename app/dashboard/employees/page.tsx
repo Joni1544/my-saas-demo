@@ -34,11 +34,18 @@ export default function EmployeesPage() {
     try {
       setLoading(true)
       const response = await fetch('/api/employees')
-      if (!response.ok) throw new Error('Fehler beim Laden der Mitarbeiter')
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unbekannter Fehler' }))
+        console.error('API Fehler:', response.status, errorData)
+        alert(`Fehler beim Laden der Mitarbeiter: ${errorData.error || 'Unbekannter Fehler'}`)
+        return
+      }
       const data = await response.json()
+      console.log('Geladene Mitarbeiter:', data.employees?.length || 0)
       setEmployees(data.employees || [])
     } catch (error) {
       console.error('Fehler:', error)
+      alert('Fehler beim Laden der Mitarbeiter. Bitte die Browser-Konsole prüfen.')
     } finally {
       setLoading(false)
     }

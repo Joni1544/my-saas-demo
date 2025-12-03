@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
       startTime?: { gte: Date; lte: Date }
       employeeId?: string
       customerId?: string
-      status?: 'OPEN' | 'ACCEPTED' | 'CANCELLED' | 'RESCHEDULED' | 'COMPLETED'
+      status?: 'OPEN' | 'ACCEPTED' | 'CANCELLED' | 'RESCHEDULED' | 'COMPLETED' | 'NEEDS_REASSIGNMENT'
     } = {
       tenantId: session.user.tenantId,
     }
@@ -51,8 +51,8 @@ export async function GET(request: NextRequest) {
     }
 
     // Statusfilter
-    if (status && ['OPEN', 'ACCEPTED', 'CANCELLED', 'RESCHEDULED', 'COMPLETED'].includes(status)) {
-      where.status = status as 'OPEN' | 'ACCEPTED' | 'CANCELLED' | 'RESCHEDULED' | 'COMPLETED'
+    if (status && ['OPEN', 'ACCEPTED', 'CANCELLED', 'RESCHEDULED', 'COMPLETED', 'NEEDS_REASSIGNMENT'].includes(status)) {
+      where.status = status as 'OPEN' | 'ACCEPTED' | 'CANCELLED' | 'RESCHEDULED' | 'COMPLETED' | 'NEEDS_REASSIGNMENT'
     }
 
     // Mitarbeiterfilter (für Admin)

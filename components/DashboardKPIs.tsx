@@ -6,6 +6,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { getEffectiveRole } from '@/lib/view-mode'
 
 interface KPIs {
   customers: number
@@ -27,6 +28,16 @@ export default function DashboardKPIs() {
   })
   const [loading, setLoading] = useState(true)
   const [userRole, setUserRole] = useState<'ADMIN' | 'MITARBEITER'>('ADMIN')
+  const [viewMode, setViewMode] = useState<'admin' | 'employee'>('admin')
+
+  useEffect(() => {
+    // Lade View-Mode aus localStorage
+    const savedMode = localStorage.getItem('viewMode') as 'admin' | 'employee' | null
+    if (savedMode) {
+      setViewMode(savedMode)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   useEffect(() => {
     async function fetchKPIs() {
@@ -34,8 +45,10 @@ export default function DashboardKPIs() {
         // Hole Session-Info um Rolle zu bestimmen
         const sessionRes = await fetch('/api/auth/session')
         const session = await sessionRes.json()
-        const role = session?.user?.role || 'ADMIN'
-        setUserRole(role)
+        const actualRole = session?.user?.role || 'ADMIN'
+        // Verwende effektive Rolle basierend auf View-Mode
+        const role = getEffectiveRole(actualRole, viewMode)
+        setUserRole(role as 'ADMIN' | 'MITARBEITER')
 
         const now = new Date()
         const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
@@ -116,7 +129,7 @@ export default function DashboardKPIs() {
     }
 
     fetchKPIs()
-  }, [])
+  }, [viewMode])
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('de-DE', {

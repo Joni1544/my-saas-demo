@@ -3,7 +3,7 @@
  * Prüft ob ein Mitarbeiter an einem bestimmten Datum verfügbar ist
  */
 import { prisma } from './prisma'
-import { isWithinInterval, isSameDay, parse, format } from 'date-fns'
+import { isWithinInterval, isSameDay } from 'date-fns'
 
 export interface AvailabilityCheck {
   isAvailable: boolean
@@ -95,15 +95,24 @@ export async function checkEmployeeAvailability(
   // Prüfe Arbeitszeiten (nur wenn gesetzt)
   if (employee.workStart && employee.workEnd) {
     try {
-      const workStartTime = parse(employee.workStart, 'HH:mm', new Date())
-      const workEndTime = parse(employee.workEnd, 'HH:mm', new Date())
-      const appointmentStartTime = parse(format(dateStart, 'HH:mm'), 'HH:mm', new Date())
-      const appointmentEndTime = parse(format(dateEnd, 'HH:mm'), 'HH:mm', new Date())
+      // Parse Arbeitszeiten (Format: "HH:mm")
+      const [workStartHour, workStartMin] = employee.workStart.split(':').map(Number)
+      const [workEndHour, workEndMin] = employee.workEnd.split(':').map(Number)
+      
+      // Hole Stunden/Minuten aus den Appointment-Daten
+      const appointmentStartHour = dateStart.getHours()
+      const appointmentStartMin = dateStart.getMinutes()
+      const appointmentEndHour = dateEnd.getHours()
+      const appointmentEndMin = dateEnd.getMinutes()
 
-      if (
-        appointmentStartTime < workStartTime ||
-        appointmentEndTime > workEndTime
-      ) {
+      // Konvertiere zu Minuten für einfachen Vergleich
+      const workStartMinutes = workStartHour * 60 + workStartMin
+      const workEndMinutes = workEndHour * 60 + workEndMin
+      const appointmentStartMinutes = appointmentStartHour * 60 + appointmentStartMin
+      const appointmentEndMinutes = appointmentEndHour * 60 + appointmentEndMin
+
+      // Prüfe ob Termin außerhalb der Arbeitszeiten liegt
+      if (appointmentStartMinutes < workStartMinutes || appointmentEndMinutes > workEndMinutes) {
         details.outsideWorkHours = true
         return {
           isAvailable: false,
@@ -114,14 +123,18 @@ export async function checkEmployeeAvailability(
 
       // Prüfe Pausenzeit
       if (employee.breakStart && employee.breakEnd) {
-        const breakStartTime = parse(employee.breakStart, 'HH:mm', new Date())
-        const breakEndTime = parse(employee.breakEnd, 'HH:mm', new Date())
+        const [breakStartHour, breakStartMin] = employee.breakStart.split(':').map(Number)
+        const [breakEndHour, breakEndMin] = employee.breakEnd.split(':').map(Number)
+        const breakStartMinutes = breakStartHour * 60 + breakStartMin
+        const breakEndMinutes = breakEndHour * 60 + breakEndMin
 
-        if (
-          (appointmentStartTime >= breakStartTime && appointmentStartTime < breakEndTime) ||
-          (appointmentEndTime > breakStartTime && appointmentEndTime <= breakEndTime) ||
-          (appointmentStartTime <= breakStartTime && appointmentEndTime >= breakEndTime)
-        ) {
+        // Prüfe ob Termin die Pause überschneidet
+        const overlapsBreak = 
+          (appointmentStartMinutes >= breakStartMinutes && appointmentStartMinutes < breakEndMinutes) ||
+          (appointmentEndMinutes > breakStartMinutes && appointmentEndMinutes <= breakEndMinutes) ||
+          (appointmentStartMinutes <= breakStartMinutes && appointmentEndMinutes >= breakEndMinutes)
+
+        if (overlapsBreak) {
           details.inBreakTime = true
           return {
             isAvailable: false,

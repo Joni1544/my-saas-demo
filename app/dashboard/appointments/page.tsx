@@ -8,9 +8,11 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { format } from 'date-fns'
+import { useSession } from 'next-auth/react'
 import { inputBase } from '@/lib/inputStyles'
 import DateSelector from '@/components/DateSelector'
 import DaySelector from '@/components/DaySelector'
+import { getEffectiveRole } from '@/lib/view-mode'
 
 interface Appointment {
   id: string
@@ -43,6 +45,7 @@ const STATUS_COLORS: Record<string, string> = {
   CANCELLED: '#EF4444',
   RESCHEDULED: '#F59E0B',
   COMPLETED: '#6B7280',
+  NEEDS_REASSIGNMENT: '#F59E0B',
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -51,11 +54,13 @@ const STATUS_LABELS: Record<string, string> = {
   CANCELLED: 'Storniert',
   RESCHEDULED: 'Verschoben',
   COMPLETED: 'Abgeschlossen',
+  NEEDS_REASSIGNMENT: 'Neu zuzuweisen',
 }
 
 type TimeFilterMode = 'day' | 'month' | 'year'
 
 export default function AppointmentsPage() {
+  const { data: session } = useSession()
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -74,10 +79,49 @@ export default function AppointmentsPage() {
   })
   const [yearFilter, setYearFilter] = useState<number>(now.getFullYear())
   const [employees, setEmployees] = useState<Array<{ id: string; user: { name: string | null; email: string } }>>([])
+  const [currentEmployeeId, setCurrentEmployeeId] = useState<string | null>(null)
+  
+  // View-Mode für Admin-Toggle
+  const getInitialViewMode = (): 'admin' | 'employee' => {
+    if (typeof window !== 'undefined') {
+      const savedMode = localStorage.getItem('viewMode') as 'admin' | 'employee' | null
+      return savedMode || 'admin'
+    }
+    return 'admin'
+  }
+  const [viewMode] = useState<'admin' | 'employee'>(getInitialViewMode)
+  
+  // Effektive Rolle bestimmen
+  const effectiveRole = session?.user?.role ? getEffectiveRole(session.user.role, viewMode) : 'MITARBEITER'
+  const isAdmin = effectiveRole === 'ADMIN'
 
   useEffect(() => {
-    fetchEmployees()
-  }, [])
+    // Hole aktuelle Employee-ID für Mitarbeiter
+    async function fetchCurrentEmployee() {
+      if (effectiveRole === 'MITARBEITER' && session?.user?.id) {
+        try {
+          const response = await fetch('/api/employees')
+          if (response.ok) {
+            const data = await response.json()
+            const currentEmployee = data.employees?.find(
+              (emp: { user: { id: string } }) => emp.user.id === session.user.id
+            )
+            if (currentEmployee) {
+              setCurrentEmployeeId(currentEmployee.id)
+            }
+          }
+        } catch (error) {
+          console.error('Fehler beim Laden der eigenen Employee-ID:', error)
+        }
+      }
+    }
+    
+    if (isAdmin) {
+      fetchEmployees()
+    } else {
+      fetchCurrentEmployee()
+    }
+  }, [isAdmin, effectiveRole, session?.user?.id])
 
   useEffect(() => {
     fetchAppointments()
@@ -100,9 +144,13 @@ export default function AppointmentsPage() {
       if (response.ok) {
         const data = await response.json()
         setEmployees(data.employees || [])
+      } else if (response.status === 403) {
+        // Mitarbeiter können keine Mitarbeiterliste sehen - das ist OK
+        setEmployees([])
       }
     } catch (error) {
       console.error('Fehler beim Laden der Mitarbeiter:', error)
+      setEmployees([])
     }
   }
 
@@ -112,7 +160,8 @@ export default function AppointmentsPage() {
       const params = new URLSearchParams()
       
       if (statusFilter) params.append('status', statusFilter)
-      if (employeeFilter) params.append('employeeId', employeeFilter)
+      // Mitarbeiter-Filter nur für Admins
+      if (employeeFilter && isAdmin) params.append('employeeId', employeeFilter)
 
       // Zeitfilter basierend auf Modus
       let startDate: Date
@@ -332,25 +381,27 @@ export default function AppointmentsPage() {
               </select>
             </div>
 
-            {/* Mitarbeiter Filter */}
-            <div>
-              <label htmlFor="employee" className="block text-sm font-medium text-gray-700">
-                Mitarbeiter
-              </label>
-              <select
-                id="employee"
-                value={employeeFilter}
-                onChange={(e) => setEmployeeFilter(e.target.value)}
-                className={`mt-1 ${inputBase}`}
-              >
-                <option value="">Alle Mitarbeiter</option>
-                {employees.map((emp) => (
-                  <option key={emp.id} value={emp.id}>
-                    {emp.user.name || emp.user.email}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {/* Mitarbeiter Filter - nur für Admins */}
+            {isAdmin && (
+              <div>
+                <label htmlFor="employee" className="block text-sm font-medium text-gray-700">
+                  Mitarbeiter
+                </label>
+                <select
+                  id="employee"
+                  value={employeeFilter}
+                  onChange={(e) => setEmployeeFilter(e.target.value)}
+                  className={`mt-1 ${inputBase}`}
+                >
+                  <option value="">Alle Mitarbeiter</option>
+                  {employees.map((emp) => (
+                    <option key={emp.id} value={emp.id}>
+                      {emp.user.name || emp.user.email}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
         </div>
 
@@ -392,12 +443,15 @@ export default function AppointmentsPage() {
                         {format(new Date(appointment.startTime), 'EEEE, d. MMMM yyyy, HH:mm')} -{' '}
                         {format(new Date(appointment.endTime), 'HH:mm')}
                       </p>
-                      <p>
-                        <span className="font-medium">Preis:</span>{' '}
-                        <span className="font-semibold text-gray-900">
-                          {formatCurrency(appointment.price)}
-                        </span>
-                      </p>
+                      {/* Preis nur für Admins oder eigene Termine */}
+                      {(isAdmin || appointment.employee?.id === currentEmployeeId) && (
+                        <p>
+                          <span className="font-medium">Preis:</span>{' '}
+                          <span className="font-semibold text-gray-900">
+                            {formatCurrency(appointment.price)}
+                          </span>
+                        </p>
+                      )}
                       {appointment.customer && (
                         <p>
                           <span className="font-medium">Kunde:</span> {appointment.customer.firstName}{' '}
@@ -423,12 +477,15 @@ export default function AppointmentsPage() {
                     >
                       Bearbeiten
                     </Link>
-                    <button
-                      onClick={() => handleDelete(appointment.id)}
-                      className="rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-500"
-                    >
-                      Löschen
-                    </button>
+                    {/* Löschen-Button nur für Admins oder eigene Termine */}
+                    {(isAdmin || appointment.employee?.id === currentEmployeeId) && (
+                      <button
+                        onClick={() => handleDelete(appointment.id)}
+                        className="rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-500"
+                      >
+                        Löschen
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>

@@ -40,9 +40,13 @@ export async function PUT(
       )
     }
 
-    // Hole Termin
-    const appointment = await prisma.appointment.findUnique({
-      where: { id },
+    // Hole Termin - prüfe auch Tenant und Status
+    const appointment = await prisma.appointment.findFirst({
+      where: {
+        id,
+        tenantId: session.user.tenantId,
+        status: 'NEEDS_REASSIGNMENT', // Nur Termine die neu zugewiesen werden müssen
+      },
       include: {
         employee: true,
       },
@@ -50,7 +54,7 @@ export async function PUT(
 
     if (!appointment) {
       return NextResponse.json(
-        { error: 'Termin nicht gefunden' },
+        { error: 'Termin nicht gefunden oder nicht im Status NEEDS_REASSIGNMENT' },
         { status: 404 }
       )
     }
@@ -72,6 +76,22 @@ export async function PUT(
           { status: 400 }
         )
       }
+    }
+
+    // Prüfe ob neuer Mitarbeiter existiert und zum Tenant gehört
+    const newEmployee = await prisma.employee.findFirst({
+      where: {
+        id: employeeId,
+        tenantId: session.user.tenantId,
+        isActive: true, // Nur aktive Mitarbeiter
+      },
+    })
+
+    if (!newEmployee) {
+      return NextResponse.json(
+        { error: 'Neuer Mitarbeiter nicht gefunden oder nicht aktiv' },
+        { status: 404 }
+      )
     }
 
     // Weise Termin neu zu
