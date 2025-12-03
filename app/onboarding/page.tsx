@@ -53,6 +53,13 @@ function OnboardingContent() {
         return
       }
 
+      // Prüfe ob Passwort bereits gesetzt ist
+      if (data.employee.hasPassword) {
+        // Passwort bereits gesetzt → direkt zum Login
+        router.push('/login?message=Passwort wurde bereits gesetzt. Bitte loggen Sie sich ein.')
+        return
+      }
+
       setEmployee(data.employee)
       if (data.employee.name) {
         setFormData(prev => ({ ...prev, name: data.employee.name }))

@@ -34,6 +34,12 @@ export default function FinanceOverview() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Prüfe ob Komponente angezeigt werden soll
+  const effectiveRole = getEffectiveRole(session?.user?.role || 'MITARBEITER', viewMode)
+  if (effectiveRole !== 'ADMIN') {
+    return null
+  }
+
   useEffect(() => {
     async function fetchFinance() {
       try {

@@ -57,13 +57,8 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Prüfe ob bereits aktiviert
-    if (employee.user.password && employee.user.password.length > 0) {
-      return NextResponse.json(
-        { error: 'Konto wurde bereits aktiviert' },
-        { status: 400 }
-      )
-    }
+    // Prüfe ob Passwort bereits gesetzt ist
+    const hasPassword = employee.user.password && employee.user.password.length > 0
 
     return NextResponse.json({
       valid: true,
@@ -73,6 +68,7 @@ export async function GET(request: NextRequest) {
         name: employee.user.name,
         role: employee.user.role,
         shopName: employee.shop.name,
+        hasPassword,
       },
     })
   } catch (error) {

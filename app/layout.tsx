@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Providers from "@/components/Providers";
@@ -19,7 +19,6 @@ export const metadata: Metadata = {
   title: "FuerstFlow",
   description: "FuerstFlow – Das moderne Verwaltungs- und Termin-System für Studios, Salons & Teams.",
   manifest: "/manifest.json",
-  themeColor: "#4F46E5",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -34,6 +33,10 @@ export const metadata: Metadata = {
       { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
     ],
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#4F46E5",
 };
 
 export default function RootLayout({

@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Sonst: eigenes Profil
-    const employee = await prisma.employee.findFirst({
+    let employee = await prisma.employee.findFirst({
       where: {
         userId: session.user.id,
         tenantId: session.user.tenantId,
@@ -73,11 +73,27 @@ export async function GET(request: NextRequest) {
       },
     })
 
+    // Wenn kein Employee-Profil existiert, erstelle es automatisch
     if (!employee) {
-      return NextResponse.json(
-        { error: 'Mitarbeiter-Profil nicht gefunden' },
-        { status: 404 }
-      )
+      employee = await prisma.employee.create({
+        data: {
+          userId: session.user.id,
+          tenantId: session.user.tenantId,
+          isActive: true,
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+          vacationRequests: {
+            orderBy: { createdAt: 'desc' },
+          },
+        },
+      })
     }
 
     return NextResponse.json({ employee })

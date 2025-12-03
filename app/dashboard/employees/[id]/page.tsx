@@ -49,6 +49,13 @@ export default function EmployeeDetailPage() {
   const [loading, setLoading] = useState(true)
   const [inviteLink, setInviteLink] = useState<string | null>(null)
   const [generatingLink, setGeneratingLink] = useState(false)
+  const [showPasswordModal, setShowPasswordModal] = useState(false)
+  const [passwordData, setPasswordData] = useState({
+    password: '',
+    confirmPassword: '',
+  })
+  const [changingPassword, setChangingPassword] = useState(false)
+  const [deletingEmployee, setDeletingEmployee] = useState(false)
   const [formData, setFormData] = useState({
     position: '',
     color: '#3B82F6',
@@ -180,6 +187,141 @@ export default function EmployeeDetailPage() {
     }
   }
 
+  const handleSetPassword = async () => {
+    if (!passwordData.password || passwordData.password.length < 8) {
+      alert('Passwort muss mindestens 8 Zeichen lang sein')
+      return
+    }
+
+    if (passwordData.password !== passwordData.confirmPassword) {
+      alert('Passwörter stimmen nicht überein')
+      return
+    }
+
+    setChangingPassword(true)
+    try {
+      const response = await fetch(`/api/employees/${employeeId}/password`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: passwordData.password }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        alert(data.error || 'Fehler beim Setzen des Passworts')
+        return
+      }
+
+      alert('Passwort wurde erfolgreich gesetzt!')
+      setShowPasswordModal(false)
+      setPasswordData({ password: '', confirmPassword: '' })
+      fetchEmployee()
+    } catch (error) {
+      console.error('Fehler:', error)
+      alert('Fehler beim Setzen des Passworts')
+    } finally {
+      setChangingPassword(false)
+    }
+  }
+
+  const handleDeletePassword = async () => {
+    if (!confirm('Möchten Sie wirklich den Zugang dieses Mitarbeiters deaktivieren? Das Passwort wird gelöscht und der Mitarbeiter kann sich nicht mehr einloggen.')) {
+      return
+    }
+
+    setDeletingEmployee(true)
+    try {
+      const response = await fetch(`/api/employees/${employeeId}/password`, {
+        method: 'DELETE',
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        alert(data.error || 'Fehler beim Deaktivieren des Zugangs')
+        return
+      }
+
+      alert('Zugang wurde deaktiviert. Passwort wurde gelöscht.')
+      fetchEmployee()
+    } catch (error) {
+      console.error('Fehler:', error)
+      alert('Fehler beim Deaktivieren des Zugangs')
+    } finally {
+      setDeletingEmployee(false)
+    }
+  }
+
+  const handleDeleteEmployee = async () => {
+    if (!confirm('Möchten Sie diesen Mitarbeiter wirklich löschen? Der Mitarbeiter wird deaktiviert.')) {
+      return
+    }
+
+    setDeletingEmployee(true)
+    try {
+      const response = await fetch(`/api/employees/${employeeId}`, {
+        method: 'DELETE',
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        alert(data.error || 'Fehler beim Löschen des Mitarbeiters')
+        return
+      }
+
+      alert('Mitarbeiter wurde erfolgreich deaktiviert.')
+      router.push('/dashboard/employees')
+    } catch (error) {
+      console.error('Fehler:', error)
+      alert('Fehler beim Löschen des Mitarbeiters')
+    } finally {
+      setDeletingEmployee(false)
+    }
+  }
+
+  const handleInviteWithPassword = async () => {
+    if (!passwordData.password || passwordData.password.length < 8) {
+      alert('Bitte geben Sie ein Passwort ein (mindestens 8 Zeichen)')
+      return
+    }
+
+    if (passwordData.password !== passwordData.confirmPassword) {
+      alert('Passwörter stimmen nicht überein')
+      return
+    }
+
+    setGeneratingLink(true)
+    try {
+      const response = await fetch('/api/employees/invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          employeeId: employee?.id,
+          email: employee?.user.email,
+          password: passwordData.password,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        alert(data.error || 'Fehler beim Erstellen der Einladung')
+        return
+      }
+
+      alert(`Passwort wurde gesetzt!\n\nDer Mitarbeiter kann sich jetzt mit folgenden Daten einloggen:\nEmail: ${data.email}\nPasswort: ${passwordData.password}\n\nLogin-URL: ${data.loginUrl}`)
+      setShowPasswordModal(false)
+      setPasswordData({ password: '', confirmPassword: '' })
+      fetchEmployee()
+    } catch (error) {
+      console.error('Fehler:', error)
+      alert('Fehler beim Erstellen der Einladung')
+    } finally {
+      setGeneratingLink(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -207,37 +349,48 @@ export default function EmployeeDetailPage() {
             <h1 className="text-3xl font-bold text-gray-900">
               {employee.user.name || employee.user.email}
             </h1>
-            {!employee.user.hasPassword && (
-              <div className="flex items-center gap-2">
-                {inviteLink ? (
-                  <div className="flex items-center gap-2 rounded-md bg-green-50 p-3 border border-green-200">
-                    <label htmlFor="invite-link-input" className="sr-only">Einladungslink</label>
-                    <input
-                      id="invite-link-input"
-                      type="text"
-                      value={inviteLink}
-                      readOnly
-                      aria-label="Einladungslink"
-                      className="text-sm text-gray-700 bg-white border border-gray-300 rounded px-2 py-1 min-w-[300px]"
-                    />
-                    <button
-                      onClick={copyInviteLink}
-                      className="rounded-md bg-green-600 px-3 py-1 text-sm font-semibold text-white hover:bg-green-500"
-                    >
-                      Kopieren
-                    </button>
-                  </div>
-                ) : (
+            <div className="flex items-center gap-2">
+              {!employee.user.hasPassword ? (
+                <>
+                  <button
+                    onClick={() => setShowPasswordModal(true)}
+                    className="rounded-md bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-500"
+                  >
+                    Passwort setzen
+                  </button>
                   <button
                     onClick={generateInviteLink}
                     disabled={generatingLink}
                     className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50"
                   >
-                    {generatingLink ? 'Wird erstellt...' : 'Einladungslink erstellen'}
+                    {generatingLink ? 'Wird erstellt...' : 'Onboarding-Link erstellen'}
                   </button>
-                )}
-              </div>
-            )}
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={() => setShowPasswordModal(true)}
+                    className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500"
+                  >
+                    Passwort ändern
+                  </button>
+                  <button
+                    onClick={handleDeletePassword}
+                    disabled={deletingEmployee}
+                    className="rounded-md bg-yellow-600 px-4 py-2 text-sm font-semibold text-white hover:bg-yellow-500 disabled:opacity-50"
+                  >
+                    {deletingEmployee ? 'Wird deaktiviert...' : 'Zugang deaktivieren'}
+                  </button>
+                </>
+              )}
+              <button
+                onClick={handleDeleteEmployee}
+                disabled={deletingEmployee}
+                className="rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-500 disabled:opacity-50"
+              >
+                {deletingEmployee ? 'Wird gelöscht...' : 'Mitarbeiter löschen'}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -521,6 +674,73 @@ export default function EmployeeDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Passwort-Modal */}
+      {showPasswordModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="rounded-lg bg-white p-6 shadow-lg max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              {employee.user.hasPassword ? 'Passwort ändern' : 'Passwort setzen'}
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Neues Passwort <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="password"
+                  value={passwordData.password}
+                  onChange={(e) => setPasswordData({ ...passwordData, password: e.target.value })}
+                  placeholder="Mindestens 8 Zeichen"
+                  className={`w-full ${inputBase}`}
+                  minLength={8}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Passwort bestätigen <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="password"
+                  value={passwordData.confirmPassword}
+                  onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                  placeholder="Passwort wiederholen"
+                  className={`w-full ${inputBase}`}
+                  minLength={8}
+                />
+              </div>
+              <div className="flex gap-2 pt-4">
+                <button
+                  onClick={() => {
+                    setShowPasswordModal(false)
+                    setPasswordData({ password: '', confirmPassword: '' })
+                  }}
+                  className="flex-1 rounded-md bg-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-300"
+                >
+                  Abbrechen
+                </button>
+                {employee.user.hasPassword ? (
+                  <button
+                    onClick={handleSetPassword}
+                    disabled={changingPassword}
+                    className="flex-1 rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500 disabled:opacity-50"
+                  >
+                    {changingPassword ? 'Wird geändert...' : 'Passwort ändern'}
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleInviteWithPassword}
+                    disabled={generatingLink}
+                    className="flex-1 rounded-md bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-500 disabled:opacity-50"
+                  >
+                    {generatingLink ? 'Wird erstellt...' : 'Passwort setzen'}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -66,6 +66,38 @@ export default function NewEmployeePage() {
       }
 
       const data = await response.json()
+      
+      // Prüfe ob User bereits ein Passwort hat
+      const selectedUser = users.find(u => u.id === formData.userId)
+      if (selectedUser) {
+        // Versuche automatisch einen Einladungslink zu erstellen, wenn User noch kein Passwort hat
+        try {
+          const inviteResponse = await fetch('/api/employees/invite', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              employeeId: data.employee.id,
+              email: selectedUser.email,
+            }),
+          })
+          
+          if (inviteResponse.ok) {
+            const inviteData = await inviteResponse.json()
+            // Zeige Einladungslink in einem Dialog
+            const shouldCopy = confirm(
+              `Mitarbeiter erfolgreich erstellt!\n\nEinladungslink:\n${inviteData.inviteLink}\n\nMöchten Sie den Link kopieren?`
+            )
+            if (shouldCopy) {
+              navigator.clipboard.writeText(inviteData.inviteLink)
+              alert('Link wurde in die Zwischenablage kopiert!')
+            }
+          }
+        } catch (inviteError) {
+          // Ignoriere Fehler beim Erstellen des Links - User hat möglicherweise bereits ein Passwort
+          console.log('Einladungslink konnte nicht erstellt werden (User hat möglicherweise bereits ein Passwort)')
+        }
+      }
+      
       router.push(`/dashboard/employees/${data.employee.id}`)
     } catch (error: unknown) {
       console.error('Fehler:', error)
