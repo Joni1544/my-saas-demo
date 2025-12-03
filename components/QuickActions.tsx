@@ -88,7 +88,7 @@ export default function QuickActions({ role: propRole }: QuickActionsProps) {
               className={`group relative flex flex-col items-center justify-center rounded-lg bg-gradient-to-br ${gradient} p-4 text-white transition-all duration-200 hover:shadow-lg overflow-hidden`}
             >
               <span className="text-2xl mb-2 relative z-10">{action.icon}</span>
-              <span className="text-xs font-medium text-center relative z-10 leading-tight">{action.title}</span>
+              <span className="text-base font-medium text-center relative z-10 leading-tight">{action.title}</span>
             </Link>
           )
         })}

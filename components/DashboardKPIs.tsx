@@ -221,7 +221,7 @@ export default function DashboardKPIs() {
           <div className="flex items-center justify-between">
             <div className="flex-1">
               <p className="text-xs font-medium text-gray-500 mb-1">{card.title}</p>
-              <p className="text-xl font-bold text-gray-900 group-hover:text-indigo-600 transition-colors">
+              <p className="text-3xl font-bold text-gray-900 group-hover:text-indigo-600 transition-colors">
                 {card.value}
               </p>
             </div>
