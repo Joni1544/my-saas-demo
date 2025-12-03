@@ -59,9 +59,9 @@ export default function Navbar() {
   return (
     <nav className="bg-white shadow">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 justify-between">
-          <div className="flex">
-            <div className="flex space-x-8">
+        <div className="flex h-16 justify-between items-center">
+          <div className="flex items-center">
+            <div className="flex space-x-6">
               {navigation.map((item) => {
                 const isActive = pathname === item.href
                 return (
@@ -69,7 +69,7 @@ export default function Navbar() {
                     key={item.name}
                     href={item.href}
                     className={`
-                      inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium
+                      inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium transition-colors
                       ${
                         isActive
                           ? 'border-indigo-500 text-gray-900'
@@ -83,13 +83,27 @@ export default function Navbar() {
               })}
             </div>
           </div>
-          <div className="flex items-center">
-            <span className="text-sm text-gray-700 mr-4">
+          <div className="flex items-center gap-4">
+            <Link
+              href="/dashboard/profile"
+              className={`
+                text-sm font-medium border-b-2 px-1 pt-1 transition-colors
+                ${
+                  pathname === '/dashboard/profile'
+                    ? 'border-indigo-500 text-gray-900'
+                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                }
+              `}
+            >
+              Profil
+            </Link>
+            <span className="text-sm text-gray-500">|</span>
+            <span className="text-sm text-gray-700">
               {session.user.email}
             </span>
             <button
               onClick={() => signOut({ callbackUrl: '/login' })}
-              className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500"
+              className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 transition-colors"
             >
               Abmelden
             </button>

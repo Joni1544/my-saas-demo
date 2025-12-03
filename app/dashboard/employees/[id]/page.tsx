@@ -6,6 +6,7 @@
 
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 import { inputBase, selectBase } from '@/lib/inputStyles'
 
@@ -21,6 +22,8 @@ interface Employee {
   baseSalary: number | null
   hourlyRate: number | null
   commissionRate: number | null
+  vacationDaysTotal: number | null
+  vacationDaysUsed: number | null
   user: {
     id: string
     name: string | null
@@ -44,7 +47,9 @@ const DAY_NAMES: Record<string, string> = {
 export default function EmployeeDetailPage() {
   const params = useParams()
   const router = useRouter()
+  const { data: session } = useSession()
   const employeeId = params.id as string
+  const isAdmin = session?.user?.role === 'ADMIN'
   const [employee, setEmployee] = useState<Employee | null>(null)
   const [loading, setLoading] = useState(true)
   const [inviteLink, setInviteLink] = useState<string | null>(null)
@@ -69,6 +74,8 @@ export default function EmployeeDetailPage() {
     hourlyRate: null as number | null,
     commissionRate: null as number | null,
     payoutDay: null as number | null,
+    vacationDaysTotal: null as number | null,
+    vacationDaysUsed: null as number | null,
   })
 
   useEffect(() => {
@@ -100,6 +107,8 @@ export default function EmployeeDetailPage() {
         hourlyRate: data.employee.hourlyRate ? parseFloat(data.employee.hourlyRate.toString()) : null,
         commissionRate: data.employee.commissionRate ? parseFloat(data.employee.commissionRate.toString()) : null,
         payoutDay: data.employee.payoutDay || null,
+        vacationDaysTotal: data.employee.vacationDaysTotal ?? null,
+        vacationDaysUsed: data.employee.vacationDaysUsed ?? null,
       })
     } catch (error) {
       console.error('Fehler:', error)
@@ -655,6 +664,55 @@ export default function EmployeeDetailPage() {
               </div>
             </div>
           </div>
+
+          {/* Urlaubstage-Verwaltung (nur für Admin) */}
+          {isAdmin && (
+            <div className="rounded-lg bg-white p-6 shadow">
+              <h2 className="mb-4 text-xl font-semibold text-gray-900">Urlaubstage-Verwaltung</h2>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Gesamturlaubstage
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={formData.vacationDaysTotal ?? ''}
+                    onChange={(e) => {
+                      const value = e.target.value === '' ? null : parseInt(e.target.value)
+                      setFormData({ ...formData, vacationDaysTotal: value })
+                    }}
+                    className={`mt-1 ${inputBase} [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
+                    placeholder="z.B. 25"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Verbrauchte Urlaubstage
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={formData.vacationDaysUsed ?? ''}
+                    onChange={(e) => {
+                      const value = e.target.value === '' ? null : parseInt(e.target.value)
+                      setFormData({ ...formData, vacationDaysUsed: value })
+                    }}
+                    className={`mt-1 ${inputBase} [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
+                    placeholder="z.B. 5"
+                  />
+                </div>
+              </div>
+              {formData.vacationDaysTotal !== null && formData.vacationDaysUsed !== null && (
+                <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                  <p className="text-sm text-blue-800">
+                    <span className="font-semibold">Verbleibend:</span>{' '}
+                    {Math.max(0, formData.vacationDaysTotal - formData.vacationDaysUsed)} Tage
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Save Button */}
           <div className="flex justify-end">
