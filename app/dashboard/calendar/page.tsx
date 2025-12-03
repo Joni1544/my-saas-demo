@@ -81,8 +81,6 @@ export default function CalendarPage() {
   const [employees, setEmployees] = useState<Employee[]>([])
   const [customers, setCustomers] = useState<Array<{ id: string; firstName: string; lastName: string }>>([])
   const [loading, setLoading] = useState(true)
-  const [availabilityMap, setAvailabilityMap] = useState<Record<string, Array<{ date: string; type: 'sick' | 'vacation' }>>>({})
-  
   // Einheitliche Datumsauswahl-States
   // Wenn ein Datum in der URL ist, verwende es
   const initialDate = dateParam ? new Date(dateParam) : now
@@ -132,43 +130,8 @@ export default function CalendarPage() {
 
   useEffect(() => {
     fetchAppointments()
-    fetchAvailability()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [viewMode, daySelection, weekSelection, monthSelection, selectedEmployeeId, selectedCustomerId, selectedStatus])
-
-  const fetchAvailability = async () => {
-    try {
-      let startDate: Date
-      let endDate: Date
-
-      switch (viewMode) {
-        case 'day':
-          startDate = startOfDay(currentDate)
-          endDate = endOfDay(currentDate)
-          break
-        case 'week':
-          startDate = startOfWeek(currentDate, { weekStartsOn: 1 })
-          endDate = endOfWeek(currentDate, { weekStartsOn: 1 })
-          break
-        case 'month':
-          startDate = startOfMonth(currentDate)
-          endDate = endOfMonth(currentDate)
-          break
-        default:
-          return
-      }
-
-      const response = await fetch(
-        `/api/employees/availability-calendar?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`
-      )
-      if (response.ok) {
-        const data = await response.json()
-        setAvailabilityMap(data.availability || {})
-      }
-    } catch (error) {
-      console.error('Fehler beim Laden der Verfügbarkeit:', error)
-    }
-  }
 
   const fetchEmployees = async () => {
     try {
@@ -402,17 +365,6 @@ export default function CalendarPage() {
           const isCurrentMonth = isSameMonth(day, currentDate)
           const isToday = isSameDay(day, new Date())
 
-          // Prüfe Verfügbarkeit für diesen Tag
-          const dayStr = format(day, 'yyyy-MM-dd')
-          const dayAvailability: Array<{ employeeId: string; type: 'sick' | 'vacation' }> = []
-          
-          for (const [employeeId, availability] of Object.entries(availabilityMap)) {
-            const dayAvail = availability.find((a) => a.date === dayStr)
-            if (dayAvail) {
-              dayAvailability.push({ employeeId, type: dayAvail.type })
-            }
-          }
-
           return (
             <div
               key={day.toISOString()}
@@ -437,25 +389,6 @@ export default function CalendarPage() {
                 >
                   {format(day, 'd')}
                 </div>
-                {/* Verfügbarkeits-Markierungen */}
-                {dayAvailability.length > 0 && (
-                  <div className="flex gap-1">
-                    {dayAvailability.map((avail) => {
-                      const employee = employees.find((e) => e.id === avail.employeeId)
-                      return (
-                        <div
-                          key={avail.employeeId}
-                          className={`w-2 h-2 rounded-full ${
-                            avail.type === 'sick' ? 'bg-red-500' : 'bg-yellow-400'
-                          }`}
-                          title={`${employee?.user.name || employee?.user.email}: ${
-                            avail.type === 'sick' ? 'Krank' : 'Urlaub'
-                          }`}
-                        />
-                      )
-                    })}
-                  </div>
-                )}
               </div>
               <div className="space-y-1">
                 {dayAppointments.slice(0, 3).map((apt) => (

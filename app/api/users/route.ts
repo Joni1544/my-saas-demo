@@ -144,6 +144,42 @@ export async function POST(request: NextRequest) {
           vacationDaysUsed: 0,
         },
       })
+
+      // Füge neuen Mitarbeiter automatisch zum Teamchat hinzu
+      const teamchat = await prisma.chatChannel.findFirst({
+        where: {
+          tenantId: session.user.tenantId,
+          isSystem: true,
+          name: 'Teamchat',
+        },
+      })
+
+      if (teamchat) {
+        await prisma.channelMember.create({
+          data: {
+            channelId: teamchat.id,
+            userId: newUser.id,
+          },
+        })
+      }
+    } else if (role === 'ADMIN') {
+      // Auch Admins automatisch zum Teamchat hinzufügen
+      const teamchat = await prisma.chatChannel.findFirst({
+        where: {
+          tenantId: session.user.tenantId,
+          isSystem: true,
+          name: 'Teamchat',
+        },
+      })
+
+      if (teamchat) {
+        await prisma.channelMember.create({
+          data: {
+            channelId: teamchat.id,
+            userId: newUser.id,
+          },
+        })
+      }
     }
 
     return NextResponse.json({

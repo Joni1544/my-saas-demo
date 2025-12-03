@@ -438,21 +438,16 @@ export default function EmployeeDetailPage() {
                 </div>
               ) : null}
               <div>
-                <label className="block text-sm font-medium text-gray-700">Kalender-Farbe</label>
-                <div className="mt-1 flex items-center gap-3">
-                  <div
-                    className="h-12 w-12 rounded border-2 border-gray-300"
-                    style={{ backgroundColor: formData.color }}
-                  />
-                  <input
-                    type="color"
-                    id="colorPicker"
-                    value={formData.color}
-                    onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-                    className="h-12 w-24 cursor-pointer"
-                    aria-label="Farbe auswählen"
-                  />
-                </div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Kalender-Farbe</label>
+                <input
+                  type="color"
+                  id="colorPicker"
+                  value={formData.color}
+                  onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                  className="h-12 w-24 cursor-pointer rounded border-2 border-gray-300"
+                  aria-label="Farbe auswählen"
+                  title="Farbe auswählen"
+                />
               </div>
               <div className="flex items-center">
                 <input

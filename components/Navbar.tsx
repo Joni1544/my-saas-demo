@@ -62,7 +62,7 @@ export default function Navbar() {
         <div className="flex h-16 items-center justify-between">
           {/* Linke Seite: Navigation Items */}
           <div className="flex flex-1 items-center min-w-0">
-            <div className="flex items-center gap-x-4 lg:gap-x-6 overflow-x-auto scrollbar-hide">
+            <div className="flex items-center gap-x-3 lg:gap-x-4 overflow-x-auto scrollbar-hide">
               {navigation.map((item) => {
                 const isActive = pathname === item.href
                 return (
@@ -70,13 +70,14 @@ export default function Navbar() {
                     key={item.name}
                     href={item.href}
                     className={`
-                      whitespace-nowrap inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium transition-colors shrink-0
+                      whitespace-nowrap inline-flex items-center border-b-2 px-2 pt-1 text-sm font-medium transition-colors shrink-0 flex-shrink-0
                       ${
                         isActive
                           ? 'border-indigo-500 text-gray-900'
                           : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
                       }
                     `}
+                    title={item.name}
                   >
                     {item.name}
                   </Link>
@@ -90,7 +91,7 @@ export default function Navbar() {
             <Link
               href="/dashboard/profile"
               className={`
-                whitespace-nowrap text-sm font-medium border-b-2 px-1 pt-1 transition-colors
+                whitespace-nowrap text-sm font-medium border-b-2 px-2 pt-1 transition-colors shrink-0
                 ${
                   isProfileActive
                     ? 'border-indigo-500 text-gray-900'

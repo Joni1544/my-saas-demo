@@ -37,7 +37,7 @@ export default function NewEmployeePage() {
     role: 'MITARBEITER' as 'ADMIN' | 'MITARBEITER',
     password: '',
     confirmPassword: '',
-    initialVacationDays: 25,
+    initialVacationDays: null as number | null,
   })
 
   useEffect(() => {
@@ -97,7 +97,7 @@ export default function NewEmployeePage() {
             email: formData.email,
             role: formData.role,
             password: formData.password || undefined,
-            initialVacationDays: formData.initialVacationDays,
+            initialVacationDays: formData.initialVacationDays ?? undefined,
           }),
         })
 
@@ -397,10 +397,13 @@ export default function NewEmployeePage() {
                   </label>
                   <input
                     type="number"
-                    min="0"
-                    value={formData.initialVacationDays}
-                    onChange={(e) => setFormData({ ...formData, initialVacationDays: parseInt(e.target.value) || 25 })}
-                    className={`mt-1 ${inputBase}`}
+                    value={formData.initialVacationDays ?? ''}
+                    onChange={(e) => {
+                      const value = e.target.value === '' ? null : parseInt(e.target.value)
+                      setFormData({ ...formData, initialVacationDays: value })
+                    }}
+                    className={`mt-1 ${inputBase} [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
+                    placeholder="z.B. 25"
                   />
                 </div>
               )}
@@ -419,17 +422,14 @@ export default function NewEmployeePage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">Kalender-Farbe</label>
-            <div className="mt-1 flex items-center gap-3">
-              <div
-                className="h-12 w-12 rounded border-2 border-gray-300"
-                style={{ backgroundColor: formData.color }}
-              />
+            <label className="block text-sm font-medium text-gray-700 mb-2">Kalender-Farbe</label>
+            <div className="flex items-center gap-3">
               <input
                 type="color"
                 value={formData.color}
                 onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-                className="h-12 w-24 cursor-pointer"
+                className="h-12 w-24 cursor-pointer rounded border-2 border-gray-300"
+                title="Farbe auswählen"
               />
             </div>
           </div>

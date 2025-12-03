@@ -23,6 +23,13 @@ interface Employee {
   breakStart: string | null
   breakEnd: string | null
   daysOff: string[]
+  workHours: Record<string, {
+    active: boolean
+    start: string
+    end: string
+    breakStart: string
+    breakEnd: string
+  }> | null
   vacationDaysTotal: number | null
   vacationDaysUsed: number | null
   sickDays: number | null
@@ -65,14 +72,24 @@ interface SickEmployee {
 type Tab = 'profile' | 'times' | 'vacation' | 'sick'
 
 const DAYS_OF_WEEK = [
-  { value: 'Monday', label: 'Montag' },
-  { value: 'Tuesday', label: 'Dienstag' },
-  { value: 'Wednesday', label: 'Mittwoch' },
-  { value: 'Thursday', label: 'Donnerstag' },
-  { value: 'Friday', label: 'Freitag' },
-  { value: 'Saturday', label: 'Samstag' },
-  { value: 'Sunday', label: 'Sonntag' },
+  { value: 'monday', label: 'Montag' },
+  { value: 'tuesday', label: 'Dienstag' },
+  { value: 'wednesday', label: 'Mittwoch' },
+  { value: 'thursday', label: 'Donnerstag' },
+  { value: 'friday', label: 'Freitag' },
+  { value: 'saturday', label: 'Samstag' },
+  { value: 'sunday', label: 'Sonntag' },
 ]
+
+const DEFAULT_WORK_SCHEDULE = {
+  monday: { active: true, start: '09:00', end: '18:00', breakStart: '12:00', breakEnd: '12:30' },
+  tuesday: { active: true, start: '09:00', end: '18:00', breakStart: '12:00', breakEnd: '12:30' },
+  wednesday: { active: true, start: '09:00', end: '18:00', breakStart: '12:00', breakEnd: '12:30' },
+  thursday: { active: true, start: '09:00', end: '18:00', breakStart: '12:00', breakEnd: '12:30' },
+  friday: { active: true, start: '09:00', end: '18:00', breakStart: '12:00', breakEnd: '12:30' },
+  saturday: { active: false, start: '09:00', end: '18:00', breakStart: '12:00', breakEnd: '12:30' },
+  sunday: { active: false, start: '09:00', end: '18:00', breakStart: '12:00', breakEnd: '12:30' },
+}
 
 export default function ProfilePage() {
   const { data: session } = useSession()
@@ -86,13 +103,15 @@ export default function ProfilePage() {
     bio: '',
     avatarUrl: '',
   })
-  const [timesFormData, setTimesFormData] = useState({
-    workStart: '',
-    workEnd: '',
-    breakStart: '',
-    breakEnd: '',
-    daysOff: [] as string[],
-  })
+  const [workSchedule, setWorkSchedule] = useState<Record<string, {
+    active: boolean
+    start: string
+    end: string
+    breakStart: string
+    breakEnd: string
+  }>>(DEFAULT_WORK_SCHEDULE)
+  const [saveSuccess, setSaveSuccess] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
   const [vacationFormData, setVacationFormData] = useState({
     startDate: '',
     endDate: '',
@@ -101,6 +120,8 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false)
   const [allVacationRequests, setAllVacationRequests] = useState<VacationRequest[]>([])
   const [sickEmployees, setSickEmployees] = useState<SickEmployee[]>([])
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
 
   const isAdmin = session?.user?.role === 'ADMIN'
 
@@ -124,13 +145,40 @@ export default function ProfilePage() {
         bio: data.employee.bio || '',
         avatarUrl: data.employee.avatarUrl || '',
       })
-      setTimesFormData({
-        workStart: data.employee.workStart || '',
-        workEnd: data.employee.workEnd || '',
-        breakStart: data.employee.breakStart || '',
-        breakEnd: data.employee.breakEnd || '',
-        daysOff: data.employee.daysOff || [],
-      })
+      // Lade workSchedule aus workHours oder migriere von Legacy-Feldern
+      if (data.employee.workHours && typeof data.employee.workHours === 'object') {
+        setWorkSchedule(data.employee.workHours as Record<string, {
+          active: boolean
+          start: string
+          end: string
+          breakStart: string
+          breakEnd: string
+        }>)
+      } else if (data.employee.workStart && data.employee.workEnd) {
+        // Migriere von Legacy-Feldern
+        const migratedSchedule: Record<string, {
+          active: boolean
+          start: string
+          end: string
+          breakStart: string
+          breakEnd: string
+        }> = {}
+        DAYS_OF_WEEK.forEach((day) => {
+          const dayName = day.value.charAt(0).toUpperCase() + day.value.slice(1)
+          const isDayOff = data.employee.daysOff?.includes(dayName) || false
+          migratedSchedule[day.value] = {
+            active: !isDayOff,
+            start: data.employee.workStart || '09:00',
+            end: data.employee.workEnd || '18:00',
+            breakStart: data.employee.breakStart || '12:00',
+            breakEnd: data.employee.breakEnd || '12:30',
+          }
+        })
+        setWorkSchedule(migratedSchedule)
+      } else {
+        setWorkSchedule(DEFAULT_WORK_SCHEDULE)
+      }
+      setAvatarPreview(null) // Reset preview when profile is fetched
     } catch (error) {
       console.error('Fehler:', error)
     } finally {
@@ -159,28 +207,92 @@ export default function ProfilePage() {
   }
 
   const handleSaveTimes = async () => {
-    if (!isAdmin) return
+    if (!isAdmin || !employee) return
 
     setSaving(true)
+    setSaveError(null)
+    setSaveSuccess(false)
+
     try {
+      // Validierung
+      for (const day of DAYS_OF_WEEK) {
+        const daySchedule = workSchedule[day.value]
+        if (daySchedule && daySchedule.active) {
+          if (daySchedule.start >= daySchedule.end) {
+            setSaveError(`${day.label}: Arbeitsbeginn muss vor Arbeitsende liegen`)
+            setSaving(false)
+            return
+          }
+          if (daySchedule.breakStart && daySchedule.breakEnd) {
+            if (daySchedule.breakStart < daySchedule.start || daySchedule.breakEnd > daySchedule.end) {
+              setSaveError(`${day.label}: Pausenzeit muss innerhalb der Arbeitszeit liegen`)
+              setSaving(false)
+              return
+            }
+            if (daySchedule.breakStart >= daySchedule.breakEnd) {
+              setSaveError(`${day.label}: Pausenbeginn muss vor Pausenende liegen`)
+              setSaving(false)
+              return
+            }
+          }
+        }
+      }
+
       const response = await fetch('/api/employees/times', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          employeeId: employee?.id,
-          ...timesFormData,
+          employeeId: employee.id,
+          workSchedule,
         }),
       })
 
-      if (!response.ok) throw new Error('Fehler beim Speichern')
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Fehler beim Speichern')
+      }
+
       await fetchProfile()
-      alert('Arbeitszeiten gespeichert')
+      setSaveSuccess(true)
+      setTimeout(() => setSaveSuccess(false), 3000)
     } catch (error) {
       console.error('Fehler:', error)
-      alert('Fehler beim Speichern')
+      setSaveError(error instanceof Error ? error.message : 'Fehler beim Speichern')
     } finally {
       setSaving(false)
     }
+  }
+
+  const handleApplyToAllDays = (sourceDay: string) => {
+    const sourceSchedule = workSchedule[sourceDay]
+    if (!sourceSchedule) return
+
+    const updatedSchedule = { ...workSchedule }
+    DAYS_OF_WEEK.forEach((day) => {
+      if (day.value !== sourceDay) {
+        updatedSchedule[day.value] = {
+          ...sourceSchedule,
+          active: updatedSchedule[day.value].active, // Behalte active-Status
+        }
+      }
+    })
+    setWorkSchedule(updatedSchedule)
+  }
+
+  const handleResetToDefault = () => {
+    if (confirm('Möchten Sie wirklich alle Arbeitszeiten auf Standardwerte zurücksetzen?')) {
+      setWorkSchedule(DEFAULT_WORK_SCHEDULE)
+    }
+  }
+
+  const updateDaySchedule = (day: string, field: string, value: string | boolean) => {
+    setWorkSchedule((prev) => ({
+      ...prev,
+      [day]: {
+        ...prev[day],
+        [field]: value,
+      },
+    }))
   }
 
   const handleVacationRequest = async () => {
@@ -301,6 +413,87 @@ export default function ProfilePage() {
     }
   }
 
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Validiere Dateityp
+    const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp']
+    if (!allowedTypes.includes(file.type)) {
+      alert('Nur Bildformate erlaubt (PNG, JPG, JPEG, WEBP)')
+      return
+    }
+
+    // Validiere Dateigröße (5 MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Datei zu groß. Maximal 5 MB erlaubt.')
+      return
+    }
+
+    // Zeige Vorschau
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      setAvatarPreview(reader.result as string)
+    }
+    reader.readAsDataURL(file)
+
+    // Upload
+    setUploadingAvatar(true)
+    try {
+      const uploadFormData = new FormData()
+      uploadFormData.append('file', file)
+
+      const response = await fetch('/api/employees/profile/avatar', {
+        method: 'POST',
+        body: uploadFormData,
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Fehler beim Hochladen')
+      }
+
+      const data = await response.json()
+      setFormData((prev) => ({ ...prev, avatarUrl: data.avatarUrl }))
+      await fetchProfile()
+      alert('Profilbild erfolgreich hochgeladen!')
+    } catch (error) {
+      console.error('Fehler:', error)
+      alert(error instanceof Error ? error.message : 'Fehler beim Hochladen des Profilbilds')
+      setAvatarPreview(null)
+    } finally {
+      setUploadingAvatar(false)
+      // Reset file input
+      e.target.value = ''
+    }
+  }
+
+  const handleRemoveAvatar = async () => {
+    if (!confirm('Möchten Sie das Profilbild wirklich entfernen?')) return
+
+    setUploadingAvatar(true)
+    try {
+      const response = await fetch('/api/employees/profile/avatar', {
+        method: 'DELETE',
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Fehler beim Entfernen')
+      }
+
+      setAvatarPreview(null)
+      setFormData((prev) => ({ ...prev, avatarUrl: '' }))
+      await fetchProfile()
+      alert('Profilbild erfolgreich entfernt!')
+    } catch (error) {
+      console.error('Fehler:', error)
+      alert(error instanceof Error ? error.message : 'Fehler beim Entfernen des Profilbilds')
+    } finally {
+      setUploadingAvatar(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -383,30 +576,56 @@ export default function ProfilePage() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Profilbild
                 </label>
-                {employee.avatarUrl ? (
-                  <Image
-                    src={employee.avatarUrl}
-                    alt="Profilbild"
-                    width={96}
-                    height={96}
-                    className="h-24 w-24 rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="h-24 w-24 rounded-full bg-gray-200 flex items-center justify-center">
-                    <span className="text-2xl text-gray-400">
-                      {employee.user.name?.[0]?.toUpperCase() || employee.user.email[0].toUpperCase()}
-                    </span>
+                <div className="flex items-start gap-4">
+                  {/* Avatar Vorschau */}
+                  <div className="relative">
+                    {(avatarPreview || employee.avatarUrl) ? (
+                      <Image
+                        src={avatarPreview || employee.avatarUrl || ''}
+                        alt="Profilbild"
+                        width={96}
+                        height={96}
+                        className="h-24 w-24 rounded-full object-cover border-2 border-gray-200"
+                      />
+                    ) : (
+                      <div className="h-24 w-24 rounded-full bg-gray-200 flex items-center justify-center border-2 border-gray-200">
+                        <span className="text-2xl text-gray-400">
+                          {employee.user.name?.[0]?.toUpperCase() || employee.user.email[0].toUpperCase()}
+                        </span>
+                      </div>
+                    )}
                   </div>
-                )}
-                {editing && (
-                  <input
-                    type="text"
-                    value={formData.avatarUrl}
-                    onChange={(e) => setFormData({ ...formData, avatarUrl: e.target.value })}
-                    placeholder="URL zum Profilbild"
-                    className={`mt-2 ${inputBase}`}
-                  />
-                )}
+
+                  {/* Upload Controls */}
+                  {editing && (
+                    <div className="flex flex-col gap-2">
+                      <label className="cursor-pointer">
+                        <input
+                          type="file"
+                          accept="image/png,image/jpeg,image/jpg,image/webp"
+                          onChange={handleAvatarUpload}
+                          disabled={uploadingAvatar}
+                          className="hidden"
+                        />
+                        <span className="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                          {uploadingAvatar ? 'Wird hochgeladen...' : '📷 Bild hochladen'}
+                        </span>
+                      </label>
+                      {(avatarPreview || employee.avatarUrl) && (
+                        <button
+                          onClick={handleRemoveAvatar}
+                          disabled={uploadingAvatar}
+                          className="inline-flex items-center rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          🗑️ Entfernen
+                        </button>
+                      )}
+                      <p className="text-xs text-gray-500">
+                        PNG, JPG, WEBP • Max. 5 MB
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Name (nur Anzeige, Admin kann über User-Management ändern) */}
@@ -506,95 +725,134 @@ export default function ProfilePage() {
               )}
             </div>
 
-            <div className="space-y-6">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Arbeitsbeginn</label>
-                  <input
-                    type="time"
-                    value={timesFormData.workStart}
-                    onChange={(e) => setTimesFormData({ ...timesFormData, workStart: e.target.value })}
-                    className={`mt-1 ${inputBase}`}
-                    disabled={!isAdmin}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Arbeitsende</label>
-                  <input
-                    type="time"
-                    value={timesFormData.workEnd}
-                    onChange={(e) => setTimesFormData({ ...timesFormData, workEnd: e.target.value })}
-                    className={`mt-1 ${inputBase}`}
-                    disabled={!isAdmin}
-                  />
-                </div>
+            {/* Success/Error Messages */}
+            {saveSuccess && (
+              <div className="mb-4 rounded-md bg-green-50 border border-green-200 p-4">
+                <p className="text-sm font-medium text-green-800">✓ Arbeitszeiten erfolgreich gespeichert!</p>
               </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Pausenbeginn</label>
-                  <input
-                    type="time"
-                    value={timesFormData.breakStart}
-                    onChange={(e) => setTimesFormData({ ...timesFormData, breakStart: e.target.value })}
-                    className={`mt-1 ${inputBase}`}
-                    disabled={!isAdmin}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Pausenende</label>
-                  <input
-                    type="time"
-                    value={timesFormData.breakEnd}
-                    onChange={(e) => setTimesFormData({ ...timesFormData, breakEnd: e.target.value })}
-                    className={`mt-1 ${inputBase}`}
-                    disabled={!isAdmin}
-                  />
-                </div>
+            )}
+            {saveError && (
+              <div className="mb-4 rounded-md bg-red-50 border border-red-200 p-4">
+                <p className="text-sm font-medium text-red-800">✗ {saveError}</p>
               </div>
+            )}
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Freie Tage</label>
-                <div className="grid grid-cols-2 gap-2">
-                  {DAYS_OF_WEEK.map((day) => (
-                    <label key={day.value} className="flex items-center">
+            {/* Header Row */}
+            <div className="mb-4 grid grid-cols-6 gap-4 items-center border-b border-gray-200 pb-3">
+              <div className="font-semibold text-gray-900">Tag</div>
+              <div className="font-semibold text-gray-900 text-center">Arbeitet?</div>
+              <div className="font-semibold text-gray-900">Beginn</div>
+              <div className="font-semibold text-gray-900">Ende</div>
+              <div className="font-semibold text-gray-900">Pause Start</div>
+              <div className="font-semibold text-gray-900">Pause Ende</div>
+            </div>
+
+            {/* Week Schedule Rows */}
+            <div className="space-y-3">
+              {DAYS_OF_WEEK.map((day) => {
+                const daySchedule = workSchedule[day.value] || DEFAULT_WORK_SCHEDULE[day.value as keyof typeof DEFAULT_WORK_SCHEDULE]
+                const isActive = daySchedule.active
+
+                return (
+                  <div
+                    key={day.value}
+                    className="grid grid-cols-6 gap-4 items-center py-3 border-b border-gray-100 last:border-b-0"
+                  >
+                    {/* Tag */}
+                    <div className="font-semibold text-gray-900">{day.label}</div>
+
+                    {/* Checkbox */}
+                    <div className="flex justify-center">
                       <input
                         type="checkbox"
-                        checked={timesFormData.daysOff.includes(day.value)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setTimesFormData({
-                              ...timesFormData,
-                              daysOff: [...timesFormData.daysOff, day.value],
-                            })
-                          } else {
-                            setTimesFormData({
-                              ...timesFormData,
-                              daysOff: timesFormData.daysOff.filter((d) => d !== day.value),
-                            })
-                          }
-                        }}
+                        checked={isActive}
+                        onChange={(e) => updateDaySchedule(day.value, 'active', e.target.checked)}
                         disabled={!isAdmin}
-                        className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                        className="h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 disabled:bg-gray-100 disabled:text-gray-400"
                       />
-                      <span className="ml-2 text-sm text-gray-700">{day.label}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
+                    </div>
 
-              {isAdmin && (
-                <div className="pt-4">
-                  <button
-                    onClick={handleSaveTimes}
-                    disabled={saving}
-                    className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50"
-                  >
-                    {saving ? 'Speichern...' : 'Speichern'}
-                  </button>
-                </div>
-              )}
+                    {/* Beginn */}
+                    <div>
+                      <input
+                        type="time"
+                        value={daySchedule.start}
+                        onChange={(e) => updateDaySchedule(day.value, 'start', e.target.value)}
+                        disabled={!isAdmin || !isActive}
+                        className={`w-full ${inputBase} disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed`}
+                      />
+                    </div>
+
+                    {/* Ende */}
+                    <div>
+                      <input
+                        type="time"
+                        value={daySchedule.end}
+                        onChange={(e) => updateDaySchedule(day.value, 'end', e.target.value)}
+                        disabled={!isAdmin || !isActive}
+                        className={`w-full ${inputBase} disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed`}
+                      />
+                    </div>
+
+                    {/* Pause Start */}
+                    <div>
+                      <input
+                        type="time"
+                        value={daySchedule.breakStart}
+                        onChange={(e) => updateDaySchedule(day.value, 'breakStart', e.target.value)}
+                        disabled={!isAdmin || !isActive}
+                        className={`w-full ${inputBase} disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed`}
+                      />
+                    </div>
+
+                    {/* Pause Ende */}
+                    <div>
+                      <input
+                        type="time"
+                        value={daySchedule.breakEnd}
+                        onChange={(e) => updateDaySchedule(day.value, 'breakEnd', e.target.value)}
+                        disabled={!isAdmin || !isActive}
+                        className={`w-full ${inputBase} disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed`}
+                      />
+                    </div>
+                  </div>
+                )
+              })}
             </div>
+
+            {/* Action Buttons */}
+            {isAdmin && (
+              <div className="mt-6 pt-6 border-t border-gray-200 flex flex-wrap gap-3">
+                <button
+                  onClick={handleSaveTimes}
+                  disabled={saving}
+                  className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50"
+                >
+                  {saving ? 'Speichern...' : 'Speichern'}
+                </button>
+                <button
+                  onClick={() => {
+                    const activeDay = DAYS_OF_WEEK.find((d) => workSchedule[d.value]?.active)
+                    if (activeDay) {
+                      handleApplyToAllDays(activeDay.value)
+                    } else {
+                      alert('Bitte aktivieren Sie zuerst einen Tag, um dessen Zeiten zu übernehmen.')
+                    }
+                  }}
+                  disabled={saving}
+                  className="rounded-md bg-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-300 disabled:opacity-50"
+                >
+                  Für alle Tage übernehmen
+                </button>
+                <button
+                  onClick={handleResetToDefault}
+                  disabled={saving}
+                  className="rounded-md bg-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-300 disabled:opacity-50"
+                >
+                  Reset auf Standardzeiten
+                </button>
+              </div>
+            )}
           </div>
         )}
 

@@ -217,7 +217,9 @@ export default function ChannelSettingsModal({
           <div className="mb-6">
             <div className="flex items-center justify-between mb-3">
               <label className="block text-sm font-medium text-gray-700">Mitglieder</label>
-              {!channel.isSystem && (
+              {channel.isSystem ? (
+                <span className="text-xs text-gray-500">Alle aktiven Mitarbeiter sind automatisch Mitglied</span>
+              ) : (
                 <button
                   onClick={() => setShowAddMember(!showAddMember)}
                   className="flex items-center gap-2 rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-500"
@@ -228,8 +230,8 @@ export default function ChannelSettingsModal({
               )}
             </div>
 
-            {/* Add Member Form */}
-            {showAddMember && availableUsers.length > 0 && (
+            {/* Add Member Form - nur für normale Channels */}
+            {!channel.isSystem && showAddMember && availableUsers.length > 0 && (
               <div className="mb-4 rounded-lg border border-gray-200 bg-gray-50 p-3">
                 <select
                   value={selectedUserId}
@@ -290,6 +292,7 @@ export default function ChannelSettingsModal({
                         <p className="text-xs text-gray-500">{member.user.email}</p>
                       </div>
                     </div>
+                    {/* Teamchat-Mitglieder können nicht entfernt werden */}
                     {!channel.isSystem && member.user.id !== currentUserId && (
                       <button
                         onClick={() => handleRemoveMember(member.user.id)}
@@ -299,6 +302,9 @@ export default function ChannelSettingsModal({
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
+                    )}
+                    {channel.isSystem && (
+                      <span className="text-xs text-gray-400">System-Channel</span>
                     )}
                   </div>
                 )

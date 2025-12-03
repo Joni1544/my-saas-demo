@@ -40,12 +40,21 @@ interface Appointment {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  OPEN: '#3B82F6',
-  ACCEPTED: '#10B981',
-  CANCELLED: '#EF4444',
-  RESCHEDULED: '#F59E0B',
-  COMPLETED: '#6B7280',
-  NEEDS_REASSIGNMENT: '#F59E0B',
+  OPEN: '#3B82F6',        // Blau
+  ACCEPTED: '#10B981',    // Grün
+  CANCELLED: '#EF4444',   // Rot
+  RESCHEDULED: '#F59E0B', // Orange
+  COMPLETED: '#6B7280',   // Grau
+  NEEDS_REASSIGNMENT: '#F59E0B', // Orange
+}
+
+const STATUS_BG_COLORS: Record<string, string> = {
+  OPEN: 'bg-blue-100 text-blue-800',
+  ACCEPTED: 'bg-green-100 text-green-800',
+  CANCELLED: 'bg-red-100 text-red-800',
+  RESCHEDULED: 'bg-orange-100 text-orange-800',
+  COMPLETED: 'bg-gray-100 text-gray-800',
+  NEEDS_REASSIGNMENT: 'bg-orange-100 text-orange-800',
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -258,16 +267,13 @@ export default function AppointmentsPage() {
         </div>
 
         {/* Filter */}
-        <div className="mb-6 space-y-4 rounded-lg bg-white p-6 shadow">
-          {/* Zeitfilter Tabs */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Zeitraum
-            </label>
+        <div className="mb-6 rounded-lg bg-white p-4 shadow">
+          <div className="flex flex-wrap items-end gap-3">
+            {/* Zeitfilter Tabs */}
             <div className="flex gap-2">
               <button
                 onClick={() => setTimeFilterMode('day')}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                   timeFilterMode === 'day'
                     ? 'bg-indigo-600 text-white'
                     : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
@@ -277,7 +283,7 @@ export default function AppointmentsPage() {
               </button>
               <button
                 onClick={() => setTimeFilterMode('month')}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                   timeFilterMode === 'month'
                     ? 'bg-indigo-600 text-white'
                     : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
@@ -287,7 +293,7 @@ export default function AppointmentsPage() {
               </button>
               <button
                 onClick={() => setTimeFilterMode('year')}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                   timeFilterMode === 'year'
                     ? 'bg-indigo-600 text-white'
                     : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
@@ -296,10 +302,9 @@ export default function AppointmentsPage() {
                 Jahr
               </button>
             </div>
-          </div>
 
-          {/* Zeitfilter Inputs */}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {/* Zeitfilter Inputs */}
+            <div className="flex flex-wrap gap-3 flex-1">
             {timeFilterMode === 'day' && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -346,62 +351,63 @@ export default function AppointmentsPage() {
               </div>
             )}
 
-            {/* Suche */}
-            <div>
-              <label htmlFor="search" className="block text-sm font-medium text-gray-700">
-                Suche
-              </label>
-              <input
-                type="text"
-                id="search"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Titel, Kunde, Mitarbeiter..."
-                className={`mt-1 ${inputBase}`}
-              />
-            </div>
+              {/* Suche */}
+              <div className="flex-1 min-w-[200px]">
+                <label htmlFor="search" className="block text-xs font-medium text-gray-700 mb-1">
+                  Suche
+                </label>
+                <input
+                  type="text"
+                  id="search"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Titel, Kunde, Mitarbeiter..."
+                  className={`w-full ${inputBase}`}
+                />
+              </div>
 
-            {/* Status Filter */}
-            <div>
-              <label htmlFor="status" className="block text-sm font-medium text-gray-700">
-                Status
-              </label>
-              <select
-                id="status"
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className={`mt-1 ${inputBase}`}
-              >
-                <option value="">Alle Status</option>
-                {Object.entries(STATUS_LABELS).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Mitarbeiter Filter - nur für Admins */}
-            {isAdmin && (
-              <div>
-                <label htmlFor="employee" className="block text-sm font-medium text-gray-700">
-                  Mitarbeiter
+              {/* Status Filter */}
+              <div className="min-w-[150px]">
+                <label htmlFor="status" className="block text-xs font-medium text-gray-700 mb-1">
+                  Status
                 </label>
                 <select
-                  id="employee"
-                  value={employeeFilter}
-                  onChange={(e) => setEmployeeFilter(e.target.value)}
-                  className={`mt-1 ${inputBase}`}
+                  id="status"
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className={`w-full ${inputBase}`}
                 >
-                  <option value="">Alle Mitarbeiter</option>
-                  {employees.map((emp) => (
-                    <option key={emp.id} value={emp.id}>
-                      {emp.user.name || emp.user.email}
+                  <option value="">Alle Status</option>
+                  {Object.entries(STATUS_LABELS).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
                     </option>
                   ))}
                 </select>
               </div>
-            )}
+
+              {/* Mitarbeiter Filter - nur für Admins */}
+              {isAdmin && (
+                <div className="min-w-[150px]">
+                  <label htmlFor="employee" className="block text-xs font-medium text-gray-700 mb-1">
+                    Mitarbeiter
+                  </label>
+                  <select
+                    id="employee"
+                    value={employeeFilter}
+                    onChange={(e) => setEmployeeFilter(e.target.value)}
+                    className={`w-full ${inputBase}`}
+                  >
+                    <option value="">Alle Mitarbeiter</option>
+                    {employees.map((emp) => (
+                      <option key={emp.id} value={emp.id}>
+                        {emp.user.name || emp.user.email}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -412,84 +418,215 @@ export default function AppointmentsPage() {
           </div>
         ) : appointments.length === 0 ? (
           <div className="rounded-lg bg-white p-12 text-center shadow">
-            <p className="text-gray-500">Keine Termine gefunden</p>
+            <div className="flex flex-col items-center">
+              <svg
+                className="w-16 h-16 text-gray-400 mb-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                />
+              </svg>
+              <p className="text-gray-500 text-lg">Keine Termine gefunden</p>
+              <p className="text-gray-400 text-sm mt-1">
+                {timeFilterMode === 'day'
+                  ? 'Für den ausgewählten Tag wurden keine Termine gefunden.'
+                  : timeFilterMode === 'month'
+                    ? 'Für den ausgewählten Monat wurden keine Termine gefunden.'
+                    : 'Für das ausgewählte Jahr wurden keine Termine gefunden.'}
+              </p>
+            </div>
+          </div>
+        ) : timeFilterMode === 'day' ? (
+          // Tagesansicht: Strukturierte Karten
+          <div className="flex flex-col gap-4">
+            {appointments
+              .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
+              .map((appointment) => (
+                <Link
+                  key={appointment.id}
+                  href={`/dashboard/appointments/${appointment.id}`}
+                  className="block rounded-lg border border-gray-200 bg-white p-4 shadow-sm hover:shadow-md hover:border-indigo-300 transition-all cursor-pointer"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      {/* Titel und Status */}
+                      <div className="flex items-start gap-3 mb-3">
+                        <h3 className="text-lg font-semibold text-gray-900 truncate">
+                          {appointment.title}
+                        </h3>
+                        <span
+                          className={`rounded-full px-2.5 py-1 text-xs font-medium shrink-0 ${
+                            STATUS_BG_COLORS[appointment.status] || 'bg-gray-100 text-gray-800'
+                          }`}
+                        >
+                          {STATUS_LABELS[appointment.status] || appointment.status}
+                        </span>
+                      </div>
+
+                      {/* Details Grid */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                        {/* Uhrzeit */}
+                        <div className="flex items-start gap-2">
+                          <span className="text-gray-400 shrink-0">🕐</span>
+                          <div>
+                            <span className="font-medium text-gray-700">Zeit:</span>{' '}
+                            <span className="text-gray-900">
+                              {format(new Date(appointment.startTime), 'HH:mm')}
+                            </span>
+                            {' - '}
+                            <span className="text-gray-900">
+                              {format(new Date(appointment.endTime), 'HH:mm')}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Kunde */}
+                        {appointment.customer && (
+                          <div className="flex items-start gap-2">
+                            <span className="text-gray-400 shrink-0">👤</span>
+                            <div>
+                              <span className="font-medium text-gray-700">Kunde:</span>{' '}
+                              <span className="text-gray-900">
+                                {appointment.customer.firstName} {appointment.customer.lastName}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Mitarbeiter */}
+                        {appointment.employee && (
+                          <div className="flex items-start gap-2">
+                            <span className="text-gray-400 shrink-0">👷</span>
+                            <div>
+                              <span className="font-medium text-gray-700">Mitarbeiter:</span>{' '}
+                              <span className="text-gray-900">
+                                {appointment.employee.user.name || appointment.employee.user.email}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Preis - nur für Admins oder eigene Termine */}
+                        {(isAdmin || appointment.employee?.id === currentEmployeeId) && (
+                          <div className="flex items-start gap-2">
+                            <span className="text-gray-400 shrink-0">💰</span>
+                            <div>
+                              <span className="font-medium text-gray-700">Preis:</span>{' '}
+                              <span className="font-semibold text-gray-900">
+                                {formatCurrency(appointment.price)}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Beschreibung/Notizen */}
+                      {(appointment.description || appointment.notes) && (
+                        <div className="mt-3 pt-3 border-t border-gray-100">
+                          {appointment.description && (
+                            <p className="text-sm text-gray-600 line-clamp-2">
+                              {appointment.description}
+                            </p>
+                          )}
+                          {appointment.notes && (
+                            <p className="text-sm text-gray-500 line-clamp-1 mt-1">
+                              <span className="font-medium">Notiz:</span> {appointment.notes}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </Link>
+              ))}
           </div>
         ) : (
+          // Monat/Jahr Ansicht: Kompakte Liste
           <div className="space-y-4">
-            {appointments.map((appointment) => (
-              <div
-                key={appointment.id}
-                className="rounded-lg bg-white p-6 shadow hover:shadow-md transition-shadow"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div
-                        className="h-4 w-4 rounded-full"
-                        style={{ backgroundColor: getAppointmentColor(appointment) }}
-                      />
-                      <h3 className="text-lg font-semibold text-gray-900">{appointment.title}</h3>
-                      <span
-                        className="rounded px-2 py-1 text-xs font-medium text-white"
-                        style={{ backgroundColor: getAppointmentColor(appointment) }}
-                      >
-                        {STATUS_LABELS[appointment.status] || appointment.status}
-                      </span>
+            {appointments
+              .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
+              .map((appointment) => (
+                <div
+                  key={appointment.id}
+                  className="rounded-lg bg-white p-6 shadow hover:shadow-md transition-shadow"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div
+                          className="h-4 w-4 rounded-full"
+                          style={{ backgroundColor: getAppointmentColor(appointment) }}
+                        />
+                        <h3 className="text-lg font-semibold text-gray-900">{appointment.title}</h3>
+                        <span
+                          className={`rounded-full px-2.5 py-1 text-xs font-medium ${
+                            STATUS_BG_COLORS[appointment.status] || 'bg-gray-100 text-gray-800'
+                          }`}
+                        >
+                          {STATUS_LABELS[appointment.status] || appointment.status}
+                        </span>
+                      </div>
+
+                      <div className="ml-7 space-y-1 text-sm text-gray-600">
+                        <p>
+                          <span className="font-medium">Zeit:</span>{' '}
+                          {format(new Date(appointment.startTime), 'EEEE, d. MMMM yyyy, HH:mm')} -{' '}
+                          {format(new Date(appointment.endTime), 'HH:mm')}
+                        </p>
+                        {/* Preis nur für Admins oder eigene Termine */}
+                        {(isAdmin || appointment.employee?.id === currentEmployeeId) && (
+                          <p>
+                            <span className="font-medium">Preis:</span>{' '}
+                            <span className="font-semibold text-gray-900">
+                              {formatCurrency(appointment.price)}
+                            </span>
+                          </p>
+                        )}
+                        {appointment.customer && (
+                          <p>
+                            <span className="font-medium">Kunde:</span> {appointment.customer.firstName}{' '}
+                            {appointment.customer.lastName}
+                          </p>
+                        )}
+                        {appointment.employee && (
+                          <p>
+                            <span className="font-medium">Mitarbeiter:</span>{' '}
+                            {appointment.employee.user.name || appointment.employee.user.email}
+                          </p>
+                        )}
+                        {appointment.description && (
+                          <p className="text-gray-500 line-clamp-2">{appointment.description}</p>
+                        )}
+                      </div>
                     </div>
 
-                    <div className="ml-7 space-y-1 text-sm text-gray-600">
-                      <p>
-                        <span className="font-medium">Zeit:</span>{' '}
-                        {format(new Date(appointment.startTime), 'EEEE, d. MMMM yyyy, HH:mm')} -{' '}
-                        {format(new Date(appointment.endTime), 'HH:mm')}
-                      </p>
-                      {/* Preis nur für Admins oder eigene Termine */}
+                    <div className="flex gap-2">
+                      <Link
+                        href={`/dashboard/appointments/${appointment.id}`}
+                        className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500"
+                      >
+                        Bearbeiten
+                      </Link>
+                      {/* Löschen-Button nur für Admins oder eigene Termine */}
                       {(isAdmin || appointment.employee?.id === currentEmployeeId) && (
-                        <p>
-                          <span className="font-medium">Preis:</span>{' '}
-                          <span className="font-semibold text-gray-900">
-                            {formatCurrency(appointment.price)}
-                          </span>
-                        </p>
-                      )}
-                      {appointment.customer && (
-                        <p>
-                          <span className="font-medium">Kunde:</span> {appointment.customer.firstName}{' '}
-                          {appointment.customer.lastName}
-                        </p>
-                      )}
-                      {appointment.employee && (
-                        <p>
-                          <span className="font-medium">Mitarbeiter:</span>{' '}
-                          {appointment.employee.user.name || appointment.employee.user.email}
-                        </p>
-                      )}
-                      {appointment.description && (
-                        <p className="text-gray-500 line-clamp-2">{appointment.description}</p>
+                        <button
+                          onClick={() => handleDelete(appointment.id)}
+                          className="rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-500"
+                        >
+                          Löschen
+                        </button>
                       )}
                     </div>
-                  </div>
-
-                  <div className="flex gap-2">
-                    <Link
-                      href={`/dashboard/appointments/${appointment.id}`}
-                      className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500"
-                    >
-                      Bearbeiten
-                    </Link>
-                    {/* Löschen-Button nur für Admins oder eigene Termine */}
-                    {(isAdmin || appointment.employee?.id === currentEmployeeId) && (
-                      <button
-                        onClick={() => handleDelete(appointment.id)}
-                        className="rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-500"
-                      >
-                        Löschen
-                      </button>
-                    )}
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
           </div>
         )}
       </div>

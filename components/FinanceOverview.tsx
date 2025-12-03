@@ -163,7 +163,7 @@ export default function FinanceOverview() {
 
   return (
     <div className="rounded-lg bg-white p-5 shadow-sm border border-gray-200">
-      <h3 className="text-sm font-semibold text-gray-700 mb-4">Finanzen-Kurzübersicht</h3>
+      <h3 className="text-xl font-semibold text-gray-700 mb-4">Finanzen-Kurzübersicht</h3>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         {cards.map((card) => (
           <div
@@ -173,7 +173,7 @@ export default function FinanceOverview() {
             <div className="flex items-center justify-between">
               <div className="flex-1">
                 <p className="text-xs font-medium text-gray-500 mb-1">{card.title}</p>
-                <p className={`text-lg font-bold ${card.color.split(' ')[1]}`}>{card.value}</p>
+                <p className={`text-2xl font-bold ${card.color.split(' ')[1]}`}>{card.value}</p>
               </div>
               <div className={`${card.iconBg} rounded-lg p-2`}>
                 <span className="text-lg">{card.icon}</span>

@@ -136,6 +136,24 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    // Füge neuen Mitarbeiter automatisch zum Teamchat hinzu
+    const teamchat = await prisma.chatChannel.findFirst({
+      where: {
+        tenantId: session.user.tenantId,
+        isSystem: true,
+        name: 'Teamchat',
+      },
+    })
+
+    if (teamchat) {
+      await prisma.channelMember.create({
+        data: {
+          channelId: teamchat.id,
+          userId: employee.userId,
+        },
+      })
+    }
+
     return NextResponse.json({ employee }, { status: 201 })
   } catch (error) {
     console.error('Fehler beim Erstellen des Mitarbeiters:', error)

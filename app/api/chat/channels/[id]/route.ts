@@ -119,7 +119,7 @@ export async function PUT(
   }
 }
 
-// DELETE: Channel löschen
+// DELETE: Channel löschen (System-Channels können nicht gelöscht werden)
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }

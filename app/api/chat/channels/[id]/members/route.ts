@@ -192,9 +192,10 @@ export async function DELETE(
       return NextResponse.json({ error: 'Channel nicht gefunden' }, { status: 404 })
     }
 
-    // System-Channels: Nur Admin kann Mitglieder entfernen
-    if (channel.isSystem && session.user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'Aus System-Channels können nur Admins Mitglieder entfernen' }, { status: 403 })
+    // System-Channels (Teamchat): Mitglieder können nicht entfernt werden
+    // Der Teamchat ist für alle aktiven Mitarbeiter reserviert
+    if (channel.isSystem) {
+      return NextResponse.json({ error: 'Aus dem Teamchat können keine Mitglieder entfernt werden. Alle aktiven Mitarbeiter sind automatisch Mitglied.' }, { status: 403 })
     }
 
     // Prüfe ob aktueller User Mitglied ist oder Admin

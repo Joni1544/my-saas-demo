@@ -199,70 +199,73 @@ export default function CustomersPage() {
             {customers.map((customer) => (
               <div
                 key={customer.id}
-                className="rounded-lg bg-white p-6 shadow hover:shadow-md transition-shadow"
+                className="flex flex-col justify-between rounded-lg bg-white p-6 shadow hover:shadow-md transition-shadow h-full min-h-[280px]"
               >
-                {/* Header */}
-                <div className="mb-4 flex items-start justify-between">
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      {customer.firstName} {customer.lastName}
-                    </h3>
-                    {customer.isArchived && (
-                      <span className="mt-1 inline-block rounded bg-gray-100 px-2 py-1 text-xs text-gray-600">
-                        Archiviert
-                      </span>
+                {/* Content-Bereich - flexibel */}
+                <div className="flex-1 flex flex-col">
+                  {/* Header */}
+                  <div className="mb-4 flex items-start justify-between">
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        {customer.firstName} {customer.lastName}
+                      </h3>
+                      {customer.isArchived && (
+                        <span className="mt-1 inline-block rounded bg-gray-100 px-2 py-1 text-xs text-gray-600">
+                          Archiviert
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Kontakt */}
+                  <div className="mb-4 space-y-1 text-sm text-gray-600">
+                    {customer.email && (
+                      <p>
+                        <span className="font-medium">Email:</span> {customer.email}
+                      </p>
+                    )}
+                    {customer.phone && (
+                      <p>
+                        <span className="font-medium">Tel:</span> {customer.phone}
+                      </p>
                     )}
                   </div>
-                </div>
 
-                {/* Kontakt */}
-                <div className="mb-4 space-y-1 text-sm text-gray-600">
-                  {customer.email && (
-                    <p>
-                      <span className="font-medium">Email:</span> {customer.email}
-                    </p>
+                  {/* Tags */}
+                  {customer.tags.length > 0 && (
+                    <div className="mb-4 flex flex-wrap gap-2">
+                      {customer.tags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="inline-block rounded bg-indigo-100 px-2 py-1 text-xs font-medium text-indigo-800"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
                   )}
-                  {customer.phone && (
+
+                  {/* Historie */}
+                  <div className="mb-4 border-t pt-4 text-sm text-gray-600">
                     <p>
-                      <span className="font-medium">Tel:</span> {customer.phone}
+                      <span className="font-medium">Termine:</span> {customer.appointmentCount}
                     </p>
+                    <p>
+                      <span className="font-medium">Letzter Termin:</span>{' '}
+                      {formatDate(customer.lastAppointment)}
+                    </p>
+                  </div>
+
+                  {/* Notizen Vorschau */}
+                  {customer.notes && (
+                    <div className="mb-4 border-t pt-4">
+                      <p className="text-sm text-gray-600 line-clamp-2">{customer.notes}</p>
+                    </div>
                   )}
                 </div>
 
-                {/* Tags */}
-                {customer.tags.length > 0 && (
-                  <div className="mb-4 flex flex-wrap gap-2">
-                    {customer.tags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="inline-block rounded bg-indigo-100 px-2 py-1 text-xs font-medium text-indigo-800"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                )}
-
-                {/* Historie */}
-                <div className="mb-4 border-t pt-4 text-sm text-gray-600">
-                  <p>
-                    <span className="font-medium">Termine:</span> {customer.appointmentCount}
-                  </p>
-                  <p>
-                    <span className="font-medium">Letzter Termin:</span>{' '}
-                    {formatDate(customer.lastAppointment)}
-                  </p>
-                </div>
-
-                {/* Notizen Vorschau */}
-                {customer.notes && (
-                  <div className="mb-4 border-t pt-4">
-                    <p className="text-sm text-gray-600 line-clamp-2">{customer.notes}</p>
-                  </div>
-                )}
-
-                {/* Actions */}
-                <div className="flex gap-2 border-t pt-4">
+                {/* Actions - immer unten bündig */}
+                <div className="mt-auto flex gap-2 border-t pt-4">
                   <Link
                     href={`/dashboard/customers/${customer.id}`}
                     className="flex-1 rounded-md bg-indigo-600 px-3 py-2 text-center text-sm font-semibold text-white hover:bg-indigo-500"

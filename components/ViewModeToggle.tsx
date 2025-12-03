@@ -46,7 +46,7 @@ export default function ViewModeToggle() {
           <button
             type="button"
             onClick={() => handleToggle('admin')}
-            className={`relative inline-flex items-center rounded-l-md px-4 py-2 text-sm font-semibold ${
+            className={`relative inline-flex items-center rounded-l-md px-5 py-2.5 text-base font-semibold ${
               viewMode === 'admin'
                 ? 'bg-indigo-600 text-white z-10'
                 : 'bg-white text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50'
@@ -57,7 +57,7 @@ export default function ViewModeToggle() {
           <button
             type="button"
             onClick={() => handleToggle('employee')}
-            className={`relative -ml-px inline-flex items-center rounded-r-md px-4 py-2 text-sm font-semibold ${
+            className={`relative -ml-px inline-flex items-center rounded-r-md px-5 py-2.5 text-base font-semibold ${
               viewMode === 'employee'
                 ? 'bg-indigo-600 text-white z-10'
                 : 'bg-white text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50'

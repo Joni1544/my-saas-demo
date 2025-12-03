@@ -14,6 +14,62 @@ export async function GET() {
       return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 })
     }
 
+    // Stelle sicher, dass Teamchat existiert und User Mitglied ist
+    let teamchat = await prisma.chatChannel.findFirst({
+      where: {
+        tenantId: session.user.tenantId,
+        isSystem: true,
+        name: 'Teamchat',
+      },
+    })
+
+    // Erstelle Teamchat falls nicht vorhanden
+    if (!teamchat) {
+      teamchat = await prisma.chatChannel.create({
+        data: {
+          name: 'Teamchat',
+          tenantId: session.user.tenantId,
+          isSystem: true,
+          createdBy: session.user.id,
+        },
+      })
+    }
+
+    // Stelle sicher, dass alle aktiven Mitarbeiter Mitglieder sind
+    const activeEmployees = await prisma.employee.findMany({
+      where: {
+        tenantId: session.user.tenantId,
+        isActive: true,
+      },
+      select: {
+        userId: true,
+      },
+    })
+
+    // Füge alle aktiven Mitarbeiter zum Teamchat hinzu
+    await prisma.channelMember.createMany({
+      data: activeEmployees.map((emp) => ({
+        channelId: teamchat!.id,
+        userId: emp.userId,
+      })),
+      skipDuplicates: true,
+    })
+
+    // Stelle sicher, dass aktueller User Mitglied ist
+    await prisma.channelMember.upsert({
+      where: {
+        channelId_userId: {
+          channelId: teamchat.id,
+          userId: session.user.id!,
+        },
+      },
+      create: {
+        channelId: teamchat.id,
+        userId: session.user.id!,
+      },
+      update: {},
+    })
+
     // Hole nur Channels, in denen der User Mitglied ist
     const userChannels = await prisma.channelMember.findMany({
       where: {
