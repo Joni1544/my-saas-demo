@@ -9,12 +9,14 @@ import { format } from 'date-fns'
 import Link from 'next/link'
 import InvoiceStatusBadge from '@/components/invoices/InvoiceStatusBadge'
 
+type InvoiceStatus = 'PENDING' | 'PAID' | 'OVERDUE' | 'CANCELLED'
+
 interface Invoice {
   id: string
   invoiceNumber: string
   totalAmount: number
   currency: string
-  status: string
+  status: InvoiceStatus
   dueDate: string
   createdAt: string
   customer?: {
@@ -74,13 +76,14 @@ export default function InvoicesPage() {
 
   const fetchStats = async () => {
     try {
-      const response = await fetch('/api/invoices?status=OPEN')
+      const response = await fetch('/api/invoices?status=PENDING')
       if (response.ok) {
         const data = await response.json()
         const invoices = data.invoices || []
         const now = new Date()
         const overdue = invoices.filter((inv: Invoice) => {
-          if (inv.status !== 'OPEN') return false
+          if (inv.status !== 'PENDING') return false
+          if (!inv.dueDate) return false
           const dueDate = new Date(inv.dueDate)
           return dueDate < now
         })
@@ -179,8 +182,7 @@ export default function InvoicesPage() {
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
               >
                 <option value="">Alle</option>
-                <option value="DRAFT">Entwurf</option>
-                <option value="OPEN">Offen</option>
+                <option value="PENDING">Ausstehend</option>
                 <option value="PAID">Bezahlt</option>
                 <option value="OVERDUE">Überfällig</option>
                 <option value="CANCELLED">Storniert</option>

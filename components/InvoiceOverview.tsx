@@ -24,7 +24,7 @@ export default function InvoiceOverview() {
 
   const fetchStats = async () => {
     try {
-      const response = await fetch('/api/invoices?status=OPEN')
+      const response = await fetch('/api/invoices?status=PENDING')
       if (!response.ok) throw new Error('Fehler beim Laden')
       
       const data = await response.json()
@@ -32,7 +32,8 @@ export default function InvoiceOverview() {
       
       const now = new Date()
       const overdue = invoices.filter((inv: { dueDate: string; status: string }) => {
-        if (inv.status !== 'OPEN') return false
+        if (inv.status !== 'PENDING') return false
+        if (!inv.dueDate) return false
         const dueDate = new Date(inv.dueDate)
         return dueDate < now
       })
