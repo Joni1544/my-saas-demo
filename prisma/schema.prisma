@@ -63,6 +63,7 @@ model Shop {
   invoiceTemplates  InvoiceTemplate[] // Rechnungstemplates für diesen Tenant
   aiUsages          AiUsage[] // KI-Nutzungen für diesen Tenant
   aiBillings        AiBilling[] // KI-Abrechnungen für diesen Tenant
+  invoiceReminders  InvoiceReminder[] // Mahnungen für diesen Tenant
 
   @@index([tenantId])
 }
@@ -518,6 +519,7 @@ model Invoice {
   employee Employee?       @relation(fields: [employeeId], references: [id], onDelete: SetNull)
   template InvoiceTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
   payments Payment[] // Alle Zahlungen für diese Rechnung
+  invoiceReminders InvoiceReminder[] // Mahnungen für diese Rechnung
 
   @@index([tenantId])
   @@index([customerId])
@@ -661,4 +663,34 @@ model AiBilling {
   @@unique([tenantId, month, year])
   @@index([tenantId])
   @@index([year, month])
+}
+
+// Mahnungs-Modell
+model InvoiceReminder {
+  id          String   @id @default(uuid())
+  tenantId    String
+  invoiceId   String
+  level       Int       // 1, 2, 3
+  status      ReminderStatus @default(PENDING)
+  reminderDate DateTime @default(now())
+  method      String?   // "email", "task", "manual"
+  aiText      String?   // DSGVO-sicherer Mahntext
+  createdAt   DateTime @default(now())
+
+  // Beziehungen
+  shop     Shop    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  invoice  Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([invoiceId])
+  @@index([level])
+  @@index([status])
+  @@index([reminderDate])
+}
+
+// Mahnungsstatus-Enum
+enum ReminderStatus {
+  PENDING
+  SENT
+  FAILED
 }

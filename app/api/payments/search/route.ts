@@ -24,10 +24,23 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ payments: [] })
     }
 
+    // Konvertiere tenantId (Shop.tenantId) zu shopId (Shop.id)
+    const shop = await prisma.shop.findUnique({
+      where: { tenantId: session.user.tenantId },
+      select: { id: true },
+    })
+
+    if (!shop) {
+      return NextResponse.json(
+        { error: 'Tenant nicht gefunden' },
+        { status: 404 }
+      )
+    }
+
     // Suche in verschiedenen Feldern
     const payments = await prisma.payment.findMany({
       where: {
-        tenantId: session.user.tenantId,
+        tenantId: shop.id, // Verweist auf Shop.id (Foreign Key)
         OR: [
           { reference: { contains: query, mode: 'insensitive' } },
           { transactionId: { contains: query, mode: 'insensitive' } },

@@ -3,7 +3,6 @@
  */
 'use client'
 
-import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import TemplateEditor from '@/components/invoices/templates/TemplateEditor'
 

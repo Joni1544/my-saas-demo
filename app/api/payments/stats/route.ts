@@ -21,15 +21,28 @@ export async function GET(request: NextRequest) {
     const startDate = searchParams.get('startDate')
     const endDate = searchParams.get('endDate')
 
+    // Konvertiere tenantId (Shop.tenantId) zu shopId (Shop.id)
+    const shop = await prisma.shop.findUnique({
+      where: { tenantId: session.user.tenantId },
+      select: { id: true },
+    })
+
+    if (!shop) {
+      return NextResponse.json(
+        { error: 'Tenant nicht gefunden' },
+        { status: 404 }
+      )
+    }
+
     const where: {
       tenantId: string
-      status?: string
+      status: 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED'
       createdAt?: {
         gte?: Date
         lte?: Date
       }
     } = {
-      tenantId: session.user.tenantId,
+      tenantId: shop.id, // Verweist auf Shop.id (Foreign Key)
       status: 'PAID',
     }
 
@@ -79,14 +92,14 @@ export async function GET(request: NextRequest) {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
     const todayPayments = payments.filter(
-      (p) => new Date(p.createdAt) >= today && p.status === 'PAID'
+      (p) => new Date(p.createdAt) >= today
     )
     const todayRevenue = todayPayments.reduce((sum, p) => sum + Number(p.amount), 0)
 
     // Fehlgeschlagene Zahlungen
     const failedPayments = await prisma.payment.count({
       where: {
-        tenantId: session.user.tenantId,
+        tenantId: shop.id, // Verweist auf Shop.id (Foreign Key)
         status: 'FAILED',
       },
     })

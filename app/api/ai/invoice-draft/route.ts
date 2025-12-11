@@ -4,8 +4,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
-import { aiServiceWrapper } from '@/services/ai/AiServiceWrapper'
-import { aiUsageService } from '@/services/ai/AiUsageService'
+import { aiAdapter } from '@/services/ai/AiAdapter'
 
 export async function POST(request: NextRequest) {
   try {
@@ -43,8 +42,14 @@ export async function POST(request: NextRequest) {
       companyStyle: companyStyle || 'professionell, freundlich',
     }
 
-    // Generiere Rechnungstext (Dummy-Implementierung)
-    const draftText = await generateInvoiceDraftText(aiContext)
+    // Generiere Rechnungstext (DSGVO-sicher, nur Metadaten)
+    const result = await aiAdapter.generateInvoiceText({
+      amount: aiContext.price,
+      customerId: 'anonymous', // Keine echte Customer-ID
+      items: [{ description: aiContext.serviceType || 'Dienstleistung', amount: aiContext.price }],
+    })
+    
+    const draftText = result.text
 
     return NextResponse.json({
       draftText,

@@ -24,23 +24,41 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status')
     const invoiceId = searchParams.get('invoiceId')
 
+    // Konvertiere tenantId (Shop.tenantId) zu shopId (Shop.id)
+    const shop = await prisma.shop.findUnique({
+      where: { tenantId: session.user.tenantId },
+      select: { id: true },
+    })
+
+    if (!shop) {
+      return NextResponse.json(
+        { error: 'Tenant nicht gefunden' },
+        { status: 404 }
+      )
+    }
+
     const where: {
       tenantId: string
       level?: number
-      status?: string
+      status?: 'PENDING' | 'SENT' | 'FAILED'
       invoiceId?: string
     } = {
-      tenantId: session.user.tenantId,
+      tenantId: shop.id, // Verweist auf Shop.id (Foreign Key)
     }
 
     if (level) where.level = parseInt(level)
     if (status && (status === 'SENT' || status === 'FAILED')) {
-      where.status = status
+      where.status = status as 'SENT' | 'FAILED'
     }
     if (invoiceId) where.invoiceId = invoiceId
 
     const reminders = await prisma.invoiceReminder.findMany({
-      where,
+      where: where as {
+        tenantId: string
+        level?: number
+        status?: 'PENDING' | 'SENT' | 'FAILED'
+        invoiceId?: string
+      },
       include: {
         invoice: {
           include: {

@@ -9,8 +9,8 @@ import { format } from 'date-fns'
 import Link from 'next/link'
 
 interface ReminderStats {
-  overdueInvoices: number
-  remindersSentToday: number
+  overdueCount: number
+  todaySent: number
   level1Count: number
   level2Count: number
   level3Count: number

@@ -51,6 +51,16 @@ export type EventName =
   // System Events
   | 'system.daily_report_generated'
   | 'system.automation_triggered'
+  
+  // AI Events
+  | 'ai.usage_recorded'
+  
+  // Invoice Reminder Events
+  | 'invoice.reminder_created'
+  | 'invoice.reminder_sent'
+  | 'invoice.reminder_failed'
+  | 'invoice.reminder_escalated'
+  | 'invoice.reminder_stopped'
 
 /**
  * Event Payload Types

@@ -13,7 +13,7 @@ import PaymentTimeline from '@/components/payments/PaymentTimeline'
 import RecordPaymentDialog from '@/components/payments/RecordPaymentDialog'
 import ApplePayButton from '@/components/payments/ApplePayButton'
 import GooglePayButton from '@/components/payments/GooglePayButton'
-import PaymentStatusBadge from '@/components/payments/PaymentStatusBadge'
+import InvoiceStatusBadge from '@/components/invoices/InvoiceStatusBadge'
 import TemplateSelector from '@/components/invoices/templates/TemplateSelector'
 
 interface Invoice {
@@ -266,7 +266,7 @@ export default function InvoiceDetailPage() {
                 Rechnung {invoice.invoiceNumber}
               </h1>
               <div className="mt-2 flex items-center gap-3">
-                <PaymentStatusBadge status={invoice.status as 'PENDING' | 'PAID' | 'OVERDUE' | 'CANCELLED'} />
+                <InvoiceStatusBadge status={invoice.status as 'PENDING' | 'PAID' | 'OVERDUE' | 'CANCELLED'} />
                 {invoice.dueDate && (
                   <span className="text-sm text-gray-600">
                     Fällig: {format(new Date(invoice.dueDate), 'dd.MM.yyyy')}
@@ -316,7 +316,7 @@ export default function InvoiceDetailPage() {
                 <div>
                   <dt className="text-sm font-medium text-gray-500">Status</dt>
                   <dd className="mt-1">
-                    <PaymentStatusBadge status={invoice.status as 'PENDING' | 'PAID' | 'OVERDUE' | 'CANCELLED'} />
+                    <InvoiceStatusBadge status={invoice.status as 'PENDING' | 'PAID' | 'OVERDUE' | 'CANCELLED'} />
                   </dd>
                 </div>
                 {invoice.customer && (

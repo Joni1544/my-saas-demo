@@ -42,8 +42,10 @@ export default function EditTemplatePage() {
   }, [templateId])
 
   useEffect(() => {
-    fetchTemplate()
-  }, [fetchTemplate])
+    if (templateId) {
+      fetchTemplate()
+    }
+  }, [templateId, fetchTemplate])
 
   const handleSave = async (updatedTemplate: Template) => {
     try {
@@ -59,8 +61,6 @@ export default function EditTemplatePage() {
     } catch (error) {
       console.error('Fehler:', error)
       alert('Fehler beim Aktualisieren des Templates')
-    } finally {
-      setSaving(false)
     }
   }
 

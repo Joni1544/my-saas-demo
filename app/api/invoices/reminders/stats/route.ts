@@ -18,6 +18,19 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // Konvertiere tenantId (Shop.tenantId) zu shopId (Shop.id)
+    const shop = await prisma.shop.findUnique({
+      where: { tenantId: session.user.tenantId },
+      select: { id: true },
+    })
+
+    if (!shop) {
+      return NextResponse.json(
+        { error: 'Tenant nicht gefunden' },
+        { status: 404 }
+      )
+    }
+
     // Überfällige Rechnungen
     const overdueInvoices = await reminderService.getOverdueInvoices(session.user.tenantId)
     const overdueCount = overdueInvoices.length
@@ -27,7 +40,7 @@ export async function GET(request: NextRequest) {
     today.setHours(0, 0, 0, 0)
     const todayReminders = await prisma.invoiceReminder.count({
       where: {
-        tenantId: session.user.tenantId,
+        tenantId: shop.id, // Verweist auf Shop.id (Foreign Key)
         status: 'SENT',
         reminderDate: {
           gte: today,
@@ -38,7 +51,7 @@ export async function GET(request: NextRequest) {
     // Level-Breakdown
     const level1Count = await prisma.invoiceReminder.count({
       where: {
-        tenantId: session.user.tenantId,
+        tenantId: shop.id, // Verweist auf Shop.id (Foreign Key)
         level: 1,
         status: 'PENDING',
       },
@@ -46,7 +59,7 @@ export async function GET(request: NextRequest) {
 
     const level2Count = await prisma.invoiceReminder.count({
       where: {
-        tenantId: session.user.tenantId,
+        tenantId: shop.id, // Verweist auf Shop.id (Foreign Key)
         level: 2,
         status: 'PENDING',
       },
@@ -54,7 +67,7 @@ export async function GET(request: NextRequest) {
 
     const level3Count = await prisma.invoiceReminder.count({
       where: {
-        tenantId: session.user.tenantId,
+        tenantId: shop.id, // Verweist auf Shop.id (Foreign Key)
         level: 3,
         status: 'PENDING',
       },

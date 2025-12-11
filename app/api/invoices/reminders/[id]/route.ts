@@ -22,10 +22,23 @@ export async function GET(
       )
     }
 
+    // Konvertiere tenantId (Shop.tenantId) zu shopId (Shop.id)
+    const shop = await prisma.shop.findUnique({
+      where: { tenantId: session.user.tenantId },
+      select: { id: true },
+    })
+
+    if (!shop) {
+      return NextResponse.json(
+        { error: 'Tenant nicht gefunden' },
+        { status: 404 }
+      )
+    }
+
     const reminder = await prisma.invoiceReminder.findFirst({
       where: {
         id,
-        tenantId: session.user.tenantId,
+        tenantId: shop.id, // Verweist auf Shop.id (Foreign Key)
       },
       include: {
         invoice: {

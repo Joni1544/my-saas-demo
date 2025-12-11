@@ -6,6 +6,7 @@ import { eventBus } from '@/events/EventBus'
 import { automationEngine } from '@/automation/AutomationEngine'
 import { prisma } from '@/lib/prisma'
 import { EventPayload, EmployeeSickPayload } from '@/events/types/EventTypes'
+import { reminderService } from '@/services/invoice/ReminderService'
 
 class AutopilotService {
   private enabled: boolean = true
@@ -176,6 +177,36 @@ class AutopilotService {
       }
     } catch (error) {
       console.error('[Autopilot] Error checking overdue tasks:', error)
+    }
+  }
+
+  /**
+   * Mahnungen verarbeiten
+   */
+  private async processReminders(): Promise<void> {
+    try {
+      // Hole alle Tenants
+      const shops = await prisma.shop.findMany({
+        select: { tenantId: true },
+      })
+
+      for (const shop of shops) {
+        // Hole überfällige Rechnungen für diesen Tenant
+        const overdueInvoices = await reminderService.getOverdueInvoices(shop.tenantId)
+
+        for (const invoice of overdueInvoices) {
+          // Berechne Mahnstufe
+          const level = reminderService.calculateReminderLevel(invoice)
+
+          if (level > 0 && invoice.reminderLevel < level) {
+            // Erstelle Mahnung
+            await reminderService.createReminder(shop.tenantId, invoice.id, level)
+            console.log(`[Autopilot] Created reminder level ${level} for invoice ${invoice.id}`)
+          }
+        }
+      }
+    } catch (error) {
+      console.error('[Autopilot] Error processing reminders:', error)
     }
   }
 

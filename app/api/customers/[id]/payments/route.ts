@@ -21,11 +21,24 @@ export async function GET(
       )
     }
 
+    // Konvertiere tenantId (Shop.tenantId) zu shopId (Shop.id)
+    const shop = await prisma.shop.findUnique({
+      where: { tenantId: session.user.tenantId },
+      select: { id: true },
+    })
+
+    if (!shop) {
+      return NextResponse.json(
+        { error: 'Tenant nicht gefunden' },
+        { status: 404 }
+      )
+    }
+
     // Prüfe ob Kunde existiert und zum Tenant gehört
     const customer = await prisma.customer.findFirst({
       where: {
         id,
-        tenantId: session.user.tenantId,
+        tenantId: shop.id, // Verweist auf Shop.id (Foreign Key)
       },
     })
 
@@ -39,7 +52,7 @@ export async function GET(
     // Hole alle Zahlungen des Kunden
     const payments = await prisma.payment.findMany({
       where: {
-        tenantId: session.user.tenantId,
+        tenantId: shop.id, // Verweist auf Shop.id (Foreign Key)
         customerId: id,
       },
       include: {
@@ -75,7 +88,7 @@ export async function GET(
     // Offene Rechnungen
     const openInvoices = await prisma.invoice.findMany({
       where: {
-        tenantId: session.user.tenantId,
+        tenantId: shop.id, // Verweist auf Shop.id (Foreign Key)
         customerId: id,
         status: {
           in: ['PENDING', 'OVERDUE'],
