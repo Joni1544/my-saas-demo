@@ -33,6 +33,11 @@ export default function Navbar() {
     { name: 'Dashboard', href: '/dashboard' },
     { name: 'Berichte', href: '/dashboard/reports' },
     { name: 'Finanzen', href: '/dashboard/finance' },
+    { name: 'Zahlungen', href: '/dashboard/payments' },
+    { name: 'Rechnungen', href: '/dashboard/invoices' },
+    { name: 'Mahnungen', href: '/dashboard/reminders' },
+    { name: 'KI-Usage', href: '/dashboard/ai-usage' },
+    { name: 'Automation', href: '/dashboard/automation/payments' },
     { name: 'Mitarbeiter', href: '/dashboard/employees' },
     { name: 'Inventar', href: '/dashboard/inventory' },
     { name: 'Termine', href: '/dashboard/appointments' },
@@ -70,7 +75,7 @@ export default function Navbar() {
                     key={item.name}
                     href={item.href}
                     className={`
-                      whitespace-nowrap inline-flex items-center border-b-2 px-2 pt-1 text-sm font-medium transition-colors shrink-0 flex-shrink-0
+                      whitespace-nowrap inline-flex items-center border-b-2 px-2 pt-1 text-sm font-medium transition-colors shrink-0
                       ${
                         isActive
                           ? 'border-indigo-500 text-gray-900'

@@ -60,6 +60,27 @@ export default function QuickActions({ role: propRole }: QuickActionsProps) {
       color: 'bg-pink-600 hover:bg-pink-700',
       adminOnly: false,
     },
+    {
+      title: 'Neue Rechnung',
+      href: '/dashboard/invoices/new',
+      icon: '📄',
+      color: 'bg-orange-600 hover:bg-orange-700',
+      adminOnly: true,
+    },
+    {
+      title: 'Zahlung erfassen',
+      href: '/dashboard/payments/pos',
+      icon: '💳',
+      color: 'bg-green-600 hover:bg-green-700',
+      adminOnly: true,
+    },
+    {
+      title: 'Rechnungs-Template',
+      href: '/dashboard/invoices/templates',
+      icon: '🎨',
+      color: 'bg-purple-600 hover:bg-purple-700',
+      adminOnly: true,
+    },
   ]
 
   // Filtere Actions basierend auf Rolle
@@ -73,6 +94,7 @@ export default function QuickActions({ role: propRole }: QuickActionsProps) {
     'bg-green-600 hover:bg-green-700': 'from-green-500 to-green-600 hover:from-green-600 hover:to-green-700',
     'bg-purple-600 hover:bg-purple-700': 'from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700',
     'bg-pink-600 hover:bg-pink-700': 'from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700',
+    'bg-orange-600 hover:bg-orange-700': 'from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700',
   }
 
   return (

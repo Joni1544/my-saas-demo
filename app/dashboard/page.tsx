@@ -10,6 +10,10 @@ import QuickActions from '@/components/QuickActions'
 import UpcomingAppointments from '@/components/UpcomingAppointments'
 import FinanceOverview from '@/components/FinanceOverview'
 import ViewModeToggle from '@/components/ViewModeToggle'
+import PaymentOverview from '@/components/PaymentOverview'
+import InvoiceOverview from '@/components/InvoiceOverview'
+import ReminderOverview from '@/components/ReminderOverview'
+import AIUsageOverview from '@/components/AIUsageOverview'
 
 export default async function DashboardPage() {
   const session = await auth()
@@ -45,6 +49,21 @@ export default async function DashboardPage() {
         {session.user.role === 'ADMIN' && (
           <div className="mb-8">
             <FinanceOverview />
+          </div>
+        )}
+
+        {/* Premium Features Widgets (nur für Admin) */}
+        {session.user.role === 'ADMIN' && (
+          <div className="mb-8">
+            <div className="mb-4">
+              <h2 className="text-lg font-semibold text-gray-900">Premium Features</h2>
+            </div>
+            <div className="grid gap-6 lg:grid-cols-2">
+              <PaymentOverview />
+              <InvoiceOverview />
+              <ReminderOverview />
+              <AIUsageOverview />
+            </div>
           </div>
         )}
 
