@@ -8,6 +8,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { inputBase, textareaBase } from '@/lib/inputStyles'
+import CustomerPaymentsSection from '@/components/customers/CustomerPaymentsSection'
 
 interface Customer {
   id: string

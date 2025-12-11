@@ -4,6 +4,8 @@
  */
 'use client'
 
+import Image from 'next/image'
+
 interface Template {
   id: string
   name: string
@@ -23,7 +25,6 @@ interface TemplatePreviewProps {
 export default function TemplatePreview({ template, className = '' }: TemplatePreviewProps) {
   const primaryColor = template.primaryColor || '#3B82F6'
   const secondaryColor = template.secondaryColor || '#1E40AF'
-  const layoutType = template.layoutType || 'modern'
 
   return (
     <div className={`rounded-lg border-2 border-gray-200 bg-white shadow-lg ${className}`}>
@@ -32,11 +33,15 @@ export default function TemplatePreview({ template, className = '' }: TemplatePr
         style={{ backgroundColor: primaryColor }}
       >
         {template.logoUrl && (
-          <img
-            src={template.logoUrl}
-            alt="Logo"
-            className="mb-4 h-12 object-contain"
-          />
+          <div className="relative mb-4 h-12 w-32">
+            <Image
+              src={template.logoUrl}
+              alt="Logo"
+              fill
+              className="object-contain"
+              unoptimized
+            />
+          </div>
         )}
         {template.headerText && (
           <p className="text-sm opacity-90">{template.headerText}</p>

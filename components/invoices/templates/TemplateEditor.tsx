@@ -4,7 +4,8 @@
  */
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
+import Image from 'next/image'
 import TemplatePreview from './TemplatePreview'
 
 interface Template {
@@ -110,7 +111,15 @@ export default function TemplateEditor({
               className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:rounded-md file:border-0 file:bg-indigo-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-indigo-700 hover:file:bg-indigo-100"
             />
             {formData.logoUrl && !logoFile && (
-              <img src={formData.logoUrl} alt="Logo" className="mt-2 h-16 object-contain" />
+              <div className="relative mt-2 h-16 w-32">
+                <Image
+                  src={formData.logoUrl}
+                  alt="Logo"
+                  fill
+                  className="object-contain"
+                  unoptimized
+                />
+              </div>
             )}
           </div>
 

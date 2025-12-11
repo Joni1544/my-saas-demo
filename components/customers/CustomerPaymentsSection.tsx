@@ -54,7 +54,11 @@ export default function CustomerPaymentsSection({ customerId }: CustomerPayments
     } finally {
       setLoading(false)
     }
-  }
+  }, [customerId])
+
+  useEffect(() => {
+    fetchPayments()
+  }, [fetchPayments])
 
   const formatAmount = (amount: number) => {
     return new Intl.NumberFormat('de-DE', {

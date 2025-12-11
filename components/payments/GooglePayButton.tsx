@@ -4,7 +4,31 @@
  */
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useCallback } from 'react'
+
+interface StripeInstance {
+  paymentRequest: (options: {
+    country: string
+    currency: string
+    total: { label: string; amount: number }
+    requestPayerName: boolean
+    requestPayerEmail: boolean
+  }) => {
+    canMakePayment: () => Promise<{ applePay?: boolean; googlePay?: boolean } | null>
+    on: (event: string, handler: (ev: PaymentMethodEvent) => void) => void
+  }
+  elements: () => {
+    create: (type: string, options: { paymentRequest: unknown; style: unknown }) => {
+      mount: (element: HTMLElement) => void
+    }
+  }
+  confirmCardPayment: (secret: string, options: { payment_method: string }) => Promise<unknown>
+}
+
+interface PaymentMethodEvent {
+  paymentMethod: { id: string }
+  complete: (status: 'success' | 'fail') => void
+}
 
 interface GooglePayButtonProps {
   amount: number
@@ -22,30 +46,9 @@ export default function GooglePayButton({
   disabled = false,
 }: GooglePayButtonProps) {
   const buttonRef = useRef<HTMLDivElement>(null)
-  const stripeRef = useRef<{ paymentRequest: (options: unknown) => unknown; elements: () => { create: (type: string, options: unknown) => unknown }; confirmCardPayment: (secret: string, options: unknown) => unknown } | null>(null)
+  const stripeRef = useRef<StripeInstance | null>(null)
 
-  useEffect(() => {
-    // Lade Stripe.js
-    if (typeof window !== 'undefined' && !stripeRef.current) {
-      const script = document.createElement('script')
-      script.src = 'https://js.stripe.com/v3/'
-      script.async = true
-      script.onload = () => {
-        if (window.Stripe) {
-          const stripe = window.Stripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || 'pk_test_dummy')
-          stripeRef.current = stripe
-          initializePaymentRequest()
-        }
-      }
-      document.body.appendChild(script)
-    }
-
-    return () => {
-      // Cleanup
-    }
-  }, [])
-
-  const initializePaymentRequest = async () => {
+  const initializePaymentRequest = useCallback(async () => {
     if (!stripeRef.current || !buttonRef.current) return
 
     try {
@@ -80,7 +83,7 @@ export default function GooglePayButton({
         prButton.mount(buttonRef.current)
 
         // Event Handler
-        paymentRequest.on('paymentmethod', async (ev: { paymentMethod: { id: string }; complete: (status: string) => void }) => {
+        paymentRequest.on('paymentmethod', async (ev: PaymentMethodEvent) => {
           try {
             // Erstelle Payment Intent
             const response = await fetch('/api/payments/stripe/intent', {
@@ -116,7 +119,28 @@ export default function GooglePayButton({
       console.error('[GooglePayButton] Error:', error)
       onError?.(error instanceof Error ? error : new Error('Fehler beim Initialisieren von Google Pay'))
     }
-  }
+  }, [amount, currency, onSuccess, onError])
+
+  useEffect(() => {
+    // Lade Stripe.js
+    if (typeof window !== 'undefined' && !stripeRef.current) {
+      const script = document.createElement('script')
+      script.src = 'https://js.stripe.com/v3/'
+      script.async = true
+      script.onload = () => {
+        if (window.Stripe) {
+          const stripe = window.Stripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || 'pk_test_dummy') as StripeInstance
+          stripeRef.current = stripe
+          initializePaymentRequest()
+        }
+      }
+      document.body.appendChild(script)
+    }
+
+    return () => {
+      // Cleanup
+    }
+  }, [initializePaymentRequest])
 
   return (
     <div className="w-full">

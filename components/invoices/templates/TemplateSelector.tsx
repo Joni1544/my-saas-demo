@@ -4,7 +4,7 @@
  */
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 
 interface Template {
   id: string
@@ -28,11 +28,7 @@ export default function TemplateSelector({
   const [templates, setTemplates] = useState<Template[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    fetchTemplates()
-  }, [])
-
-  const fetchTemplates = async () => {
+  const fetchTemplates = useCallback(async () => {
     try {
       const response = await fetch('/api/invoice-templates')
       if (response.ok) {
@@ -50,7 +46,11 @@ export default function TemplateSelector({
     } finally {
       setLoading(false)
     }
-  }
+  }, [value, onChange])
+
+  useEffect(() => {
+    fetchTemplates()
+  }, [fetchTemplates])
 
   if (loading) {
     return (
