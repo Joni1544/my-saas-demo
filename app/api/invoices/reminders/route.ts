@@ -34,7 +34,9 @@ export async function GET(request: NextRequest) {
     }
 
     if (level) where.level = parseInt(level)
-    if (status) where.status = status as any
+    if (status && (status === 'SENT' || status === 'FAILED')) {
+      where.status = status
+    }
     if (invoiceId) where.invoiceId = invoiceId
 
     const reminders = await prisma.invoiceReminder.findMany({

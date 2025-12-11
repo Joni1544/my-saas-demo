@@ -4,9 +4,8 @@
  */
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { format } from 'date-fns'
-import PaymentCard from '@/components/payments/PaymentCard'
 import PaymentStatusBadge from '@/components/payments/PaymentStatusBadge'
 
 interface CustomerPaymentsSectionProps {
@@ -36,11 +35,7 @@ export default function CustomerPaymentsSection({ customerId }: CustomerPayments
   const [stats, setStats] = useState<PaymentStats | null>(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    fetchPayments()
-  }, [customerId])
-
-  const fetchPayments = async () => {
+  const fetchPayments = useCallback(async () => {
     try {
       setLoading(true)
       const response = await fetch(`/api/customers/${customerId}/payments`)
@@ -55,6 +50,10 @@ export default function CustomerPaymentsSection({ customerId }: CustomerPayments
       setLoading(false)
     }
   }, [customerId])
+
+  useEffect(() => {
+    fetchPayments()
+  }, [fetchPayments])
 
   useEffect(() => {
     fetchPayments()

@@ -7,12 +7,23 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import TemplateEditor from '@/components/invoices/templates/TemplateEditor'
 
+interface Template {
+  id?: string
+  name: string
+  description?: string
+  logoUrl?: string
+  primaryColor?: string
+  secondaryColor?: string
+  layoutType?: string
+  headerText?: string
+  footerText?: string
+  isDefault?: boolean
+}
+
 export default function NewTemplatePage() {
   const router = useRouter()
-  const [saving, setSaving] = useState(false)
 
-  const handleSave = async (template: any) => {
-    setSaving(true)
+  const handleSave = async (template: Template) => {
     try {
       const response = await fetch('/api/invoice-templates', {
         method: 'POST',
@@ -26,8 +37,6 @@ export default function NewTemplatePage() {
     } catch (error) {
       console.error('Fehler:', error)
       alert('Fehler beim Erstellen des Templates')
-    } finally {
-      setSaving(false)
     }
   }
 

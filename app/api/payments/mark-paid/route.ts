@@ -4,6 +4,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { paymentService } from '@/services/payment/PaymentService'
+import { PaymentMethod } from '@prisma/client'
+import { prisma } from '@/lib/prisma'
 
 export async function POST(request: NextRequest) {
   try {
@@ -28,11 +30,10 @@ export async function POST(request: NextRequest) {
 
     // Wenn method und reference angegeben sind, aktualisiere Payment zuerst
     if (method && (method === 'CASH' || method === 'BANK_TRANSFER')) {
-      const { prisma } = await import('@/lib/prisma')
       await prisma.payment.update({
         where: { id: paymentId },
         data: {
-          method: method as any,
+          method: method as PaymentMethod,
           reference: reference || null,
         },
       })

@@ -3,23 +3,31 @@
  */
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import TemplateEditor from '@/components/invoices/templates/TemplateEditor'
+
+interface Template {
+  id?: string
+  name: string
+  description?: string
+  logoUrl?: string
+  primaryColor?: string
+  secondaryColor?: string
+  layoutType?: string
+  headerText?: string
+  footerText?: string
+  isDefault?: boolean
+}
 
 export default function EditTemplatePage() {
   const params = useParams()
   const router = useRouter()
   const templateId = params.id as string
-  const [template, setTemplate] = useState<any>(null)
+  const [template, setTemplate] = useState<Template | null>(null)
   const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
 
-  useEffect(() => {
-    fetchTemplate()
-  }, [templateId])
-
-  const fetchTemplate = async () => {
+  const fetchTemplate = useCallback(async () => {
     try {
       const response = await fetch(`/api/invoice-templates/${templateId}`)
       if (response.ok) {
@@ -31,10 +39,13 @@ export default function EditTemplatePage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [templateId])
 
-  const handleSave = async (updatedTemplate: any) => {
-    setSaving(true)
+  useEffect(() => {
+    fetchTemplate()
+  }, [fetchTemplate])
+
+  const handleSave = async (updatedTemplate: Template) => {
     try {
       const response = await fetch(`/api/invoice-templates/${templateId}`, {
         method: 'PUT',

@@ -266,7 +266,7 @@ export default function InvoiceDetailPage() {
                 Rechnung {invoice.invoiceNumber}
               </h1>
               <div className="mt-2 flex items-center gap-3">
-                <PaymentStatusBadge status={invoice.status as any} />
+                <PaymentStatusBadge status={invoice.status as 'PENDING' | 'PAID' | 'OVERDUE' | 'CANCELLED'} />
                 {invoice.dueDate && (
                   <span className="text-sm text-gray-600">
                     Fällig: {format(new Date(invoice.dueDate), 'dd.MM.yyyy')}

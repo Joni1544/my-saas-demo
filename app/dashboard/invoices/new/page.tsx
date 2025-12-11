@@ -9,11 +9,29 @@ import { useRouter } from 'next/navigation'
 import TemplateSelector from '@/components/invoices/templates/TemplateSelector'
 import TemplatePreview from '@/components/invoices/templates/TemplatePreview'
 
+interface Template {
+  id: string
+  name: string
+  logoUrl?: string | null
+  primaryColor?: string | null
+  secondaryColor?: string | null
+  layoutType?: string | null
+  headerText?: string | null
+  footerText?: string | null
+}
+
+interface Customer {
+  id: string
+  firstName: string
+  lastName: string
+  email: string | null
+}
+
 export default function NewInvoicePage() {
   const router = useRouter()
   const [templateId, setTemplateId] = useState<string>('')
-  const [template, setTemplate] = useState<any>(null)
-  const [customers, setCustomers] = useState<any[]>([])
+  const [template, setTemplate] = useState<Template | null>(null)
+  const [customers, setCustomers] = useState<Customer[]>([])
   const [loading, setLoading] = useState(false)
   const [generatingAiText, setGeneratingAiText] = useState(false)
   const [formData, setFormData] = useState({

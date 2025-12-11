@@ -4,9 +4,18 @@
  */
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { format } from 'date-fns'
 import Link from 'next/link'
+
+interface ReminderStats {
+  overdueInvoices: number
+  remindersSentToday: number
+  level1Count: number
+  level2Count: number
+  level3Count: number
+  avgDaysOverdue: number
+}
 
 interface Reminder {
   id: string
@@ -34,19 +43,14 @@ interface Reminder {
 
 export default function RemindersPage() {
   const [reminders, setReminders] = useState<Reminder[]>([])
-  const [stats, setStats] = useState<any>(null)
+  const [stats, setStats] = useState<ReminderStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [filters, setFilters] = useState({
     level: '',
     status: '',
   })
 
-  useEffect(() => {
-    fetchReminders()
-    fetchStats()
-  }, [filters])
-
-  const fetchReminders = async () => {
+  const fetchReminders = useCallback(async () => {
     try {
       setLoading(true)
       const params = new URLSearchParams()
@@ -63,9 +67,9 @@ export default function RemindersPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [filters])
 
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     try {
       const response = await fetch('/api/invoices/reminders/stats')
       if (response.ok) {
@@ -75,7 +79,12 @@ export default function RemindersPage() {
     } catch (error) {
       console.error('Fehler:', error)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    fetchReminders()
+    fetchStats()
+  }, [fetchReminders, fetchStats])
 
   const formatAmount = (amount: number, currency: string) => {
     return new Intl.NumberFormat('de-DE', {
