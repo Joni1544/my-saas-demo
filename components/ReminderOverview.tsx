@@ -92,7 +92,7 @@ export default function ReminderOverview() {
                   {formatCurrency(stats?.totalOverdueAmount || 0)}
                 </div>
               </div>
-              {Object.keys(stats?.levelDistribution || {}).length > 0 && (
+              {stats && Object.keys(stats.levelDistribution || {}).length > 0 && (
                 <div className="pt-2 border-t border-gray-200">
                   <div className="text-xs text-gray-600 mb-1">Level-Verteilung</div>
                   <div className="space-y-1">
