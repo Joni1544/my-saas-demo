@@ -168,6 +168,20 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    // Event emitieren
+    try {
+      const { eventBus } = await import('@/events/EventBus')
+      eventBus.emit('customer.created', {
+        tenantId: session.user.tenantId,
+        customerId: customer.id,
+        customerName: `${firstName} ${lastName}`,
+        timestamp: new Date(),
+        userId: session.user.id,
+      })
+    } catch (error) {
+      console.error('[Customers API] Failed to emit customer.created event:', error)
+    }
+
     return NextResponse.json({ customer }, { status: 201 })
   } catch (error) {
     console.error('Fehler beim Erstellen des Kunden:', error)

@@ -116,14 +116,51 @@ export default function AppointmentDetailPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [appointmentId, userRole])
 
+  // Konvertiere UTC ISO-String zu datetime-local Format (lokale Zeit)
   const formatDateTimeLocal = (dateString: string) => {
+    if (!dateString) return ''
+    
+    // Date-String aus DB ist UTC ISO-String (z.B. "2024-01-15T13:00:00.000Z")
+    // new Date() interpretiert ISO-Strings korrekt und konvertiert automatisch zu lokaler Zeit
     const date = new Date(dateString)
+    
+    // Prüfe ob das Datum gültig ist
+    if (isNaN(date.getTime())) {
+      console.error('Ungültiges Datum:', dateString)
+      return ''
+    }
+    
+    // getFullYear(), getMonth(), getDate(), getHours(), getMinutes() geben lokale Zeit zurück
     const year = date.getFullYear()
     const month = String(date.getMonth() + 1).padStart(2, '0')
     const day = String(date.getDate()).padStart(2, '0')
     const hours = String(date.getHours()).padStart(2, '0')
     const minutes = String(date.getMinutes()).padStart(2, '0')
+    
     return `${year}-${month}-${day}T${hours}:${minutes}`
+  }
+
+  // Konvertiere datetime-local String zu ISO-String mit korrekter Zeitzone
+  const convertToISOString = (dateTimeLocal: string): string => {
+    if (!dateTimeLocal) return ''
+    
+    // datetime-local Format: "YYYY-MM-DDTHH:mm" (lokale Zeit ohne Zeitzone)
+    const [datePart, timePart] = dateTimeLocal.split('T')
+    if (!datePart || !timePart) return ''
+    
+    const [year, month, day] = datePart.split('-').map(Number)
+    const [hours, minutes] = timePart.split(':').map(Number)
+    
+    // Erstelle Date-Objekt in lokaler Zeitzone
+    const localDateTime = new Date(year, month - 1, day, hours, minutes, 0, 0)
+    
+    if (isNaN(localDateTime.getTime())) {
+      console.error('Ungültiges Datum:', dateTimeLocal)
+      return ''
+    }
+    
+    // Konvertiere zu ISO-String (UTC)
+    return localDateTime.toISOString()
   }
 
   const fetchAppointment = async () => {
@@ -194,11 +231,22 @@ export default function AppointmentDetailPage() {
 
   const handleSave = async () => {
     try {
+      // Konvertiere datetime-local zu ISO-String für korrekte Zeitzone-Behandlung
+      const startTimeISO = convertToISOString(formData.startTime)
+      const endTimeISO = convertToISOString(formData.endTime)
+
+      if (!startTimeISO || !endTimeISO) {
+        alert('Bitte geben Sie Start- und Endzeit ein')
+        return
+      }
+
       const response = await fetch(`/api/appointments/${appointmentId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
+          startTime: startTimeISO,
+          endTime: endTimeISO,
           price: formData.price ? parseFloat(formData.price) : null,
           customerId: formData.customerId || null,
           employeeId: formData.employeeId || null,
@@ -230,13 +278,19 @@ export default function AppointmentDetailPage() {
     if (editing && formData.startTime && formData.endTime && formData.employeeId && userRole === 'ADMIN') {
       const checkAvailability = async () => {
         try {
+          // Konvertiere zu ISO-String für Verfügbarkeitsprüfung
+          const startTimeISO = convertToISOString(formData.startTime)
+          const endTimeISO = convertToISOString(formData.endTime)
+          
+          if (!startTimeISO || !endTimeISO) return
+
           const response = await fetch('/api/employees/check-availability', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               employeeId: formData.employeeId,
-              startTime: formData.startTime,
-              endTime: formData.endTime,
+              startTime: startTimeISO,
+              endTime: endTimeISO,
             }),
           })
           

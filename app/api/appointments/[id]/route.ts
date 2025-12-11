@@ -234,6 +234,47 @@ export async function PUT(
       },
     })
 
+    // Event emitieren für Updates
+    if (updatedAppointment) {
+      try {
+        const { eventBus } = await import('@/events/EventBus')
+        const changes: Record<string, unknown> = {}
+        if (title !== undefined) changes.title = title
+        if (status !== undefined) changes.status = status
+        if (startTime !== undefined) changes.startTime = startTime
+        if (endTime !== undefined) changes.endTime = endTime
+
+        if (Object.keys(changes).length > 0) {
+          eventBus.emit('appointment.updated', {
+            tenantId: session.user.tenantId,
+            appointmentId: updatedAppointment.id,
+            changes,
+            timestamp: new Date(),
+            userId: session.user.id,
+          })
+        }
+
+        // Spezielle Events für Status-Änderungen
+        if (status === 'CANCELLED') {
+          eventBus.emit('appointment.cancelled', {
+            tenantId: session.user.tenantId,
+            appointmentId: updatedAppointment.id,
+            timestamp: new Date(),
+            userId: session.user.id,
+          })
+        } else if (status === 'COMPLETED') {
+          eventBus.emit('appointment.completed', {
+            tenantId: session.user.tenantId,
+            appointmentId: updatedAppointment.id,
+            timestamp: new Date(),
+            userId: session.user.id,
+          })
+        }
+      } catch (error) {
+        console.error('[Appointments API] Failed to emit appointment.updated event:', error)
+      }
+    }
+
     return NextResponse.json({ appointment: updatedAppointment })
   } catch (error) {
     console.error('Fehler beim Aktualisieren des Termins:', error)
@@ -284,6 +325,12 @@ export async function DELETE(
       }
     }
 
+    // Hole Termin-Daten vor dem Löschen für Event
+    const appointmentToDelete = await prisma.appointment.findFirst({
+      where,
+      select: { id: true, tenantId: true },
+    })
+
     const appointment = await prisma.appointment.deleteMany({
       where,
     })
@@ -293,6 +340,21 @@ export async function DELETE(
         { error: 'Termin nicht gefunden' },
         { status: 404 }
       )
+    }
+
+    // Event emitieren für Löschung (wird als Cancelled behandelt)
+    if (appointmentToDelete) {
+      try {
+        const { eventBus } = await import('@/events/EventBus')
+        eventBus.emit('appointment.cancelled', {
+          tenantId: appointmentToDelete.tenantId,
+          appointmentId: appointmentToDelete.id,
+          timestamp: new Date(),
+          userId: session.user.id,
+        })
+      } catch (error) {
+        console.error('[Appointments API] Failed to emit appointment.cancelled event:', error)
+      }
     }
 
     return NextResponse.json({ message: 'Termin erfolgreich gelöscht' })

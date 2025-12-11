@@ -101,6 +101,24 @@ export async function PUT(
       where: { id: id },
     })
 
+    // Prüfe ob Bestand niedrig ist und emitte Event
+    if (updatedItem && updatedItem.quantity <= updatedItem.minThreshold) {
+      try {
+        const { eventBus } = await import('@/events/EventBus')
+        eventBus.emit('inventory.low', {
+          tenantId: session.user.tenantId,
+          itemId: updatedItem.id,
+          itemName: updatedItem.name,
+          currentQuantity: updatedItem.quantity,
+          minThreshold: updatedItem.minThreshold,
+          timestamp: new Date(),
+          userId: session.user.id,
+        })
+      } catch (error) {
+        console.error('[Inventory API] Failed to emit inventory.low event:', error)
+      }
+    }
+
     return NextResponse.json({ item: updatedItem })
   } catch (error) {
     console.error('Fehler beim Aktualisieren des Artikels:', error)

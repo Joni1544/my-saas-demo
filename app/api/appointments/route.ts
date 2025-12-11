@@ -197,6 +197,23 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    // Event emitieren
+    try {
+      const { eventBus } = await import('@/events/EventBus')
+      eventBus.emit('appointment.created', {
+        tenantId: session.user.tenantId,
+        appointmentId: appointment.id,
+        customerId: appointment.customerId || undefined,
+        employeeId: appointment.employeeId || undefined,
+        startTime: appointment.startTime,
+        endTime: appointment.endTime,
+        timestamp: new Date(),
+        userId: session.user.id,
+      })
+    } catch (error) {
+      console.error('[Appointments API] Failed to emit appointment.created event:', error)
+    }
+
     return NextResponse.json({ appointment }, { status: 201 })
   } catch (error) {
     console.error('Fehler beim Erstellen des Termins:', error)

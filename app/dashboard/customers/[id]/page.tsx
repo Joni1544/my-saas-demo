@@ -403,6 +403,12 @@ export default function CustomerDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Zahlungsverhalten Sektion */}
+      <div className="mt-8 rounded-lg bg-white p-6 shadow">
+        <h2 className="mb-4 text-lg font-semibold text-gray-900">💳 Zahlungsverhalten</h2>
+        <CustomerPaymentsSection customerId={customer.id} />
+      </div>
     </div>
   )
 }

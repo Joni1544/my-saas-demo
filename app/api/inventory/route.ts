@@ -89,6 +89,24 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    // Prüfe ob Bestand niedrig ist und emitte Event
+    if (item.quantity <= item.minThreshold) {
+      try {
+        const { eventBus } = await import('@/events/EventBus')
+        eventBus.emit('inventory.low', {
+          tenantId: session.user.tenantId,
+          itemId: item.id,
+          itemName: item.name,
+          currentQuantity: item.quantity,
+          minThreshold: item.minThreshold,
+          timestamp: new Date(),
+          userId: session.user.id,
+        })
+      } catch (error) {
+        console.error('[Inventory API] Failed to emit inventory.low event:', error)
+      }
+    }
+
     return NextResponse.json({ item }, { status: 201 })
   } catch (error) {
     console.error('Fehler beim Erstellen des Artikels:', error)

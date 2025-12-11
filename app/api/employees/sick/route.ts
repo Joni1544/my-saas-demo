@@ -62,6 +62,20 @@ export async function POST(request: NextRequest) {
       // Prüfe und setze Termine auf NEEDS_REASSIGNMENT
       const reassignedCount = await checkAndReassignAppointmentsForSickEmployee(employee.id)
 
+      // Event emitieren
+      try {
+        const { eventBus } = await import('@/events/EventBus')
+        eventBus.emit('employee.sick', {
+          tenantId: session.user.tenantId,
+          employeeId: employee.id,
+          employeeName: updatedEmployee.user.name || updatedEmployee.user.email,
+          timestamp: new Date(),
+          userId: session.user.id,
+        })
+      } catch (error) {
+        console.error('[Employees API] Failed to emit employee.sick event:', error)
+      }
+
       return NextResponse.json({
         employee: updatedEmployee,
         reassignedAppointments: reassignedCount,

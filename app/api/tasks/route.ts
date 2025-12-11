@@ -107,6 +107,22 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    // Event emitieren
+    try {
+      const { eventBus } = await import('@/events/EventBus')
+      eventBus.emit('task.created', {
+        tenantId: session.user.tenantId,
+        taskId: task.id,
+        assignedTo: task.assignedTo || undefined,
+        priority: task.priority,
+        deadline: task.deadline || undefined,
+        timestamp: new Date(),
+        userId: session.user.id,
+      })
+    } catch (error) {
+      console.error('[Tasks API] Failed to emit task.created event:', error)
+    }
+
     return NextResponse.json({ task }, { status: 201 })
   } catch (error) {
     console.error('Fehler beim Erstellen der Aufgabe:', error)

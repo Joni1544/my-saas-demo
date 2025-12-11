@@ -108,6 +108,29 @@ export default function NewAppointmentPage() {
     return `${year}-${month}-${day}T${hours}:${minutes}`
   }
 
+  // Konvertiere datetime-local String zu ISO-String mit korrekter Zeitzone
+  const convertToISOString = (dateTimeLocal: string): string => {
+    if (!dateTimeLocal) return ''
+    
+    // datetime-local Format: "YYYY-MM-DDTHH:mm" (lokale Zeit ohne Zeitzone)
+    const [datePart, timePart] = dateTimeLocal.split('T')
+    if (!datePart || !timePart) return ''
+    
+    const [year, month, day] = datePart.split('-').map(Number)
+    const [hours, minutes] = timePart.split(':').map(Number)
+    
+    // Erstelle Date-Objekt in lokaler Zeitzone
+    const localDateTime = new Date(year, month - 1, day, hours, minutes, 0, 0)
+    
+    if (isNaN(localDateTime.getTime())) {
+      console.error('Ungültiges Datum:', dateTimeLocal)
+      return ''
+    }
+    
+    // Konvertiere zu ISO-String (UTC)
+    return localDateTime.toISOString()
+  }
+
   const fetchCustomers = async () => {
     try {
       const response = await fetch('/api/customers?isArchived=false&sortBy=name&sortOrder=asc')
@@ -150,13 +173,19 @@ export default function NewAppointmentPage() {
       if (!employee.id || !formData.startTime || !formData.endTime) continue
       
       try {
+        // Konvertiere zu ISO-String für Verfügbarkeitsprüfung
+        const startTimeISO = convertToISOString(formData.startTime)
+        const endTimeISO = convertToISOString(formData.endTime)
+        
+        if (!startTimeISO || !endTimeISO) continue
+
         const response = await fetch('/api/employees/check-availability', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             employeeId: employee.id,
-            startTime: formData.startTime,
-            endTime: formData.endTime,
+            startTime: startTimeISO,
+            endTime: endTimeISO,
           }),
         })
         
@@ -186,11 +215,23 @@ export default function NewAppointmentPage() {
     setLoading(true)
 
     try {
+      // Konvertiere datetime-local zu ISO-String für korrekte Zeitzone-Behandlung
+      const startTimeISO = convertToISOString(formData.startTime)
+      const endTimeISO = convertToISOString(formData.endTime)
+
+      if (!startTimeISO || !endTimeISO) {
+        alert('Bitte geben Sie Start- und Endzeit ein')
+        setLoading(false)
+        return
+      }
+
       const response = await fetch('/api/appointments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
+          startTime: startTimeISO,
+          endTime: endTimeISO,
           price: formData.price ? parseFloat(formData.price) : 0,
           customerId: formData.customerId || null,
           employeeId: formData.employeeId || null,

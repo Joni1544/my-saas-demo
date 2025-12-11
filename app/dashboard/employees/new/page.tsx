@@ -466,16 +466,16 @@ export default function NewEmployeePage() {
 
         {/* Credentials Modal */}
         {showCredentials && credentials && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-            <div className="rounded-lg bg-white p-6 shadow-xl max-w-md w-full mx-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900 bg-opacity-30 backdrop-blur-sm">
+            <div className="rounded-lg bg-white p-6 shadow-2xl max-w-md w-full mx-4 border border-gray-200">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">✅ Mitarbeiter erfolgreich erstellt</h3>
               <div className="space-y-4">
                 <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
                   <p className="text-sm font-medium text-blue-900 mb-2">Login-Daten:</p>
                   <div className="space-y-2 text-sm">
-                    <p><span className="font-semibold">Email:</span> {credentials.email}</p>
-                    <p><span className="font-semibold">Passwort:</span> {credentials.password}</p>
-                    <p><span className="font-semibold">Login-URL:</span> {credentials.loginUrl}</p>
+                    <p className="text-gray-900"><span className="font-semibold text-gray-900">Email:</span> <span className="text-gray-800">{credentials.email}</span></p>
+                    <p className="text-gray-900"><span className="font-semibold text-gray-900">Passwort:</span> <span className="text-gray-800">{credentials.password}</span></p>
+                    <p className="text-gray-900"><span className="font-semibold text-gray-900">Login-URL:</span> <span className="text-gray-800 break-all">{credentials.loginUrl}</span></p>
                   </div>
                 </div>
                 <div className="flex gap-2">
@@ -511,11 +511,11 @@ export default function NewEmployeePage() {
 
         {/* Invite Link Modal */}
         {showInviteLink && inviteLink && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-            <div className="rounded-lg bg-white p-6 shadow-xl max-w-lg w-full mx-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900 bg-opacity-30 backdrop-blur-sm">
+            <div className="rounded-lg bg-white p-6 shadow-2xl max-w-lg w-full mx-4 border border-gray-200">
               <h3 className="text-lg font-semibold text-gray-900 mb-2">✅ Mitarbeiter erfolgreich erstellt</h3>
-              <p className="text-sm text-gray-600 mb-4">
-                Der Mitarbeiter <span className="font-semibold">{formData.name || formData.email}</span> wurde erstellt. 
+              <p className="text-sm text-gray-800 mb-4">
+                Der Mitarbeiter <span className="font-semibold text-gray-900">{formData.name || formData.email}</span> wurde erstellt. 
                 Senden Sie diesen Einladungslink, damit der Mitarbeiter sein Passwort setzen kann.
               </p>
               <div className="space-y-4">
@@ -539,7 +539,7 @@ export default function NewEmployeePage() {
                       Kopieren
                     </button>
                   </div>
-                  <p className="text-xs text-green-700 mt-2">
+                  <p className="text-xs text-green-800 mt-2 font-medium">
                     ⏰ Dieser Link ist 7 Tage gültig
                   </p>
                 </div>

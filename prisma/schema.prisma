@@ -58,6 +58,11 @@ model Shop {
   inventoryItems    InventoryItem[] // Inventar-Artikel für diesen Tenant
   chatChannels      ChatChannel[] // Chat-Kanäle für diesen Tenant
   dailyReports      DailyReport[] // Tägliche Chef-Berichte
+  invoices          Invoice[] // Rechnungen für diesen Tenant
+  payments          Payment[] // Zahlungen für diesen Tenant
+  invoiceTemplates  InvoiceTemplate[] // Rechnungstemplates für diesen Tenant
+  aiUsages          AiUsage[] // KI-Nutzungen für diesen Tenant
+  aiBillings        AiBilling[] // KI-Abrechnungen für diesen Tenant
 
   @@index([tenantId])
 }
@@ -80,6 +85,8 @@ model Customer {
   // Beziehungen
   shop         Shop          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   appointments Appointment[]
+  invoices     Invoice[] // Rechnungen für diesen Kunden
+  payments     Payment[] // Zahlungen von diesem Kunden
 
   @@index([tenantId])
   @@index([email])
@@ -135,6 +142,8 @@ model Employee {
   expenses          Expense[] // Ausgaben die dem Mitarbeiter zugeordnet sind
   recurringExpenses RecurringExpense[] // Daueraufträge für Gehälter
   vacationRequests  VacationRequest[] // Urlaubsanträge
+  payments          Payment[] // Zahlungen die dem Mitarbeiter zugeordnet sind
+  invoices          Invoice[] // Rechnungen die der Mitarbeiter erstellt hat
 
   @@index([tenantId])
   @@index([userId])
@@ -476,4 +485,180 @@ model DailyReport {
   @@unique([tenantId, reportDate])
   @@index([tenantId])
   @@index([reportDate])
+}
+
+// Rechnungs-Modell
+model Invoice {
+  id            String  @id @default(cuid())
+  tenantId      String // Referenz zur Firma
+  customerId    String? // Optional: Kunde
+  employeeId    String? // Optional: Mitarbeiter der die Rechnung erstellt hat
+  appointmentId String? // Optional: Verknüpfung zu Termin
+  templateId    String? // Optional: Verwendetes Template
+
+  invoiceNumber String // Rechnungsnummer (z.B. RE-2024-001)
+  amount        Decimal @db.Decimal(10, 2) // Rechnungsbetrag
+  currency      String  @default("EUR")
+
+  status  InvoiceStatus @default(PENDING) // PENDING, PAID, OVERDUE, CANCELLED
+  dueDate DateTime? // Fälligkeitsdatum
+  paidAt  DateTime? // Bezahlt am
+  reminderLevel Int @default(0) // Aktuelle Mahnstufe (0 = keine, 1-3 = Mahnstufen)
+
+  description String? // Rechnungstext/Beschreibung
+  aiDraftText String? // KI-generierter Text (DSGVO-sicher, keine personenbezogenen Daten)
+  items       Json? // Rechnungsposten als JSON Array
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Beziehungen
+  shop     Shop            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer Customer?       @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  employee Employee?       @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+  template InvoiceTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  payments Payment[] // Alle Zahlungen für diese Rechnung
+
+  @@index([tenantId])
+  @@index([customerId])
+  @@index([employeeId])
+  @@index([templateId])
+  @@index([status])
+  @@index([invoiceNumber])
+  @@index([dueDate])
+}
+
+// Rechnungs-Template-Modell
+model InvoiceTemplate {
+  id           String   @id @default(uuid())
+  tenantId     String
+  name         String
+  description  String?
+
+  logoUrl      String?
+  primaryColor String?   @default("#3B82F6")
+  secondaryColor String? @default("#1E40AF")
+
+  layoutType   String   @default("modern") // "modern", "classic", "minimal"
+
+  headerText   String?
+  footerText   String?
+
+  defaultItems Json?    // Optional: Standardpositionen als JSON Array
+
+  isDefault    Boolean  @default(false) // Standard-Template für diesen Tenant
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Beziehungen
+  shop     Shop      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  invoices Invoice[] // Rechnungen die dieses Template verwenden
+
+  @@index([tenantId])
+  @@index([isDefault])
+}
+
+// Zahlungs-Modell
+model Payment {
+  id         String  @id @default(uuid())
+  tenantId   String
+  invoiceId  String? // Optional: Verknüpfung zu Rechnung
+  customerId String? // Optional: Kunde
+  employeeId String? // Optional: Mitarbeiter (z.B. bei Barzahlung)
+
+  amount   Decimal @db.Decimal(10, 2)
+  currency String  @default("EUR")
+
+  method PaymentMethod
+  status PaymentStatus @default(PENDING)
+
+  transactionId String? // Stripe Payment Intent ID, PayPal Order ID, Bank-Verwendungszweck
+  reference     String? // z.B. Bankreferenz oder Kassenbeleg-Nummer
+
+  paidAt    DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  // Beziehungen
+  shop     Shop      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  invoice  Invoice?  @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+  customer Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  employee Employee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([invoiceId])
+  @@index([customerId])
+  @@index([employeeId])
+  @@index([status])
+  @@index([method])
+  @@index([transactionId])
+}
+
+// Zahlungsmethoden-Enum
+enum PaymentMethod {
+  STRIPE_CARD
+  STRIPE_TERMINAL
+  APPLE_PAY
+  GOOGLE_PAY
+  PAYPAL
+  BANK_TRANSFER
+  CASH
+}
+
+// Zahlungsstatus-Enum
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+// Rechnungsstatus-Enum
+enum InvoiceStatus {
+  PENDING
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+// KI-Nutzungs-Modell
+model AiUsage {
+  id            String   @id @default(uuid())
+  tenantId      String
+  feature       String          // z. B. "invoice_draft", "daily_report"
+  tokensInput   Int
+  tokensOutput  Int
+  totalTokens   Int
+  cost          Float           // Kosten in EUR
+  aiProvider    String          // "openai", "gemini", etc.
+  timestamp     DateTime @default(now())
+
+  // Beziehungen
+  shop Shop @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([timestamp])
+  @@index([feature])
+  @@index([aiProvider])
+}
+
+// KI-Abrechnungs-Modell
+model AiBilling {
+  id            String   @id @default(uuid())
+  tenantId      String
+  month         Int
+  year          Int
+  totalTokens   Int
+  baseCost      Float
+  multiplier    Float    @default(1.2)
+  finalCost     Float
+  createdAt     DateTime @default(now())
+
+  // Beziehungen
+  shop Shop @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, month, year])
+  @@index([tenantId])
+  @@index([year, month])
 }
