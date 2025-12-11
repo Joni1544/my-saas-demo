@@ -7,7 +7,7 @@
 import Image from 'next/image'
 
 interface Template {
-  id: string
+  id?: string
   name: string
   logoUrl?: string | null
   primaryColor?: string | null

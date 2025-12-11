@@ -471,19 +471,22 @@ export const defaultRules: AutomationRule[] = [
         if (!invoice) return
 
         // Generiere KI-Mahntext (DSGVO-sicher)
-        const { aiServiceWrapper } = await import('@/services/ai/AiServiceWrapper')
-        const reminderText = await aiServiceWrapper.generateInvoiceDraft(
-          {
-            tenantId: payload.tenantId,
-            feature: 'reminder_text',
-            aiProvider: 'openai',
-          },
-          JSON.stringify({
+        // Verwende die Reminder-Text-Generierung direkt (nicht generateInvoiceDraft)
+        const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/ai/reminder-text`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
             level: reminderPayload.level,
             invoiceAmount: Number(invoice.amount),
             companyMood: 'neutral',
-          })
-        )
+          }),
+        })
+        
+        if (!response.ok) {
+          throw new Error('Fehler beim Generieren des Mahntexts')
+        }
+        
+        const { reminderText } = await response.json()
 
         // Aktualisiere Mahnung mit KI-Text
         await prisma.invoiceReminder.updateMany({

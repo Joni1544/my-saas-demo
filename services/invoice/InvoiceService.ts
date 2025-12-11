@@ -39,7 +39,7 @@ class InvoiceService {
           dueDate: data.dueDate || null,
           description: data.description || null,
           aiDraftText: data.aiDraftText || null,
-          items: data.items ? JSON.stringify(data.items) : null,
+          items: data.items ? (data.items as any) : null,
         },
       })
 
@@ -128,23 +128,37 @@ class InvoiceService {
     customerId?: string
   }) {
     try {
-      const where: {
-        tenantId: string
-        status?: string
-        customerId?: string
-      } = {
-        tenantId,
+      // Konvertiere tenantId (Shop.tenantId) zu shopId (Shop.id)
+      const shop = await prisma.shop.findUnique({
+        where: { tenantId },
+        select: { id: true },
+      })
+
+      if (!shop) {
+        throw new Error(`Shop with tenantId ${tenantId} not found`)
       }
 
-      if (filters?.status) {
-        where.status = filters.status as any
+      const where: {
+        tenantId: string
+        status?: 'PENDING' | 'PAID' | 'OVERDUE' | 'CANCELLED'
+        customerId?: string
+      } = {
+        tenantId: shop.id, // Verweist auf Shop.id (Foreign Key)
+      }
+
+      if (filters?.status && (filters.status === 'PENDING' || filters.status === 'PAID' || filters.status === 'OVERDUE' || filters.status === 'CANCELLED')) {
+        where.status = filters.status as 'PENDING' | 'PAID' | 'OVERDUE' | 'CANCELLED'
       }
       if (filters?.customerId) {
         where.customerId = filters.customerId
       }
 
       const invoices = await prisma.invoice.findMany({
-        where,
+        where: where as {
+          tenantId: string
+          status?: 'PENDING' | 'PAID' | 'OVERDUE' | 'CANCELLED'
+          customerId?: string
+        },
         include: {
           customer: {
             select: {

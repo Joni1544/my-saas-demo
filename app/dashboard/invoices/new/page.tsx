@@ -4,7 +4,7 @@
  */
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import TemplateSelector from '@/components/invoices/templates/TemplateSelector'
 import TemplatePreview from '@/components/invoices/templates/TemplatePreview'
@@ -44,17 +44,7 @@ export default function NewInvoicePage() {
     dueDate: '',
   })
 
-  useEffect(() => {
-    fetchCustomers()
-  }, [])
-
-  useEffect(() => {
-    if (templateId) {
-      fetchTemplate()
-    }
-  }, [templateId])
-
-  const fetchCustomers = async () => {
+  const fetchCustomers = useCallback(async () => {
     try {
       const response = await fetch('/api/customers')
       if (response.ok) {
@@ -64,9 +54,10 @@ export default function NewInvoicePage() {
     } catch (error) {
       console.error('Fehler:', error)
     }
-  }
+  }, [])
 
-  const fetchTemplate = async () => {
+  const fetchTemplate = useCallback(async () => {
+    if (!templateId) return
     try {
       const response = await fetch(`/api/invoice-templates/${templateId}`)
       if (response.ok) {
@@ -76,7 +67,17 @@ export default function NewInvoicePage() {
     } catch (error) {
       console.error('Fehler:', error)
     }
-  }
+  }, [templateId])
+
+  useEffect(() => {
+    fetchCustomers()
+  }, [fetchCustomers])
+
+  useEffect(() => {
+    if (templateId) {
+      fetchTemplate()
+    }
+  }, [templateId, fetchTemplate])
 
   const handleGenerateAiText = async () => {
     setGeneratingAiText(true)

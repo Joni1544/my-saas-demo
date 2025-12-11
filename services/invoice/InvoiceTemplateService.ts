@@ -61,7 +61,7 @@ class InvoiceTemplateService {
           layoutType: data.layoutType || 'modern',
           headerText: data.headerText || null,
           footerText: data.footerText || null,
-          defaultItems: data.defaultItems ? JSON.stringify(data.defaultItems) : null,
+          defaultItems: data.defaultItems ? (data.defaultItems as any) : null,
           isDefault: data.isDefault || false,
         },
       })
@@ -199,7 +199,7 @@ class InvoiceTemplateService {
           ...(data.layoutType && { layoutType: data.layoutType }),
           ...(data.headerText !== undefined && { headerText: data.headerText }),
           ...(data.footerText !== undefined && { footerText: data.footerText }),
-          ...(data.defaultItems && { defaultItems: JSON.stringify(data.defaultItems) }),
+          ...(data.defaultItems && { defaultItems: data.defaultItems as any }),
           ...(data.isDefault !== undefined && { isDefault: data.isDefault }),
         },
       })

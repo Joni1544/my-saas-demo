@@ -382,19 +382,19 @@ class PaymentService {
 
       const where: {
         tenantId: string
-        status?: string
-        method?: string
+        status?: 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED'
+        method?: 'STRIPE_CARD' | 'STRIPE_TERMINAL' | 'APPLE_PAY' | 'GOOGLE_PAY' | 'PAYPAL' | 'BANK_TRANSFER' | 'CASH'
         customerId?: string
         invoiceId?: string
       } = {
         tenantId: shopId, // Verweist auf Shop.id (Foreign Key)
       }
 
-      if (filters?.status) {
-        where.status = filters.status as any
+      if (filters?.status && (filters.status === 'PENDING' || filters.status === 'PAID' || filters.status === 'FAILED' || filters.status === 'REFUNDED')) {
+        where.status = filters.status as 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED'
       }
-      if (filters?.method) {
-        where.method = filters.method as any
+      if (filters?.method && (filters.method === 'STRIPE_CARD' || filters.method === 'STRIPE_TERMINAL' || filters.method === 'APPLE_PAY' || filters.method === 'GOOGLE_PAY' || filters.method === 'PAYPAL' || filters.method === 'BANK_TRANSFER' || filters.method === 'CASH')) {
+        where.method = filters.method as 'STRIPE_CARD' | 'STRIPE_TERMINAL' | 'APPLE_PAY' | 'GOOGLE_PAY' | 'PAYPAL' | 'BANK_TRANSFER' | 'CASH'
       }
       if (filters?.customerId) {
         where.customerId = filters.customerId
@@ -404,7 +404,13 @@ class PaymentService {
       }
 
       const payments = await prisma.payment.findMany({
-        where,
+        where: where as {
+          tenantId: string
+          status?: 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED'
+          method?: 'STRIPE_CARD' | 'STRIPE_TERMINAL' | 'APPLE_PAY' | 'GOOGLE_PAY' | 'PAYPAL' | 'BANK_TRANSFER' | 'CASH'
+          customerId?: string
+          invoiceId?: string
+        },
         include: {
           customer: {
             select: {

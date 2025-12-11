@@ -3,7 +3,7 @@
  * Erfasst und verwaltet KI-Nutzung pro Tenant
  */
 import { prisma } from '@/lib/prisma'
-import { EventBus } from '@/events/EventBus'
+import { eventBus } from '@/events/EventBus'
 
 export interface RecordUsageData {
   tenantId: string
@@ -44,7 +44,7 @@ class AiUsageService {
       })
 
       // Event an EventBus senden
-      EventBus.emit('ai.usage_recorded', {
+      eventBus.emit('ai.usage_recorded', {
         tenantId: data.tenantId,
         usageId: usage.id,
         feature: data.feature,

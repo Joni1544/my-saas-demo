@@ -3,7 +3,7 @@
  * Wrapper für AiService mit Usage-Tracking
  */
 import { aiUsageService } from './AiUsageService'
-import { aiAdapter } from './AiAdapter'
+import { aiAdapter, DailyReportResult, TaskSuggestion } from './AiAdapter'
 
 interface UsageContext {
   tenantId: string
@@ -43,15 +43,19 @@ class AiServiceWrapper {
   /**
    * Generiere Rechnungstext mit Tracking
    */
-  async generateInvoiceDraft(context: UsageContext, prompt: string): Promise<string> {
+  async generateInvoiceDraft(context: UsageContext, prompt: {
+    amount: number
+    customerId: string
+    items: Array<{ description: string; amount: number }>
+  }): Promise<string> {
     return this.callWithTracking(context, async () => {
       const result = await aiAdapter.generateInvoiceText(prompt)
       // Dummy Usage - würde später durch echte API-Response ersetzt
       return {
-        result,
+        result: result.text, // Extrahiere text aus InvoiceTextResult
         usage: {
-          inputTokens: prompt.length / 4, // Grobe Schätzung: ~4 Zeichen pro Token
-          outputTokens: result.length / 4,
+          inputTokens: JSON.stringify(prompt).length / 4, // Grobe Schätzung: ~4 Zeichen pro Token
+          outputTokens: result.text.length / 4,
         },
       }
     })
@@ -60,14 +64,14 @@ class AiServiceWrapper {
   /**
    * Generiere Tagesbericht mit Tracking
    */
-  async generateDailyReport(context: UsageContext, data: unknown): Promise<string> {
+  async generateDailyReport(context: UsageContext, data: unknown): Promise<DailyReportResult> {
     return this.callWithTracking(context, async () => {
-      const result = await aiAdapter.generateDailyReport(data)
+      const result = await aiAdapter.generateDailyReport(data as any)
       return {
         result,
         usage: {
           inputTokens: JSON.stringify(data).length / 4,
-          outputTokens: result.length / 4,
+          outputTokens: JSON.stringify(result).length / 4,
         },
       }
     })
@@ -76,9 +80,9 @@ class AiServiceWrapper {
   /**
    * Generiere Task-Vorschläge mit Tracking
    */
-  async generateTaskSuggestions(context: UsageContext, data: unknown): Promise<string[]> {
+  async generateTaskSuggestions(context: UsageContext, data: unknown): Promise<TaskSuggestion[]> {
     return this.callWithTracking(context, async () => {
-      const result = await aiAdapter.generateTaskSuggestions(data)
+      const result = await aiAdapter.generateTaskSuggestions(data as any)
       return {
         result,
         usage: {

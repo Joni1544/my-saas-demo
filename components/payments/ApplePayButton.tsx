@@ -100,9 +100,11 @@ export default function ApplePayButton({
             const { paymentIntent } = await response.json()
 
             // Bestätige Payment
-            stripeRef.current.confirmCardPayment(paymentIntent.clientSecret, {
-              payment_method: ev.paymentMethod.id,
-            })
+            if (stripeRef.current) {
+              stripeRef.current.confirmCardPayment(paymentIntent.clientSecret, {
+                payment_method: ev.paymentMethod.id,
+              })
+            }
 
             ev.complete('success')
             onSuccess?.()
